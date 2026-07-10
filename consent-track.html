@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>肖像同意書回條回收追蹤表</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:"Microsoft JhengHei","微軟正黑體","PingFang TC",sans-serif;
+    background:#EDE6E3; color:#1a1a1a; font-size:15px; line-height:1.7;
+  }
+  .wrap { max-width:720px; margin:0 auto; padding:12px 12px 40px; }
+  .card {
+    background:#FAF7F5; border-radius:10px; padding:16px 14px;
+    margin-bottom:12px; box-shadow:0 1px 4px rgba(140,120,115,.15);
+  }
+  h1 { font-size:18px; text-align:center; letter-spacing:2px; margin-bottom:4px; }
+  .sub { text-align:center; font-size:13px; color:#333; margin-bottom:8px; }
+  h2 { font-size:16px; margin-bottom:8px; border-left:4px solid #C9A9A6; padding-left:8px; }
+  textarea {
+    width:100%; font-size:15px; padding:10px; border:1px solid #C9B8B4;
+    border-radius:8px; background:#fff; color:#1a1a1a; font-family:inherit;
+    min-height:110px; resize:vertical;
+  }
+  .hint { font-size:13px; color:#333; margin:6px 0; }
+  .btn {
+    border:none; border-radius:8px; font-size:15px; font-family:inherit;
+    padding:10px 14px; cursor:pointer; margin:6px 6px 0 0; letter-spacing:1px;
+  }
+  .btn-main { background:#B98E8A; color:#fff; font-weight:bold; }
+  .btn-sub { background:#DDD0CC; color:#333; font-size:14px; }
+  .stats { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:4px; }
+  .stat {
+    flex:1; min-width:100px; background:#fff; border:1px solid #C9B8B4;
+    border-radius:8px; text-align:center; padding:8px 4px;
+  }
+  .stat .num { font-size:18px; font-weight:bold; }
+  .stat .lbl { font-size:13px; color:#333; }
+  .stat.pend .num { color:#A5514B; }
+  .stat.agree .num { color:#6E8B6E; }
+  .stat.disagree .num { color:#8A7A9B; }
+  table { width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden; }
+  th, td { border:1px solid #E3D8D5; padding:8px 6px; font-size:15px; text-align:center; }
+  th { background:#F0E4E1; font-size:14px; }
+  td.name { text-align:left; padding-left:10px; font-weight:bold; }
+  select {
+    font-size:15px; font-family:inherit; padding:6px 8px;
+    border:1px solid #C9B8B4; border-radius:6px; background:#fff; color:#1a1a1a;
+  }
+  select.st-pend { background:#F8ECEB; color:#A5514B; }
+  select.st-agree { background:#ECF2EC; color:#3E5B3E; }
+  select.st-disagree { background:#EFEAF4; color:#5A4A6B; }
+  td .date { font-size:13px; color:#333; }
+  td .del { color:#A5514B; font-size:13px; cursor:pointer; text-decoration:underline; }
+  .bar { display:flex; flex-wrap:wrap; align-items:center; }
+  #pendBox {
+    display:none; margin-top:10px; background:#fff; border:1px solid #C9B8B4;
+    border-radius:8px; padding:10px 12px; white-space:pre-wrap; font-size:15px;
+  }
+  .empty { text-align:center; color:#8a7f7c; font-size:14px; padding:16px 0; }
+  @media (max-width:480px){ th:nth-child(4), td:nth-child(4){ display:none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="card">
+    <h1>肖像同意書回條回收追蹤表</h1>
+    <div class="sub">台中市私立小蘋果托嬰中心</div>
+    <div class="stats">
+      <div class="stat"><div class="num" id="sTotal">0</div><div class="lbl">全園幼兒</div></div>
+      <div class="stat agree"><div class="num" id="sAgree">0</div><div class="lbl">同意</div></div>
+      <div class="stat disagree"><div class="num" id="sDis">0</div><div class="lbl">不同意</div></div>
+      <div class="stat pend"><div class="num" id="sPend">0</div><div class="lbl">未交</div></div>
+    </div>
+  </div>
+
+  <div class="card" id="rosterCard">
+    <h2>建立幼兒名單</h2>
+    <div class="hint">請貼上幼兒姓名，一行一位。已存在的姓名不會重複加入。</div>
+    <textarea id="rosterInput" placeholder="例如：&#10;王小明&#10;林小美&#10;陳小安"></textarea>
+    <div class="bar">
+      <button class="btn btn-main" onclick="addRoster()">加入名單</button>
+      <button class="btn btn-sub" onclick="clearAll()">清空全部資料</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>回收狀況登記</h2>
+    <div class="hint">收到家長回條圖片後，於下表更改狀態，日期會自動記錄。</div>
+    <table>
+      <thead><tr><th style="width:34%">幼兒姓名</th><th style="width:30%">狀態</th><th style="width:24%">收件日期</th><th style="width:12%">刪除</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="empty" id="emptyMsg">尚未建立名單，請先於上方貼上幼兒姓名。</div>
+    <div class="bar">
+      <button class="btn btn-main" onclick="makePendList()">產生未交名單（催繳用）</button>
+      <button class="btn btn-sub" onclick="exportCsv()">匯出 CSV 存檔</button>
+    </div>
+    <div id="pendBox"></div>
+  </div>
+
+</div>
+
+<script>
+let data = [];
+let canStore = true;
+try { localStorage.setItem('_t','1'); localStorage.removeItem('_t'); }
+catch(e){ canStore = false; }
+
+function load(){
+  if(!canStore) return;
+  try { const s = localStorage.getItem('consentTrack'); if(s) data = JSON.parse(s); } catch(e){}
+}
+function save(){
+  if(!canStore) return;
+  try { localStorage.setItem('consentTrack', JSON.stringify(data)); } catch(e){}
+}
+
+function todayStr(){
+  const d = new Date();
+  return (d.getFullYear()-1911) + '/' + (d.getMonth()+1) + '/' + d.getDate();
+}
+
+function addRoster(){
+  const lines = document.getElementById('rosterInput').value
+    .split('\n').map(s=>s.trim()).filter(s=>s);
+  const exist = new Set(data.map(x=>x.name));
+  lines.forEach(n=>{ if(!exist.has(n)){ data.push({name:n, status:'未交', date:''}); exist.add(n); } });
+  document.getElementById('rosterInput').value = '';
+  save(); render();
+}
+
+function clearAll(){
+  if(!confirm('確定要清空全部名單與紀錄嗎？')) return;
+  data = []; save(); render();
+}
+
+function setStatus(i, v){
+  data[i].status = v;
+  data[i].date = (v === '未交') ? '' : todayStr();
+  save(); render();
+}
+
+function delRow(i){
+  if(!confirm('確定刪除「' + data[i].name + '」？')) return;
+  data.splice(i,1); save(); render();
+}
+
+function render(){
+  const tb = document.getElementById('tbody');
+  tb.innerHTML = '';
+  data.forEach((r,i)=>{
+    const cls = r.status==='未交' ? 'st-pend' : (r.status==='同意' ? 'st-agree' : 'st-disagree');
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td class="name">' + r.name + '</td>' +
+      '<td><select class="' + cls + '" onchange="setStatus(' + i + ', this.value)">' +
+        ['未交','同意','不同意'].map(s=>'<option' + (r.status===s?' selected':'') + '>' + s + '</option>').join('') +
+      '</select></td>' +
+      '<td><span class="date">' + (r.date || '—') + '</span></td>' +
+      '<td><span class="del" onclick="delRow(' + i + ')">刪除</span></td>';
+    tb.appendChild(tr);
+  });
+  document.getElementById('emptyMsg').style.display = data.length ? 'none' : 'block';
+  document.getElementById('sTotal').textContent = data.length;
+  document.getElementById('sAgree').textContent = data.filter(x=>x.status==='同意').length;
+  document.getElementById('sDis').textContent = data.filter(x=>x.status==='不同意').length;
+  document.getElementById('sPend').textContent = data.filter(x=>x.status==='未交').length;
+}
+
+function makePendList(){
+  const pend = data.filter(x=>x.status==='未交').map(x=>x.name);
+  const box = document.getElementById('pendBox');
+  box.style.display = 'block';
+  if(!pend.length){ box.textContent = '全數已回收，無未交名單。'; return; }
+  const txt = '【肖像同意書回條提醒】\n以下幼兒尚未回傳簽名回條，再麻煩家長撥空填寫，謝謝您：\n' +
+    pend.map((n,i)=>(i+1) + '. ' + n).join('\n');
+  box.textContent = txt;
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(txt).then(()=>{ alert('未交名單已複製，可直接貼到 LINE。'); }).catch(()=>{});
+  }
+}
+
+function exportCsv(){
+  let csv = '\uFEFF幼兒姓名,狀態,收件日期\n';
+  data.forEach(r=>{ csv += r.name + ',' + r.status + ',' + (r.date||'') + '\n'; });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = '肖像同意書回收紀錄_' + todayStr().replace(/\//g,'') + '.csv';
+  a.click();
+}
+
+load(); render();
+if(!canStore){
+  document.querySelector('.sub').textContent += '（此瀏覽器無法儲存資料，請於填寫後匯出 CSV 保存）';
+}
+</script>
+</body>
+</html>
