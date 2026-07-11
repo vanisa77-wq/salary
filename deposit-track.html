@@ -31,6 +31,7 @@
   .badge.pending { background:#F8ECEB; color:#A5514B; }
   .btn { border:none; border-radius:8px; font-size:14px; font-family:inherit; padding:6px 10px; cursor:pointer; }
   .btn-view { background:#6E97BE; color:#fff; }
+  .del { color:#A5514B; font-size:13px; cursor:pointer; text-decoration:underline; }
   .empty { text-align:center; color:#8a7f7c; font-size:14px; padding:20px 0; }
   body.gate-lock{overflow:hidden}
   #login-gate{position:fixed;inset:0;z-index:99999;background:#1a1a1a;display:flex;align-items:center;justify-content:center;padding:20px}
@@ -115,12 +116,13 @@
   <div class="card">
     <table>
       <thead><tr>
-        <th style="width:16%">學生姓名</th>
-        <th style="width:18%">家長</th>
-        <th style="width:16%">定位金</th>
-        <th style="width:16%">建立時間</th>
-        <th style="width:16%">狀態</th>
-        <th style="width:18%">操作</th>
+        <th style="width:14%">學生姓名</th>
+        <th style="width:16%">家長</th>
+        <th style="width:14%">繳款方式</th>
+        <th style="width:14%">建立時間</th>
+        <th style="width:14%">狀態</th>
+        <th style="width:16%">操作</th>
+        <th style="width:12%">刪除</th>
       </tr></thead>
       <tbody id="tbody"></tbody>
     </table>
@@ -315,16 +317,26 @@ function render(){
     tr.innerHTML =
       '<td class="name">' + (d.child||'') + '</td>' +
       '<td>' + (d.parentName||'') + '<br><span style="font-size:12px;color:#888;">' + (d.parentPhone||'') + '</span></td>' +
-      '<td>' + (d.depositAmount||'') + '</td>' +
+      '<td>' + (d.payMethod==='轉帳' ? ('＃' + (d.depositCode||'')) : (d.payMethod||'')) + '</td>' +
       '<td style="font-size:12px;">' + createdStr + '</td>' +
       '<td>' + (signed
         ? '<span class="badge signed">已簽名</span><br><span style="font-size:11px;color:#888;">' + signedStr + '</span>'
         : '<span class="badge pending">尚未簽名</span>') + '</td>' +
       '<td>' + (signed
         ? '<button class="btn btn-view" onclick="viewReceipt(\'' + r.id + '\')">查看收據</button>'
-        : '<span style="font-size:12px;color:#aaa;">—</span>') + '</td>';
+        : '<span style="font-size:12px;color:#aaa;">—</span>') + '</td>' +
+      '<td><span class="del" onclick="deleteRow(\'' + r.id + '\')">刪除</span></td>';
     tb.appendChild(tr);
   });
+}
+
+async function deleteRow(id){
+  const r = rows.find(x=>x.id===id);
+  const label = r ? ((r.data && r.data.child) || id) : id;
+  if(!confirm('確定要刪除「' + label + '」這筆紀錄嗎？此動作無法復原。')) return;
+  const { error } = await sb.from('deposit_receipts').delete().eq('id', id);
+  if(error){ alert('刪除失敗：' + error.message); return; }
+  loadData();
 }
 
 let previewCanvasBlob = null;
