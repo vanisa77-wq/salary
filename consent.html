@@ -9,6 +9,7 @@
 <meta property="og:description" content="小蘋果托嬰中心｜幼兒肖像使用同意書">
 <meta property="og:type" content="website">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
@@ -238,10 +239,15 @@ document.querySelectorAll('.opt input').forEach(i=>{
   });
 });
 
+// ===== Supabase =====
+const SUPABASE_URL = 'https://vicbgttehkqeqhyvtlet.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_N4DH8txPq9dc9naOPk_Qmg_qEbEcXVM';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 // ===== 產生回條 =====
 let resultBlob = null;
 
-function makeReceipt(){
+async function makeReceipt(){
   const err = document.getElementById('errMsg');
   const child = document.getElementById('childName').value.trim();
   const parent = document.getElementById('parentName').value.trim();
@@ -271,6 +277,16 @@ function makeReceipt(){
   const d = new Date();
   document.getElementById('rDate').textContent =
     '民國' + (d.getFullYear()-1911) + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日';
+
+  // 存回資料庫，供稽查/評鑑調閱（不需等家長傳 LINE 回來才算有紀錄）
+  sb.from('consent_receipts').insert({
+    child: child,
+    parent_name: parent,
+    rel: (rel.value==='其他') ? otherRel : rel.value,
+    consent: consent.value,
+    signature: cv.toDataURL('image/png'),
+    signed_at: d.toISOString()
+  }).then(()=>{}).catch(()=>{});
 
   html2canvas(document.getElementById('receipt'), {scale:2, backgroundColor:'#ffffff'}).then(canvas=>{
     canvas.toBlob(b=>{

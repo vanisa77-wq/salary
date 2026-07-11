@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>肖像同意書回條回收追蹤表</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
@@ -72,6 +74,20 @@
   #login-gate button{width:100%;height:46px;border:none;border-radius:8px;background:#C0392B;color:#fff;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:6px}
   #login-gate button:hover{background:#A93226}
   #login-gate .lg-err{color:#C0392B;font-size:13px;text-align:center;margin-top:10px;min-height:18px}
+  #receipt {
+    background:#fff; padding:18px 16px; border-radius:8px;
+    border:1px solid #C9B8B4;
+  }
+  #receipt h3 { font-size:17px; text-align:center; letter-spacing:6px; margin-bottom:10px; }
+  #receipt .line { font-size:15px; margin-bottom:8px; color:#1a1a1a; }
+  #receipt .line b { display:inline-block; min-width:5.5em; }
+  #receipt .choice { font-size:15px; margin-bottom:8px; padding-left:2px; }
+  #receipt img.sigimg { height:90px; display:block; margin-top:2px; }
+  #receipt .center-name { text-align:center; font-size:13px; color:#333; margin-top:10px; border-top:1px solid #E3D8D5; padding-top:8px; }
+  #previewModal { display:none; position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,.6); overflow-y:auto; padding:20px 12px; }
+  #previewModal .modalInner { max-width:420px; margin:0 auto; background:#fff; border-radius:10px; padding:14px; }
+  #previewModal .modalClose { display:block; width:100%; border:none; border-radius:8px; background:#DDD0CC; color:#333; font-size:14px; padding:10px; margin-top:10px; cursor:pointer; font-family:inherit; }
+  #previewModal .modalDownload { display:block; width:100%; border:none; border-radius:8px; background:#6E97BE; color:#fff; font-size:15px; font-weight:bold; padding:12px; margin-top:8px; cursor:pointer; font-family:inherit; }
 </style>
 </head>
 <body class="gate-lock">
@@ -144,6 +160,48 @@
     <div id="pendBox"></div>
   </div>
 
+  <div class="card">
+    <h2>系統自動回收紀錄（家長線上簽名，稽核/評鑑調閱用）</h2>
+    <div class="hint">家長在「肖像同意書」頁面簽名送出的當下，資料會自動存進資料庫，不需要等 LINE 回傳才算有紀錄。</div>
+    <div class="stats" style="margin-top:8px;">
+      <div class="stat"><div class="num" id="rTotal">0</div><div class="lbl">系統回收筆數</div></div>
+    </div>
+    <table style="margin-top:10px;">
+      <thead><tr>
+        <th style="width:8%">No.</th>
+        <th style="width:22%">幼兒姓名</th>
+        <th style="width:22%">家長</th>
+        <th style="width:14%">結果</th>
+        <th style="width:18%">簽名時間</th>
+        <th style="width:10%">操作</th>
+        <th style="width:6%">刪除</th>
+      </tr></thead>
+      <tbody id="rtbody"></tbody>
+    </table>
+    <div class="empty" id="rEmptyMsg" style="display:none;">目前沒有任何系統回收紀錄。</div>
+  </div>
+
+</div>
+
+<div id="previewModal">
+  <div class="modalInner">
+    <div id="previewWrap"></div>
+    <button class="modalDownload" onclick="downloadPreview()">下載回條圖片</button>
+    <button class="modalClose" onclick="closePreview()">關閉</button>
+  </div>
+</div>
+
+<!-- 回條版面模板（與 consent.html 共用同一份） -->
+<div style="position:absolute; left:-9999px; top:0; width:600px;">
+  <div id="receipt">
+    <h3>幼兒肖像使用同意書　回條</h3>
+    <div class="line"><b>幼兒姓名：</b><span id="rChild"></span></div>
+    <div class="choice" id="rChoice"></div>
+    <div class="line"><b>家長姓名：</b><span id="rParent"></span>（<span id="rRel"></span>）</div>
+    <div class="line"><b>家長簽名：</b><img class="sigimg" id="rSig" alt=""></div>
+    <div class="line"><b>簽名日期：</b><span id="rDate"></span></div>
+    <div class="center-name">台中市私立小蘋果托嬰中心</div>
+  </div>
 </div>
 
 <script>
@@ -152,6 +210,7 @@ const ADMIN_PASS='640506';
 function unlockGate(){
   document.getElementById('login-gate').style.display='none';
   document.body.classList.remove('gate-lock');
+  loadReceipts();
 }
 function tryAdminLogin(){
   const email=(document.getElementById('lg-email').value||'').trim();
@@ -259,6 +318,95 @@ function exportCsv(){
   a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
   a.download = '肖像同意書回收紀錄_' + todayStr().replace(/\//g,'') + '.csv';
   a.click();
+}
+
+// ===== Supabase：系統自動回收紀錄 =====
+const SUPABASE_URL = 'https://vicbgttehkqeqhyvtlet.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_N4DH8txPq9dc9naOPk_Qmg_qEbEcXVM';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let receiptRows = [];
+
+async function loadReceipts(){
+  const { data: rows, error } = await sb.from('consent_receipts').select('*').order('signed_at', {ascending:false});
+  if(error){ alert('讀取失敗：' + error.message); return; }
+  receiptRows = rows || [];
+  renderReceipts();
+}
+
+function renderReceipts(){
+  const tb = document.getElementById('rtbody');
+  tb.innerHTML = '';
+  document.getElementById('rTotal').textContent = receiptRows.length;
+  document.getElementById('rEmptyMsg').style.display = receiptRows.length ? 'none' : 'block';
+  receiptRows.forEach((r,i)=>{
+    const tr = document.createElement('tr');
+    const signedStr = r.signed_at ? new Date(r.signed_at).toLocaleString('zh-TW', {hour12:false}) : '';
+    const resultLabel = r.consent === 'agree' ? '同意' : '不同意';
+    const resultCls = r.consent === 'agree' ? 'st-agree' : 'st-disagree';
+    tr.innerHTML =
+      '<td>' + (i+1) + '</td>' +
+      '<td class="name">' + (r.child||'') + '</td>' +
+      '<td>' + (r.parent_name||'') + '<br><span style="font-size:12px;color:#888;">' + (r.rel||'') + '</span></td>' +
+      '<td><span class="' + resultCls + '" style="padding:3px 8px;border-radius:6px;font-size:13px;">' + resultLabel + '</span></td>' +
+      '<td style="font-size:12px;">' + signedStr + '</td>' +
+      '<td><button class="btn btn-main" style="padding:6px 10px;font-size:13px;" onclick="viewReceipt(\'' + r.id + '\')">查看</button></td>' +
+      '<td><span class="del" onclick="deleteReceipt(\'' + r.id + '\')">刪除</span></td>';
+    tb.appendChild(tr);
+  });
+}
+
+let previewCanvasBlob = null;
+
+function viewReceipt(id){
+  const r = receiptRows.find(x=>x.id===id);
+  if(!r) return;
+  document.getElementById('rChild').textContent = r.child || '';
+  document.getElementById('rParent').textContent = r.parent_name || '';
+  document.getElementById('rRel').textContent = r.rel || '';
+  document.getElementById('rChoice').innerHTML = (r.consent === 'agree')
+    ? '<b>■ 同意</b>　依同意書所載用途，使用本人子女之照片或影片。'
+    : '<b>■ 不同意</b>　本人子女之照片或影片公開使用於本中心公開平台、園務宣傳、活動成果展示及其他對外公開之用途。';
+  document.getElementById('rSig').src = r.signature || '';
+  const dt = r.signed_at ? new Date(r.signed_at) : new Date();
+  document.getElementById('rDate').textContent =
+    '民國' + (dt.getFullYear()-1911) + '年' + (dt.getMonth()+1) + '月' + dt.getDate() + '日';
+
+  const receiptEl = document.getElementById('receipt');
+  const wrap = document.getElementById('previewWrap');
+  wrap.innerHTML = '';
+  wrap.appendChild(receiptEl);
+  receiptEl.style.position = 'static';
+
+  document.getElementById('previewModal').style.display = 'block';
+  window.scrollTo({top:0});
+  previewCanvasBlob = null;
+
+  html2canvas(receiptEl, {scale:2, backgroundColor:'#ffffff'}).then(canvas=>{
+    canvas.toBlob(b=>{ previewCanvasBlob = b; }, 'image/png');
+  });
+}
+
+function closePreview(){
+  document.getElementById('previewModal').style.display = 'none';
+  previewCanvasBlob = null;
+}
+
+function downloadPreview(){
+  if(!previewCanvasBlob){ alert('圖片還在準備中，請稍等一下再試一次'); return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(previewCanvasBlob);
+  a.download = '肖像同意書回條.png';
+  a.click();
+}
+
+async function deleteReceipt(id){
+  const r = receiptRows.find(x=>x.id===id);
+  const label = r ? (r.child || id) : id;
+  if(!confirm('確定要刪除「' + label + '」這筆系統紀錄嗎？此動作無法復原。')) return;
+  const { error } = await sb.from('consent_receipts').delete().eq('id', id);
+  if(error){ alert('刪除失敗：' + error.message); return; }
+  loadReceipts();
 }
 
 load(); render();
