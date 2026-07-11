@@ -447,6 +447,9 @@ async function loadParentData(id){
 const urlId = new URLSearchParams(location.search).get('id');
 
 if(urlId){
+  // 家長端不需要看到內部行政工具的導覽列
+  const navBar = document.getElementById('site-nav-bar');
+  if(navBar){ navBar.nextElementSibling.remove(); navBar.remove(); }
   document.getElementById('teacherSection').classList.add('hidden');
   document.getElementById('parentSection').classList.remove('hidden');
   loadParentData(urlId);
