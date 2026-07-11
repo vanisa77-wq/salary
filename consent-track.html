@@ -60,9 +60,49 @@
   }
   .empty { text-align:center; color:#8a7f7c; font-size:14px; padding:16px 0; }
   @media (max-width:480px){ th:nth-child(4), td:nth-child(4){ display:none; } }
+  body.gate-lock{overflow:hidden}
+  #login-gate{position:fixed;inset:0;z-index:99999;background:#1a1a1a;display:flex;align-items:center;justify-content:center;padding:20px}
+  #login-gate .lg-card{background:#fff;border-radius:16px;padding:32px 28px;max-width:360px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+  #login-gate .lg-title{font-size:17px;font-weight:700;color:#1a1a1a;margin-bottom:4px;text-align:center}
+  #login-gate .lg-sub{font-size:13px;color:#888;text-align:center;margin-bottom:20px}
+  #login-gate label{font-size:14px;color:#333;font-weight:500;display:block;margin-bottom:5px}
+  #login-gate .lg-field{margin-bottom:14px}
+  #login-gate input{width:100%;height:44px;border:1px solid #D5D3CC;border-radius:8px;background:#FAFAF8;color:#1a1a1a;font-size:16px;font-family:inherit;padding:0 12px;outline:none}
+  #login-gate input:focus{border-color:#C0392B;box-shadow:0 0 0 3px rgba(192,57,43,.1)}
+  #login-gate button{width:100%;height:46px;border:none;border-radius:8px;background:#C0392B;color:#fff;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:6px}
+  #login-gate button:hover{background:#A93226}
+  #login-gate .lg-err{color:#C0392B;font-size:13px;text-align:center;margin-top:10px;min-height:18px}
 </style>
 </head>
-<body>
+<body class="gate-lock">
+<div id="site-nav-bar" style="position:fixed;top:0;left:0;right:0;z-index:100000;background:#2c2c2c;padding:8px 10px;display:flex;gap:8px;overflow-x:auto;font-family:'Microsoft JhengHei','PingFang TC',sans-serif;font-size:13px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.2);">
+  <a href="/" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">💰 月薪計算</a>
+  <a href="/daily" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">📅 日薪計算</a>
+  <a href="/report" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">📝 請假加班回報</a>
+  <a href="/deposit" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">🍎 定位金收據</a>
+  <a href="/consent" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">📷 肖像同意書</a>
+  <a href="/deposit-track" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">🔒 定位金追蹤</a>
+  <a href="/consent-track" style="color:#fff;background:#C0392B;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">🔒 同意書回傳</a>
+</div>
+<div style="height:44px;"></div>
+
+<div id="login-gate">
+  <div class="lg-card">
+    <div class="lg-title">🔒 小蘋果托嬰中心｜同意書回收追蹤</div>
+    <div class="lg-sub">管理員登入</div>
+    <div class="lg-field">
+      <label>帳號（手機號碼）</label>
+      <input type="text" id="lg-email" autocomplete="off" placeholder="請輸入手機號碼">
+    </div>
+    <div class="lg-field">
+      <label>密碼</label>
+      <input type="password" id="lg-pass" autocomplete="off" placeholder="請輸入密碼">
+    </div>
+    <button onclick="tryAdminLogin()">登入</button>
+    <div class="lg-err" id="lg-err"></div>
+  </div>
+</div>
+
 <div class="wrap">
 
   <div class="card">
@@ -70,9 +110,12 @@
     <div class="sub">台中市私立小蘋果托嬰中心</div>
     <div class="stats">
       <div class="stat"><div class="num" id="sTotal">0</div><div class="lbl">全園幼兒</div></div>
+      <div class="stat agree"><div class="num" id="sReturned">0</div><div class="lbl">已回傳</div></div>
+      <div class="stat pend"><div class="num" id="sPend">0</div><div class="lbl">未回傳</div></div>
+    </div>
+    <div class="stats" style="margin-top:8px;">
       <div class="stat agree"><div class="num" id="sAgree">0</div><div class="lbl">同意</div></div>
       <div class="stat disagree"><div class="num" id="sDis">0</div><div class="lbl">不同意</div></div>
-      <div class="stat pend"><div class="num" id="sPend">0</div><div class="lbl">未交</div></div>
     </div>
   </div>
 
@@ -90,7 +133,7 @@
     <h2>回收狀況登記</h2>
     <div class="hint">收到家長回條圖片後，於下表更改狀態，日期會自動記錄。</div>
     <table>
-      <thead><tr><th style="width:34%">幼兒姓名</th><th style="width:30%">狀態</th><th style="width:24%">收件日期</th><th style="width:12%">刪除</th></tr></thead>
+      <thead><tr><th style="width:8%">No.</th><th style="width:28%">幼兒姓名</th><th style="width:28%">狀態</th><th style="width:24%">收件日期</th><th style="width:12%">刪除</th></tr></thead>
       <tbody id="tbody"></tbody>
     </table>
     <div class="empty" id="emptyMsg">尚未建立名單，請先於上方貼上幼兒姓名。</div>
@@ -104,6 +147,30 @@
 </div>
 
 <script>
+const ADMIN_EMAIL='0931114981';
+const ADMIN_PASS='640506';
+function unlockGate(){
+  document.getElementById('login-gate').style.display='none';
+  document.body.classList.remove('gate-lock');
+}
+function tryAdminLogin(){
+  const email=(document.getElementById('lg-email').value||'').trim();
+  const pass=(document.getElementById('lg-pass').value||'').trim();
+  const err=document.getElementById('lg-err');
+  if(email!==ADMIN_EMAIL||pass!==ADMIN_PASS){
+    err.textContent='帳號或密碼錯誤';
+    document.getElementById('lg-pass').value='';
+    return;
+  }
+  err.textContent='';
+  sessionStorage.setItem('consentTrackAuth','1');
+  unlockGate();
+}
+['lg-email','lg-pass'].forEach(id=>{
+  document.getElementById(id).addEventListener('keydown', e=>{ if(e.key==='Enter') tryAdminLogin(); });
+});
+if(sessionStorage.getItem('consentTrackAuth')==='1') unlockGate();
+
 let data = [];
 let canStore = true;
 try { localStorage.setItem('_t','1'); localStorage.removeItem('_t'); }
@@ -155,6 +222,7 @@ function render(){
     const cls = r.status==='未交' ? 'st-pend' : (r.status==='同意' ? 'st-agree' : 'st-disagree');
     const tr = document.createElement('tr');
     tr.innerHTML =
+      '<td>' + (i+1) + '</td>' +
       '<td class="name">' + r.name + '</td>' +
       '<td><select class="' + cls + '" onchange="setStatus(' + i + ', this.value)">' +
         ['未交','同意','不同意'].map(s=>'<option' + (r.status===s?' selected':'') + '>' + s + '</option>').join('') +
@@ -165,6 +233,7 @@ function render(){
   });
   document.getElementById('emptyMsg').style.display = data.length ? 'none' : 'block';
   document.getElementById('sTotal').textContent = data.length;
+  document.getElementById('sReturned').textContent = data.filter(x=>x.status!=='未交').length;
   document.getElementById('sAgree').textContent = data.filter(x=>x.status==='同意').length;
   document.getElementById('sDis').textContent = data.filter(x=>x.status==='不同意').length;
   document.getElementById('sPend').textContent = data.filter(x=>x.status==='未交').length;

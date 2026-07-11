@@ -81,6 +81,8 @@
   <a href="/report" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">📝 請假加班回報</a>
   <a href="/deposit" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">🍎 定位金收據</a>
   <a href="/consent" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">📷 肖像同意書</a>
+  <a href="/deposit-track" style="color:#fff;background:#C0392B;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">🔒 定位金追蹤</a>
+  <a href="/consent-track" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">🔒 同意書回傳</a>
 </div>
 <div style="height:44px;"></div>
 
@@ -116,6 +118,7 @@
   <div class="card">
     <table>
       <thead><tr>
+        <th style="width:6%">No.</th>
         <th style="width:14%">學生姓名</th>
         <th style="width:16%">家長</th>
         <th style="width:14%">繳款方式</th>
@@ -308,13 +311,14 @@ function render(){
   document.getElementById('sPending').textContent = rows.filter(r=>!r.signed_at).length;
   document.getElementById('emptyMsg').style.display = rows.length ? 'none' : 'block';
 
-  rows.forEach(r=>{
+  rows.forEach((r,i)=>{
     const d = r.data || {};
     const signed = !!r.signed_at;
     const tr = document.createElement('tr');
     const createdStr = r.created_at ? new Date(r.created_at).toLocaleString('zh-TW', {hour12:false}) : '';
     const signedStr = r.signed_at ? new Date(r.signed_at).toLocaleString('zh-TW', {hour12:false}) : '';
     tr.innerHTML =
+      '<td>' + (i+1) + '</td>' +
       '<td class="name">' + (d.child||'') + '</td>' +
       '<td>' + (d.parentName||'') + '<br><span style="font-size:12px;color:#888;">' + (d.parentPhone||'') + '</span></td>' +
       '<td>' + (d.payMethod==='轉帳' ? ('＃' + (d.depositCode||'')) : (d.payMethod||'')) + '</td>' +
