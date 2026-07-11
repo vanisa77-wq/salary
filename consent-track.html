@@ -274,28 +274,52 @@ function delRow(i){
   data.splice(i,1); save(); render();
 }
 
+function autoMatch(name){
+  // 系統自動回收紀錄裡，若有同名的簽名紀錄，以那筆為準（取最新一筆）
+  const matches = (typeof receiptRows !== 'undefined' ? receiptRows : []).filter(r=>r.child===name);
+  if(!matches.length) return null;
+  const r = matches[0]; // receiptRows 已經照 signed_at 新到舊排序
+  return {
+    status: r.consent==='agree' ? '同意' : '不同意',
+    date: r.signed_at ? new Date(r.signed_at).toLocaleDateString('zh-TW') : '',
+    id: r.id
+  };
+}
+
 function render(){
   const tb = document.getElementById('tbody');
   tb.innerHTML = '';
   data.forEach((r,i)=>{
-    const cls = r.status==='未交' ? 'st-pend' : (r.status==='同意' ? 'st-agree' : 'st-disagree');
+    const auto = autoMatch(r.name);
+    const effStatus = auto ? auto.status : r.status;
+    const effDate = auto ? auto.date : r.date;
+    const cls = effStatus==='未交' ? 'st-pend' : (effStatus==='同意' ? 'st-agree' : 'st-disagree');
     const tr = document.createElement('tr');
+    const statusCell = auto
+      ? '<span class="' + cls + '" style="display:inline-block;padding:5px 10px;border-radius:6px;font-size:14px;">' + auto.status + '</span> ' +
+        '<span style="font-size:11px;color:#888;">（系統自動）</span> ' +
+        '<span class="del" style="margin-left:4px;" onclick="viewReceipt(\'' + auto.id + '\')">查看</span>'
+      : '<select class="' + cls + '" onchange="setStatus(' + i + ', this.value)">' +
+        ['未交','同意','不同意'].map(s=>'<option' + (r.status===s?' selected':'') + '>' + s + '</option>').join('') +
+      '</select>';
     tr.innerHTML =
       '<td>' + (i+1) + '</td>' +
       '<td class="name">' + r.name + '</td>' +
-      '<td><select class="' + cls + '" onchange="setStatus(' + i + ', this.value)">' +
-        ['未交','同意','不同意'].map(s=>'<option' + (r.status===s?' selected':'') + '>' + s + '</option>').join('') +
-      '</select></td>' +
-      '<td><span class="date">' + (r.date || '—') + '</span></td>' +
+      '<td>' + statusCell + '</td>' +
+      '<td><span class="date">' + (effDate || '—') + '</span></td>' +
       '<td><span class="del" onclick="delRow(' + i + ')">刪除</span></td>';
     tb.appendChild(tr);
   });
   document.getElementById('emptyMsg').style.display = data.length ? 'none' : 'block';
+  const effRows = data.map(r=>{
+    const auto = autoMatch(r.name);
+    return auto ? auto.status : r.status;
+  });
   document.getElementById('sTotal').textContent = data.length;
-  document.getElementById('sReturned').textContent = data.filter(x=>x.status!=='未交').length;
-  document.getElementById('sAgree').textContent = data.filter(x=>x.status==='同意').length;
-  document.getElementById('sDis').textContent = data.filter(x=>x.status==='不同意').length;
-  document.getElementById('sPend').textContent = data.filter(x=>x.status==='未交').length;
+  document.getElementById('sReturned').textContent = effRows.filter(s=>s!=='未交').length;
+  document.getElementById('sAgree').textContent = effRows.filter(s=>s==='同意').length;
+  document.getElementById('sDis').textContent = effRows.filter(s=>s==='不同意').length;
+  document.getElementById('sPend').textContent = effRows.filter(s=>s==='未交').length;
 }
 
 function makePendList(){
@@ -331,7 +355,19 @@ async function loadReceipts(){
   const { data: rows, error } = await sb.from('consent_receipts').select('*').order('signed_at', {ascending:false});
   if(error){ alert('讀取失敗：' + error.message); return; }
   receiptRows = rows || [];
+  // 系統裡有簽名、但還沒被加進上面名單的小朋友，自動補進名單，讓上方統計看得到
+  const existingNames = new Set(data.map(x=>x.name));
+  let added = false;
+  receiptRows.forEach(r=>{
+    if(!existingNames.has(r.child)){
+      data.push({ name: r.child, status: r.consent==='agree' ? '同意' : '不同意', date: '' });
+      existingNames.add(r.child);
+      added = true;
+    }
+  });
+  if(added) save();
   renderReceipts();
+  render();
 }
 
 function renderReceipts(){
