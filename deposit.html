@@ -642,7 +642,9 @@ async function confirmSign(){
     sb.from('deposit_receipts').update({
       signature: sigDataUrl,
       signed_at: d.toISOString()
-    }).eq('id', urlId).then(()=>{}).catch(()=>{});
+    }).eq('id', urlId).then(({error})=>{
+      if(error) console.error('簽名存檔失敗：', error.message);
+    });
   }
 
   html2canvas(wrap.querySelector('#receipt'), {scale:2, backgroundColor:'#ffffff'}).then(canvas=>{
