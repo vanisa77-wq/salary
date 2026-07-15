@@ -7,6 +7,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
@@ -143,9 +145,12 @@
     <div class="bar">
       <button class="btn btn-main" onclick="addRoster()">加入名單</button>
       <button class="btn btn-sub" onclick="clearAll()">清空全部資料</button>
-      <button class="btn btn-sub" onclick="document.getElementById('rosterImgInput').click()">📷 上傳截圖辨識姓名</button>
+      <button class="btn btn-sub" onclick="document.getElementById('rosterFileInput').click()">📄 匯入 Excel／Word 名單</button>
+      <input type="file" id="rosterFileInput" accept=".xlsx,.xls,.csv,.docx" style="display:none" onchange="importRosterFile(this.files[0])">
+      <button class="btn btn-sub" onclick="document.getElementById('rosterImgInput').click()">📷 上傳截圖辨識姓名（測試功能）</button>
       <input type="file" id="rosterImgInput" accept="image/*" style="display:none" onchange="ocrRoster(this.files[0])">
     </div>
+    <div class="hint">⚠️ 截圖辨識是用電腦自動猜字，複雜字、密集排版容易認錯，準確度有限，加入名單前務必逐一核對；如果您手上已經有 Excel 或 Word 電子檔名單，強烈建議改用「匯入 Excel／Word 名單」，準確度高很多。</div>
     <div class="hint" id="ocrStatus" style="display:none;"></div>
   </div>
 
@@ -260,6 +265,49 @@ function addRoster(){
   lines.forEach(n=>{ if(!exist.has(n)){ data.push({name:n, status:'未交', date:''}); exist.add(n); } });
   document.getElementById('rosterInput').value = '';
   save(); render();
+}
+
+async function importRosterFile(file){
+  if(!file) return;
+  const status = document.getElementById('ocrStatus');
+  status.style.display = 'block';
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  try{
+    let rawText = '';
+    if(ext === 'xlsx' || ext === 'xls' || ext === 'csv'){
+      status.textContent = '讀取試算表中…';
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, {type:'array'});
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, {header:1});
+      rawText = rows.flat().map(v=>String(v==null?'':v)).join('\n');
+    } else if(ext === 'docx'){
+      status.textContent = '讀取 Word 檔中…';
+      const buf = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({arrayBuffer:buf});
+      rawText = result.value;
+    } else if(ext === 'doc'){
+      status.textContent = '不支援舊版 .doc 格式，請在 Word 用「另存新檔」存成 .docx 再匯入。';
+      return;
+    } else {
+      status.textContent = '不支援這個檔案格式，請用 .xlsx、.xls、.csv 或 .docx。';
+      return;
+    }
+    const names = [...new Set(rawText.split(/[\n,，、\t]+/)
+      .map(s=>s.trim())
+      .filter(s=>s.length>=2 && s.length<=4 && /^[一-龥]+$/.test(s)))];
+    if(!names.length){
+      status.textContent = '檔案裡沒有找到看起來像姓名的內容，請確認欄位內容，或改用手動貼上。';
+      return;
+    }
+    const box = document.getElementById('rosterInput');
+    box.value = (box.value ? box.value.trim() + '\n' : '') + names.join('\n');
+    status.textContent = '已從檔案匯入 ' + names.length + ' 個姓名（讀取檔案文字，非圖片猜字，準確度高），請檢查下方文字框確認無誤後再按「加入名單」。';
+  }catch(e){
+    status.textContent = '匯入失敗：' + e.message;
+  }finally{
+    document.getElementById('rosterFileInput').value = '';
+  }
 }
 
 function loadImageFromFile(file){
