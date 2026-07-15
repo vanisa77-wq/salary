@@ -324,14 +324,50 @@ function render(){
       '<td>' + (d.payMethod==='轉帳' ? ('＃' + (d.depositCode||'')) : (d.payMethod||'')) + '</td>' +
       '<td style="font-size:12px;">' + createdStr + '</td>' +
       '<td>' + (signed
-        ? '<span class="badge signed">已簽名</span><br><span style="font-size:11px;color:#888;">' + signedStr + '</span>'
+        ? '<span class="badge signed">已簽名' + (r.signature_photo && !r.signature ? '（手動）' : '') + '</span><br><span style="font-size:11px;color:#888;">' + signedStr + '</span>'
         : '<span class="badge pending">尚未簽名</span>') + '</td>' +
       '<td>' + (signed
         ? '<button class="btn btn-view" onclick="viewReceipt(\'' + r.id + '\')">查看收據</button>'
-        : '<span style="font-size:12px;color:#aaa;">—</span>') + '</td>' +
+        : '<button class="btn btn-view" onclick="document.getElementById(\'upl-' + r.id + '\').click()">📷 上傳標記已回傳</button>' +
+          '<input type="file" id="upl-' + r.id + '" accept="image/*" style="display:none" onchange="uploadReceiptPhoto(\'' + r.id + '\', this.files[0])">') + '</td>' +
       '<td><span class="del" onclick="deleteRow(\'' + r.id + '\')">刪除</span></td>';
     tb.appendChild(tr);
   });
+}
+
+function loadImageFromFileDT(file){
+  return new Promise((resolve,reject)=>{
+    const img = new Image();
+    img.onload = ()=>resolve(img);
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+async function uploadReceiptPhoto(id, file){
+  if(!file) return;
+  const r = rows.find(x=>x.id===id);
+  const label = r ? ((r.data && r.data.child) || id) : id;
+  if(!confirm('確認要把這張圖檔標記為「' + label + '」已回傳的收據嗎？')) return;
+  try{
+    const img = await loadImageFromFileDT(file);
+    const scale = Math.min(1, 1000 / img.width);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(img.width * scale);
+    canvas.height = Math.round(img.height * scale);
+    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(img.src);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+    const { error } = await sb.from('deposit_receipts').update({
+      signature_photo: dataUrl,
+      signed_at: new Date().toISOString()
+    }).eq('id', id);
+    if(error){ alert('標記失敗：' + error.message); return; }
+    loadData();
+  }catch(e){
+    alert('圖片處理失敗：' + e.message);
+  }
 }
 
 async function deleteRow(id){
@@ -345,16 +381,34 @@ async function deleteRow(id){
 
 let previewCanvasBlob = null;
 
+let previewPhotoDataUrl = null;
+
 function viewReceipt(id){
   const r = rows.find(x=>x.id===id);
   if(!r) return;
+  previewPhotoDataUrl = null;
+  const wrap = document.getElementById('previewWrap');
+
+  // 手動上傳標記的收據：沒有畫布簽名，只有整張回傳照片，直接顯示照片本身
+  if(r.signature_photo && !r.signature){
+    wrap.innerHTML = '';
+    const img = document.createElement('img');
+    img.src = r.signature_photo;
+    img.style.width = '100%';
+    img.style.borderRadius = '8px';
+    wrap.appendChild(img);
+    previewPhotoDataUrl = r.signature_photo;
+    document.getElementById('previewModal').style.display = 'block';
+    window.scrollTo({top:0});
+    return;
+  }
+
   const d = Object.assign({}, r.data);
   if(d.birthYear && d.enrollYear){
     const age = calcAge(Number(d.birthYear), Number(d.birthMonth), Number(d.birthDay),
                          Number(d.enrollYear), Number(d.enrollMonth), Number(d.enrollDay));
     d.ageYear = age.y; d.ageMonth = age.m; d.ageDay = age.d;
   }
-  const wrap = document.getElementById('previewWrap');
   const receiptEl = renderReceiptInto(wrap, d);
   const sigImg = receiptEl.querySelector('.rSig');
   const sigPlaceholder = receiptEl.querySelector('.rSigPlaceholder');
@@ -380,9 +434,17 @@ function closePreview(){
   document.getElementById('previewModal').style.display = 'none';
   document.getElementById('previewWrap').innerHTML = '';
   previewCanvasBlob = null;
+  previewPhotoDataUrl = null;
 }
 
 function downloadPreview(){
+  if(previewPhotoDataUrl){
+    const a = document.createElement('a');
+    a.href = previewPhotoDataUrl;
+    a.download = '定位金繳款收據.jpg';
+    a.click();
+    return;
+  }
   if(!previewCanvasBlob){ alert('圖片還在準備中，請稍等一下再試一次'); return; }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(previewCanvasBlob);
