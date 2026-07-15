@@ -269,17 +269,19 @@ async function ocrRoster(file){
   status.textContent = '辨識中，第一次使用需下載中文語言包，請稍候…';
   try{
     const { data: { text } } = await Tesseract.recognize(file, 'chi_tra', {
+      tessedit_pageseg_mode: '6',
       logger: m=>{
         if(m.status && m.progress != null){
           status.textContent = '辨識中…（' + m.status + ' ' + Math.round(m.progress*100) + '%）';
         }
       }
     });
-    const names = text.split(/[\n，,、\s]+/)
-      .map(s=>s.trim())
-      .filter(s=>s.length>=2 && s.length<=4 && /^[一-龥]+$/.test(s));
+    // 直接抓出所有連續 2~4 個中文字的片段，不依賴分隔符號（截圖為多欄表格時，
+    // Tesseract 常常讀不出欄與欄之間的空白分隔）
+    const names = [...new Set((text.match(/[一-龥]{2,4}/g) || []))];
     if(!names.length){
-      status.textContent = '沒有辨識到姓名，請確認截圖清楚，或改用手動貼上。';
+      status.textContent = '沒有辨識到姓名，請確認截圖清楚，或改用手動貼上。原始辨識內容：' +
+        (text.trim().slice(0,200) || '（空白，可能是圖片太模糊或語言包載入失敗）');
       return;
     }
     const box = document.getElementById('rosterInput');
