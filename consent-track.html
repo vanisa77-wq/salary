@@ -215,30 +215,27 @@
 </div>
 
 <script>
-const ADMIN_EMAIL='0931114981';
-const ADMIN_PASS='640506';
 function unlockGate(){
   document.getElementById('login-gate').style.display='none';
   document.body.classList.remove('gate-lock');
   loadReceipts();
 }
-function tryAdminLogin(){
+async function tryAdminLogin(){
   const email=(document.getElementById('lg-email').value||'').trim();
   const pass=(document.getElementById('lg-pass').value||'').trim();
   const err=document.getElementById('lg-err');
-  if(email!==ADMIN_EMAIL||pass!==ADMIN_PASS){
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if(error){
     err.textContent='帳號或密碼錯誤';
     document.getElementById('lg-pass').value='';
     return;
   }
   err.textContent='';
-  sessionStorage.setItem('consentTrackAuth','1');
   unlockGate();
 }
 ['lg-email','lg-pass'].forEach(id=>{
   document.getElementById(id).addEventListener('keydown', e=>{ if(e.key==='Enter') tryAdminLogin(); });
 });
-if(sessionStorage.getItem('consentTrackAuth')==='1') unlockGate();
 
 let data = [];
 let canStore = true;
@@ -491,6 +488,7 @@ function exportCsv(){
 const SUPABASE_URL = 'https://vicbgttehkqeqhyvtlet.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_N4DH8txPq9dc9naOPk_Qmg_qEbEcXVM';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+sb.auth.getSession().then(({data})=>{ if(data.session) unlockGate(); });
 
 let receiptRows = [];
 
