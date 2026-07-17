@@ -91,12 +91,12 @@
     <div class="lg-title">🔒 小蘋果托嬰中心｜定位金收據追蹤</div>
     <div class="lg-sub">管理員登入</div>
     <div class="lg-field">
-      <label>帳號（手機號碼）</label>
-      <input type="text" id="lg-email" autocomplete="off" placeholder="請輸入手機號碼">
+      <label>Email</label>
+      <input type="email" id="lg-email" autocomplete="username" placeholder="請輸入登入 Email">
     </div>
     <div class="lg-field">
       <label>密碼</label>
-      <input type="password" id="lg-pass" autocomplete="off" placeholder="請輸入密碼">
+      <input type="password" id="lg-pass" autocomplete="current-password" placeholder="請輸入密碼">
     </div>
     <button onclick="tryAdminLogin()">登入</button>
     <div class="lg-err" id="lg-err"></div>
@@ -216,35 +216,34 @@
   </template>
 
 <script>
-const ADMIN_EMAIL='0931114981';
-const ADMIN_PASS='640506';
+// ===== Supabase（登入保護改用真正的 Supabase Auth 帳密，資料庫層級一併鎖定，
+// 不再是純前端裝飾用的密碼框） =====
+const SUPABASE_URL = 'https://vicbgttehkqeqhyvtlet.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_N4DH8txPq9dc9naOPk_Qmg_qEbEcXVM';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 function unlockGate(){
   document.getElementById('login-gate').style.display='none';
   document.body.classList.remove('gate-lock');
   loadData();
 }
-function tryAdminLogin(){
+async function tryAdminLogin(){
   const email=(document.getElementById('lg-email').value||'').trim();
   const pass=(document.getElementById('lg-pass').value||'').trim();
   const err=document.getElementById('lg-err');
-  if(email!==ADMIN_EMAIL||pass!==ADMIN_PASS){
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if(error){
     err.textContent='帳號或密碼錯誤';
     document.getElementById('lg-pass').value='';
     return;
   }
   err.textContent='';
-  sessionStorage.setItem('depositTrackAuth','1');
   unlockGate();
 }
 ['lg-email','lg-pass'].forEach(id=>{
   document.getElementById(id).addEventListener('keydown', e=>{ if(e.key==='Enter') tryAdminLogin(); });
 });
-if(sessionStorage.getItem('depositTrackAuth')==='1') unlockGate();
-
-// ===== Supabase =====
-const SUPABASE_URL = 'https://vicbgttehkqeqhyvtlet.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_N4DH8txPq9dc9naOPk_Qmg_qEbEcXVM';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+sb.auth.getSession().then(({data})=>{ if(data.session) unlockGate(); });
 
 const WD = ['日','一','二','三','四','五','六'];
 function fmtROCParts(rocYear, month, day){
