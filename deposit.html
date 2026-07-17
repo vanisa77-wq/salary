@@ -436,9 +436,14 @@ async function loadParentData(id){
   const wrap = document.getElementById('receiptDisplayWrap');
   wrap.innerHTML = '<p style="text-align:center; color:#7a6e6a; padding:24px 0;">資料讀取中…</p>';
   try {
-    const { data, error } = await sb.from('deposit_receipts').select('data').eq('id', id).single();
-    if(error || !data) throw error || new Error('not found');
-    renderReceiptInto(wrap, withComputedAge(data.data));
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/deposit-view`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({ id }),
+    });
+    const result = await res.json().catch(()=>({}));
+    if(!res.ok || result.error || !result.data) throw new Error(result.error || 'not found');
+    renderReceiptInto(wrap, withComputedAge(result.data));
     setupSignaturePad();
   } catch(e){
     wrap.innerHTML = '<p style="text-align:center; color:#A5514B; padding:24px 0;">找不到這筆資料，請確認連結是否正確，或請老師重新產生連結。</p>';
