@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小蘋果托嬰中心｜員工資料管理</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'PingFang TC','Helvetica Neue',sans-serif;background:#F5F4F0;color:#1a1a1a;font-size:16px;line-height:1.6}
+.container{max-width:960px;margin:0 auto;padding:24px 16px 60px}
+.section{background:#fff;border:1px solid #E5E3DC;border-radius:14px;padding:20px;margin-bottom:14px}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:8px}
+.topbar h1{font-size:20px}
+.topbar a{font-size:14px;color:#1B6E3A;text-decoration:none;font-weight:600}
+.topbar a:hover{text-decoration:underline}
+
+body.gate-lock{overflow:hidden}
+#login-gate{position:fixed;inset:0;z-index:99999;background:#1a1a1a;display:flex;align-items:center;justify-content:center;padding:20px}
+#login-gate .lg-card{background:#fff;border-radius:16px;padding:32px 28px;max-width:360px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+#login-gate .lg-title{font-size:17px;font-weight:700;color:#1a1a1a;margin-bottom:4px;text-align:center}
+#login-gate .lg-sub{font-size:13px;color:#888;text-align:center;margin-bottom:20px}
+#login-gate label{font-size:14px;color:#333;font-weight:500;display:block;margin-bottom:5px}
+#login-gate .lg-field{margin-bottom:14px}
+#login-gate input{width:100%;height:44px;border:1px solid #D5D3CC;border-radius:8px;background:#FAFAF8;color:#1a1a1a;font-size:16px;font-family:inherit;padding:0 12px;outline:none}
+#login-gate input:focus{border-color:#C0392B;box-shadow:0 0 0 3px rgba(192,57,43,.1)}
+#login-gate button{width:100%;height:46px;border:none;border-radius:8px;background:#C0392B;color:#fff;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:6px}
+#login-gate button:hover{background:#A93226}
+#login-gate .lg-err{color:#C0392B;font-size:13px;text-align:center;margin-top:10px;min-height:18px}
+</style>
+</head>
+<body class="gate-lock">
+
+<div id="login-gate">
+  <div class="lg-card">
+    <div class="lg-title">🔒 小蘋果托嬰中心｜員工資料管理</div>
+    <div class="lg-sub">管理員登入</div>
+    <div class="lg-field">
+      <label>Email</label>
+      <input type="email" id="lg-email" autocomplete="username" placeholder="請輸入登入 Email">
+    </div>
+    <div class="lg-field">
+      <label>密碼</label>
+      <input type="password" id="lg-pass" autocomplete="current-password" placeholder="請輸入密碼">
+    </div>
+    <button onclick="tryAdminLogin()">登入</button>
+    <div class="lg-err" id="lg-err"></div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="topbar">
+    <h1>📇 員工資料管理</h1>
+    <a href="index.html">← 回到薪資系統</a>
+  </div>
+
+  <div class="section" style="background:#EFF6FF;border:1px solid #BFDBFE">
+    <div style="font-size:13px;color:#666;margin-bottom:10px">在這裡建立每位老師的固定資料（本薪、全勤獎金、投保級距、眷屬人數、登入帳號密碼、固定津貼），之後在薪資系統的「員工姓名」欄位輸入相同姓名（或用 LINE 回報載入），系統會自動帶入這些設定，不用每次重填。<br>✅ 資料直接存在 <b>Supabase 雲端資料庫</b>，換電腦、換瀏覽器都會看到最新資料，新增/修改/刪除都會即時同步，不需要手動備份。</div>
+    <div id="empdb-list" style="margin-bottom:10px"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" onclick="addEmpDBRow()" style="padding:8px 14px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">➕ 新增員工</button>
+      <button type="button" onclick="exportEmpDB()" style="padding:8px 14px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">⬇️ 匯出目前清單（唯讀）</button>
+    </div>
+    <textarea id="empdb-io" style="display:none;width:100%;height:120px;margin-top:8px;border:1px solid #D5D3CC;border-radius:8px;padding:8px;box-sizing:border-box;font-family:monospace;font-size:12px" placeholder="貼上備份的文字內容" readonly></textarea>
+  </div>
+</div>
+
+<script>
+// 登入保護改用真正的 Supabase Auth 帳密（sb 由下方 Supabase 區塊建立），
+// 不再是寫死在網頁原始碼裡的手機號碼／密碼。
+function unlockGate(){
+  document.getElementById('login-gate').style.display='none';
+  document.body.classList.remove('gate-lock');
+  document.body.classList.add('gate-unlocked');
+  loadEmployeeDB();
+}
+async function tryAdminLogin(){
+  var email=(document.getElementById('lg-email').value||'').trim();
+  var pass=(document.getElementById('lg-pass').value||'').trim();
+  var err=document.getElementById('lg-err');
+  var result=await sb.auth.signInWithPassword({ email:email, password:pass });
+  if(result.error){
+    err.textContent='帳號或密碼錯誤';
+    document.getElementById('lg-pass').value='';
+    return;
+  }
+  err.textContent='';
+  unlockGate();
+}
+['lg-email','lg-pass'].forEach(function(id){
+  document.getElementById(id).addEventListener('keydown',function(e){
+    if(e.key==='Enter')tryAdminLogin();
+  });
+});
+
+/* ===== Supabase ===== */
+const SUPABASE_URL = 'https://vicbgttehkqeqhyvtlet.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_N4DH8txPq9dc9naOPk_Qmg_qEbEcXVM';
+function initSupabase(){
+  if(!window.supabase) return null;
+  return window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+const sb = initSupabase();
+if(sb) sb.auth.getSession().then(function(res){ if(res.data.session) unlockGate(); });
+
+/* ===== 投保級距表（跟薪資系統共用同一組數字） ===== */
+const LABOR=[[0x8214,0x341],[0x87f0,0x366],[0x8dcc,0x38c],[0x9538,0x3bb],[0x9ca4,0x3ea],[0xa410,0x41a],[0xab7c,0x44a],[0xb2e8,0x479]];
+const HEALTH=[[0x8214,0x204],[0x87f0,0x21c],[0x8dcc,0x233],[0x9538,0x250],[0x9ca4,0x26e],[0xa410,0x28b],[0xab7c,0x2a9],[0xb2e8,0x2c6]];
+
+let employeeDB=[];
+let dependentsByEmp={};
+let allowancesByEmp={};
+let expandedEmpId=null;
+function rowToEmp(r){return {id:r.id,account:r.account||'',password:r.password||'',name:r.name||'',base:r.base||0,bonus:r.bonus||0,insGrade:r.ins_grade||0,dependents:r.dependents||0,hireDate:r.hire_date||'',jobTitle:r.job_title||'',healthInsGrade:r.health_ins_grade||0,laborInsExempt:r.labor_ins_exempt===true};}
+function depAge(birthDate){
+  if(!birthDate)return null;
+  const b=new Date(birthDate);
+  if(isNaN(b))return null;
+  const today=new Date();
+  let age=today.getFullYear()-b.getFullYear();
+  const m=today.getMonth()-b.getMonth();
+  if(m<0||(m===0&&today.getDate()<b.getDate()))age--;
+  return age;
+}
+function depIsBillable(d){
+  if(d.billable_override===true)return true;
+  if(d.billable_override===false)return false;
+  const age=depAge(d.birth_date);
+  if(age===null)return true;
+  return age<65;
+}
+function loadEmployeeDB(){
+  try{
+    const cached=localStorage.getItem('scEmployeeDB');
+    if(cached)employeeDB=JSON.parse(cached);
+  }catch(e){}
+  const client=initSupabase();
+  if(!client)return;
+  client.from('employees').select('*').order('id').then(function(res){
+    if(res.error){console.error(res.error);return;}
+    employeeDB=(res.data||[]).map(rowToEmp);
+    try{localStorage.setItem('scEmployeeDB',JSON.stringify(employeeDB));}catch(e){}
+    renderEmpDBList();
+  });
+  client.from('dependents').select('*').order('id').then(function(res){
+    if(res.error){console.error(res.error);return;}
+    dependentsByEmp={};
+    (res.data||[]).forEach(function(d){
+      if(!dependentsByEmp[d.employee_id])dependentsByEmp[d.employee_id]=[];
+      dependentsByEmp[d.employee_id].push(d);
+    });
+    renderEmpDBList();
+  });
+  client.from('employee_allowances').select('*').order('id').then(function(res){
+    if(res.error){console.error(res.error);return;}
+    allowancesByEmp={};
+    (res.data||[]).forEach(function(a){
+      if(!allowancesByEmp[a.employee_id])allowancesByEmp[a.employee_id]=[];
+      allowancesByEmp[a.employee_id].push(a);
+    });
+    renderEmpDBList();
+  });
+}
+function empDBInsGradeOptions(selectedIdx){
+  return LABOR.map(([sal,fee],i)=>'<option value="'+i+'"'+(i===+selectedIdx?' selected':'')+'>'+sal.toLocaleString('zh-TW')+'元</option>').join('');
+}
+function empDBHealthGradeOptions(selectedIdx){
+  return HEALTH.map(([sal,fee],i)=>'<option value="'+i+'"'+(i===+selectedIdx?' selected':'')+'>'+sal.toLocaleString('zh-TW')+'元</option>').join('');
+}
+function toggleEmpExpand(id){expandedEmpId=(expandedEmpId===id)?null:id;renderEmpDBList();}
+function renderEmpDetail(e,i){
+  const deps=dependentsByEmp[e.id]||[];
+  const billableCount=deps.filter(depIsBillable).length;
+  const exemptCount=deps.length-billableCount;
+  let html='<div style="padding:10px;background:#F7F6F3;border-radius:8px;margin:-4px 0 8px;display:flex;flex-direction:column;gap:8px">';
+  html+='<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">';
+  html+='<label style="font-size:12px;color:#666">到職日</label><input type="date" value="'+(e.hireDate||'')+'" style="height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" onchange="updateEmpDBField('+i+',\'hireDate\',this.value)">';
+  html+='<label style="font-size:12px;color:#666">職稱</label><input type="text" value="'+(e.jobTitle||'').replace(/"/g,'&quot;')+'" style="width:100px;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateEmpDBField('+i+',\'jobTitle\',this.value)">';
+  html+='<label style="font-size:12px;color:#666">勞保級距</label><select style="height:32px;border:1px solid #D5D3CC;border-radius:6px" onchange="updateEmpDBField('+i+',\'insGrade\',+this.value)">'+empDBInsGradeOptions(e.insGrade)+'</select>';
+  html+='<label style="font-size:12px;color:#666">健保級距</label><select style="height:32px;border:1px solid #D5D3CC;border-radius:6px" onchange="updateEmpDBField('+i+',\'healthInsGrade\',+this.value)">'+empDBHealthGradeOptions(e.healthInsGrade)+'</select>';
+  html+='<label style="font-size:12px;color:#B45309;display:flex;align-items:center;gap:4px"><input type="checkbox" '+(e.laborInsExempt?'checked':'')+' onchange="updateEmpDBField('+i+',\'laborInsExempt\',this.checked)">固定免收勞保費（例如已領勞保老年給付者）</label>';
+  html+='</div>';
+  html+='<div style="font-size:13px;font-weight:600;color:#333;margin-top:4px">👪 眷屬管理</div>';
+  html+='<div>'+deps.map(function(d){
+    const billable=depIsBillable(d);
+    const age=depAge(d.birth_date);
+    const tag=billable?'<span style="color:#B45309;font-size:12px">計費</span>':'<span style="color:#1B6E3A;font-size:12px">免計費</span>';
+    const ageTag=age!==null?('（'+age+'歲'+(age>=65?'，滿65':'')+'）'):'';
+    return '<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap">'
+      +'<input type="text" value="'+(d.name||'').replace(/"/g,'&quot;')+'" placeholder="姓名" style="width:80px;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateDependentField('+d.id+',\'name\',this.value)">'
+      +'<input type="text" value="'+(d.relation||'').replace(/"/g,'&quot;')+'" placeholder="關係" style="width:70px;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateDependentField('+d.id+',\'relation\',this.value)">'
+      +'<input type="date" value="'+(d.birth_date||'')+'" style="height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" onchange="updateDependentField('+d.id+',\'birth_date\',this.value,true)">'
+      +'<span style="font-size:12px;color:#999">'+ageTag+'</span>'
+      +tag
+      +'<label style="font-size:12px;color:#666;display:flex;align-items:center;gap:3px"><input type="checkbox" '+(d.billable_override===true?'checked':'')+' onchange="updateDependentField('+d.id+',\'billable_override\',this.checked?true:null,true)">強制計費</label>'
+      +'<button type="button" onclick="removeDependent('+e.id+','+d.id+')" style="color:#C0392B;background:none;border:none;cursor:pointer;font-size:12px">✕</button>'
+      +'</div>';
+  }).join('')+'</div>';
+  html+='<button type="button" onclick="addDependent('+e.id+')" style="align-self:flex-start;padding:5px 10px;border:1px dashed #C5C3BB;border-radius:6px;background:transparent;font-size:12px;cursor:pointer">＋新增眷屬</button>';
+  html+='<div style="font-size:12px;color:#666;margin-top:4px">眷屬總數:'+deps.length+'　免計費:'+exemptCount+'　計費:'+billableCount+'</div>';
+  const allowances=allowancesByEmp[e.id]||[];
+  html+='<div style="font-size:13px;font-weight:600;color:#333;margin-top:8px">💰 固定津貼（每月自動帶入「其它應領項目」）</div>';
+  html+='<div>'+allowances.map(function(a){
+    return '<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap">'
+      +'<input type="text" value="'+(a.name||'').replace(/"/g,'&quot;')+'" placeholder="津貼名稱，例：學檔津貼(2人)" style="width:180px;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateAllowanceField('+a.id+',\'name\',this.value)">'
+      +'<input type="number" value="'+(a.amount||0)+'" placeholder="金額" style="width:90px;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateAllowanceField('+a.id+',\'amount\',+this.value)">'
+      +'<button type="button" onclick="removeAllowance('+e.id+','+a.id+')" style="color:#C0392B;background:none;border:none;cursor:pointer;font-size:12px">✕</button>'
+      +'</div>';
+  }).join('')+'</div>';
+  html+='<button type="button" onclick="addAllowance('+e.id+')" style="align-self:flex-start;padding:5px 10px;border:1px dashed #C5C3BB;border-radius:6px;background:transparent;font-size:12px;cursor:pointer">＋新增津貼項目</button>';
+  html+='</div>';
+  return html;
+}
+function renderEmpDBList(){
+  const box=document.getElementById('empdb-list');
+  if(!employeeDB.length){box.innerHTML='<div style="color:#999;font-size:13px">尚未建立任何員工資料</div>';return;}
+  box.innerHTML=employeeDB.map((e,i)=>{
+    let row='<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap;padding:8px;background:#fff;border:1px solid #E5E3DC;border-radius:8px">'
+    +'<span style="width:28px;text-align:center;color:#999;font-size:13px">'+(i+1)+'</span>'
+    +'<input type="text" value="'+(e.name||'').replace(/"/g,'&quot;')+'" placeholder="姓名" style="width:80px;height:34px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateEmpDBField('+i+',\'name\',this.value)">'
+    +'<input type="text" value="'+(e.account||'').replace(/"/g,'&quot;')+'" placeholder="登入帳號" style="width:150px;height:34px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateEmpDBField('+i+',\'account\',this.value)">'
+    +'<input type="text" value="'+(e.password||'').replace(/"/g,'&quot;')+'" placeholder="密碼" style="width:90px;height:34px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateEmpDBField('+i+',\'password\',this.value)">'
+    +'<input type="number" value="'+(e.base||'')+'" placeholder="本薪" style="width:90px;height:34px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateEmpDBField('+i+',\'base\',+this.value)">'
+    +'<input type="number" value="'+(e.bonus||'')+'" placeholder="全勤獎金" style="width:90px;height:34px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateEmpDBField('+i+',\'bonus\',+this.value)">'
+    +'<button type="button" onclick="toggleEmpExpand('+e.id+')" style="padding:6px 10px;border:1px solid #D5D3CC;border-radius:6px;background:#FAFAF8;cursor:pointer;font-size:13px">'+(expandedEmpId===e.id?'▼ 收合':'▶ 展開')+'</button>'
+    +'<button type="button" onclick="removeEmpDBRow('+i+')" style="color:#C0392B;background:none;border:none;cursor:pointer;font-size:13px">✕刪除</button>'
+    +'</div>';
+    if(expandedEmpId===e.id)row+=renderEmpDetail(e,i);
+    return row;
+  }).join('');
+}
+function empFieldToColumn(field){
+  const map={insGrade:'ins_grade',hireDate:'hire_date',jobTitle:'job_title',healthInsGrade:'health_ins_grade',laborInsExempt:'labor_ins_exempt'};
+  return map[field]||field;
+}
+function updateEmpDBField(i,field,val){
+  const emp=employeeDB[i];
+  if(!emp)return;
+  emp[field]=val;
+  try{localStorage.setItem('scEmployeeDB',JSON.stringify(employeeDB));}catch(e){}
+  if(!emp.id)return;
+  const client=initSupabase();
+  if(!client)return;
+  const payload={};
+  payload[empFieldToColumn(field)]=val;
+  client.from('employees').update(payload).eq('id',emp.id).then(function(res){
+    if(res.error)console.error(res.error);
+  });
+}
+function addEmpDBRow(){
+  const client=initSupabase();
+  if(!client){alert('Supabase 載入失敗，請檢查網路連線');return;}
+  client.from('employees').insert({account:'',password:'',name:'',base:0,bonus:0,ins_grade:0,dependents:0,job_title:'托育人員'}).select().then(function(res){
+    if(res.error){alert('新增失敗：'+res.error.message);return;}
+    employeeDB.push(rowToEmp(res.data[0]));
+    try{localStorage.setItem('scEmployeeDB',JSON.stringify(employeeDB));}catch(e){}
+    renderEmpDBList();
+  });
+}
+function removeEmpDBRow(i){
+  const emp=employeeDB[i];
+  if(!emp)return;
+  if(!confirm('確定要刪除「'+(emp.name||'（未命名）')+'」嗎？'))return;
+  const client=initSupabase();
+  if(!client){alert('Supabase 載入失敗，請檢查網路連線');return;}
+  client.from('employees').delete().eq('id',emp.id).then(function(res){
+    if(res.error){alert('刪除失敗：'+res.error.message);return;}
+    employeeDB.splice(i,1);
+    delete dependentsByEmp[emp.id];
+    delete allowancesByEmp[emp.id];
+    try{localStorage.setItem('scEmployeeDB',JSON.stringify(employeeDB));}catch(e){}
+    renderEmpDBList();
+  });
+}
+function addDependent(empId){
+  const client=initSupabase();
+  if(!client){alert('Supabase 載入失敗，請檢查網路連線');return;}
+  client.from('dependents').insert({employee_id:empId,name:'',relation:'',birth_date:null}).select().then(function(res){
+    if(res.error){alert('新增失敗：'+res.error.message);return;}
+    if(!dependentsByEmp[empId])dependentsByEmp[empId]=[];
+    dependentsByEmp[empId].push(res.data[0]);
+    renderEmpDBList();
+  });
+}
+function updateDependentField(depId,field,val,shouldRerender){
+  for(const empId in dependentsByEmp){
+    const d=dependentsByEmp[empId].find(x=>x.id===depId);
+    if(d){d[field]=val;break;}
+  }
+  const client=initSupabase();
+  if(!client)return;
+  const payload={};
+  payload[field]=val;
+  client.from('dependents').update(payload).eq('id',depId).then(function(res){
+    if(res.error){console.error(res.error);return;}
+    if(shouldRerender)renderEmpDBList();
+  });
+}
+function removeDependent(empId,depId){
+  if(!confirm('確定要刪除這筆眷屬資料嗎？'))return;
+  const client=initSupabase();
+  if(!client)return;
+  client.from('dependents').delete().eq('id',depId).then(function(res){
+    if(res.error){alert('刪除失敗：'+res.error.message);return;}
+    dependentsByEmp[empId]=(dependentsByEmp[empId]||[]).filter(d=>d.id!==depId);
+    renderEmpDBList();
+  });
+}
+function addAllowance(empId){
+  const client=initSupabase();
+  if(!client){alert('Supabase 載入失敗，請檢查網路連線');return;}
+  client.from('employee_allowances').insert({employee_id:empId,name:'',amount:0}).select().then(function(res){
+    if(res.error){alert('新增失敗：'+res.error.message);return;}
+    if(!allowancesByEmp[empId])allowancesByEmp[empId]=[];
+    allowancesByEmp[empId].push(res.data[0]);
+    renderEmpDBList();
+  });
+}
+function updateAllowanceField(allowId,field,val){
+  for(const empId in allowancesByEmp){
+    const a=allowancesByEmp[empId].find(x=>x.id===allowId);
+    if(a){a[field]=val;break;}
+  }
+  const client=initSupabase();
+  if(!client)return;
+  const payload={};
+  payload[field]=val;
+  client.from('employee_allowances').update(payload).eq('id',allowId).then(function(res){
+    if(res.error)console.error(res.error);
+  });
+}
+function removeAllowance(empId,allowId){
+  if(!confirm('確定要刪除這筆津貼項目嗎？'))return;
+  const client=initSupabase();
+  if(!client)return;
+  client.from('employee_allowances').delete().eq('id',allowId).then(function(res){
+    if(res.error){alert('刪除失敗：'+res.error.message);return;}
+    allowancesByEmp[empId]=(allowancesByEmp[empId]||[]).filter(a=>a.id!==allowId);
+    renderEmpDBList();
+  });
+}
+function exportEmpDB(){const io=document.getElementById('empdb-io');io.style.display='block';io.value=JSON.stringify(employeeDB,null,2);io.focus();io.select();}
+</script>
+<div id="versionStamp" style="position:fixed;bottom:6px;right:10px;font-size:11px;color:#999;background:rgba(255,255,255,.85);padding:2px 8px;border-radius:8px;z-index:9999;">最後更新:2026-07-10</div>
+</body>
+</html>
