@@ -143,8 +143,8 @@ select:focus{border-color:#C0392B}
 .result-wrap{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
 .result-col{border-radius:12px;overflow:hidden;border:1px solid #D5D3CC}
 .col-header{padding:11px 16px;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:space-between}
-.col-header.earn{background:#D4EDDA;color:#1B6E3A}
-.col-header.deduct{background:#F9D7D7;color:#B91C1C}
+.col-header.earn{background:#BFDAD8;color:#fff}
+.col-header.deduct{background:#F0D2C9;color:#fff}
 .col-header .total{font-size:19px;font-weight:700}
 .col-body{background:#fff}
 .col-row{display:flex;align-items:flex-start;justify-content:space-between;padding:9px 16px;border-bottom:1px solid #F5F4F0;font-size:15px;gap:8px}
@@ -155,11 +155,11 @@ select:focus{border-color:#C0392B}
 .amt.green{color:#1B6E3A}
 .amt.red{color:#B91C1C}
 
-.final-box{background:#FBE0DA;border-radius:14px;padding:22px 24px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;border:none}
-.final-val{font-size:34px;font-weight:700;color:#1a1a1a;letter-spacing:.01em}
+.final-box{background:#C7C9D6;border-radius:14px;padding:22px 24px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;border:none}
+.final-val{font-size:34px;font-weight:700;color:#fff;letter-spacing:.01em}
 .final-val span{font-size:17px;color:#333;font-weight:400;margin-left:4px}
-.final-label{font-size:20px;color:#1a1a1a;font-weight:700}
-.final-formula{font-size:17px;color:#1a1a1a;font-weight:500;margin-top:4px}
+.final-label{font-size:20px;color:#fff;font-weight:700}
+.final-formula{font-size:17px;color:#fff;font-weight:500;margin-top:4px}
 
 .note{font-size:11px;color:#1a1a1a;text-align:center;line-height:1.8;padding:0 20px}
 .divider{height:1px;background:#EEECEA;margin:10px 0}
@@ -830,8 +830,8 @@ async function tryAdminLogin(){
   </div>
 
   <!-- 年度統計 -->
-  <div class="section" style="background:#EDEEF3;border:2px solid #BF9241">
-    <div id="yearly-panel" style="display:none">
+  <div class="section" id="yearly-panel" style="background:#EDEEF3;border:2px solid #BF9241;display:none">
+    <div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
         <span style="font-size:14px">選擇年度：</span>
         <select id="yearly-year-sel" onchange="renderYearlyStats()" style="height:36px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 10px"></select>
