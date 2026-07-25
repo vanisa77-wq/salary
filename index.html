@@ -28,6 +28,12 @@ body{font-family:'PingFang TC','Helvetica Neue',sans-serif;background:#F8F5F7;co
 .calc-tab:focus-visible{outline:2px solid #B91C1C;outline-offset:2px}
 .calc-tab[aria-selected="true"]{color:#3D6E93;border-bottom-color:#93BAD9;background:#EAF1F6}
 .calc-tabpanel{display:none !important}
+.calc-tabpanel.active>*:first-child{margin-top:0 !important}
+#tp-ins .section{padding:14px 16px;margin-bottom:10px}
+#tp-ins .ins-card{padding:11px}
+#tp-ins .field{margin-bottom:10px !important}
+#tp-ins .ins-row{margin-top:4px}
+#tp-ins label{margin-bottom:6px !important}
 .calc-tabpanel.active{display:block !important}
 
 .section{background:#fff;border:1px solid #E4DCE2;border-radius:14px;padding:20px;margin-bottom:14px}
@@ -695,7 +701,7 @@ async function tryAdminLogin(){
   <div class="ins-grid">
     <!-- 勞保 -->
     <div class="ins-card">
-      <span class="itag" style="background:#DBEAFE;color:#1E40AF">勞工保險</span>
+      <span class="itag" style="background:#E6EDF3;color:#3D6E93">勞工保險</span>
       <div class="ins-row"><label>足月自付</label><span class="val" id="labor-full">—</span></div>
       <div class="ins-row"><label>在職比例</label><span class="val" id="labor-ratio">—</span></div>
       <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#1a1a1a;margin:8px 0;cursor:pointer">
@@ -706,7 +712,7 @@ async function tryAdminLogin(){
     </div>
     <!-- 健保 -->
     <div class="ins-card">
-      <span class="itag" style="background:#D1FAE5;color:#065F46">全民健保</span>
+      <span class="itag" style="background:#E6EDF3;color:#3D6E93">全民健保</span>
       <div class="field" style="margin-bottom:8px">
         <label style="font-size:13px;color:#1a1a1a;margin-bottom:4px;display:block">眷屬人數（最多計3人）</label>
         <select id="dependents"><option value="0">0 人（無眷屬）</option><option value="1">1 人</option><option value="2">2 人</option><option value="3">3 人</option><option value="4">4 人（計3人）</option><option value="5">5 人以上（計3人）</option></select>
