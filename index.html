@@ -469,22 +469,11 @@ async function tryAdminLogin(){
 </div>
 <div class="layout-grid"><div class="col-main">
 <div class="calc-tabpanel active" id="tp-basic">
-<!-- LINE回報辨識 -->
-<div class="section" style="background:#FBF0F3;border:1px solid #E9C6CE">
-  <div class="sec-title"><span class="icon">📋</span> 貼上老師 LINE 回報（自動帶入）<span style="font-size:11px;color:#999;font-weight:400;margin-left:8px">版本 v5（2026/07/04）</span></div>
-  <div style="font-size:13px;color:#666;margin-bottom:8px">將老師回傳的完整訊息內容貼到下方。<b>建議做法：貼一位 → 按「➕ 加入暫存」→ 框會清空，再貼下一位</b>，全部加完按「✅ 辨識並帶入」一次處理。也可以把多位的訊息直接疊在框裡一起辨識。多位時會列出名單讓您點選「載入計算」逐一切換（切換時自動清空前一位的資料）。</div>
-  <textarea id="line-report-text" placeholder="請貼上老師的LINE回報內容…" style="width:100%;min-height:280px;border:1px solid #D5D3CC;border-radius:8px;padding:10px;font-size:14px;font-family:inherit;box-sizing:border-box;resize:vertical"></textarea>
-  <div id="line-stash-info" style="display:none;margin-top:8px;padding:8px 12px;background:#ECFDF5;border:1px solid #A7F3D0;border-radius:8px;font-size:13px"></div>
-  <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
-    <button type="button" onclick="stashLineReport()" style="padding:9px 18px;border:none;border-radius:8px;background:#B45309;color:#fff;font-size:14px;cursor:pointer;font-weight:600">➕ 加入暫存（繼續貼下一位）</button>
-    <button type="button" onclick="parseLineReport()" style="padding:9px 18px;border:none;border-radius:8px;background:#1B6E3A;color:#fff;font-size:14px;cursor:pointer;font-weight:600">✅ 辨識並帶入</button>
-    <button type="button" onclick="clearLineStash()" style="padding:9px 18px;border:1px solid #D5D3CC;border-radius:8px;background:#FAFAF8;color:#666;font-size:14px;cursor:pointer">清空文字框與暫存</button>
-  </div>
-
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
   <!-- Supabase 讀取本月回報 -->
-  <div class="section" style="background:#EFF5FA;border:1px solid #C7D7E7">
+  <div class="section" style="background:#EFF5FA;border:1px solid #C7D7E7;margin-bottom:0">
     <div class="sec-title" style="color:#3D6E93"><span class="icon">📡</span> 從 Supabase 載入本月老師回報</div>
-    <div style="padding:16px;font-size:13px;color:#666">
+    <div style="font-size:13px;color:#666">
       <div style="margin-bottom:10px">選擇薪資月份，系統會自動從 Supabase 讀取所有已提交的老師回報：</div>
       <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
         <select id="supa-year" style="height:36px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 10px">
@@ -510,15 +499,29 @@ async function tryAdminLogin(){
       </div>
       <div id="supa-status" style="font-size:12px;color:#666;margin-top:6px"></div>
     </div>
-  <div id="line-report-result" style="display:none;margin-top:10px;padding:10px 12px;background:#fff;border:1px solid #D5D3CC;border-radius:8px;font-size:13px;line-height:1.8"></div>
-</div>
-</div><!-- 修正：原本缺少的「LINE回報辨識」外層 section 收合標籤，補上避免後面內容被誤吃進這一層 -->
+  </div>
 
-<!-- 員工資料庫 -->
-<div class="section" style="background:#EDF3F8;border:1px solid #93BAD9">
-  <a href="employees.html" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:#1a1a1a;font-weight:600">
-    <span class="icon">📇</span> 員工基本資料庫管理　<span style="font-size:12px;color:#1B6E3A;font-weight:400">（點此開啟員工資料管理頁面）→</span>
-  </a>
+  <!-- 員工資料庫 -->
+  <div class="section" style="background:#EDF3F8;border:1px solid #93BAD9;margin-bottom:0;display:flex;align-items:center">
+    <a href="employees.html" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:#1a1a1a;font-weight:600">
+      <span class="icon">📇</span> 員工基本資料庫管理　<span style="font-size:12px;color:#1B6E3A;font-weight:400">（點此開啟員工資料管理頁面）→</span>
+    </a>
+  </div>
+</div>
+
+<div id="line-report-result" style="display:none;margin-bottom:14px;padding:10px 12px;background:#fff;border:1px solid #D5D3CC;border-radius:8px;font-size:13px;line-height:1.8"></div>
+
+<!-- LINE回報辨識 -->
+<div class="section" style="background:#FBF0F3;border:1px solid #E9C6CE">
+  <div class="sec-title"><span class="icon">📋</span> 貼上老師 LINE 回報（自動帶入）<span style="font-size:11px;color:#999;font-weight:400;margin-left:8px">版本 v5（2026/07/04）</span></div>
+  <div style="font-size:13px;color:#666;margin-bottom:8px">將老師回傳的完整訊息內容貼到下方。<b>建議做法：貼一位 → 按「➕ 加入暫存」→ 框會清空，再貼下一位</b>，全部加完按「✅ 辨識並帶入」一次處理。也可以把多位的訊息直接疊在框裡一起辨識。多位時會列出名單讓您點選「載入計算」逐一切換（切換時自動清空前一位的資料）。</div>
+  <textarea id="line-report-text" placeholder="請貼上老師的LINE回報內容…" style="width:100%;min-height:280px;border:1px solid #D5D3CC;border-radius:8px;padding:10px;font-size:14px;font-family:inherit;box-sizing:border-box;resize:vertical"></textarea>
+  <div id="line-stash-info" style="display:none;margin-top:8px;padding:8px 12px;background:#ECFDF5;border:1px solid #A7F3D0;border-radius:8px;font-size:13px"></div>
+  <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+    <button type="button" onclick="stashLineReport()" style="padding:9px 18px;border:none;border-radius:8px;background:#B45309;color:#fff;font-size:14px;cursor:pointer;font-weight:600">➕ 加入暫存（繼續貼下一位）</button>
+    <button type="button" onclick="parseLineReport()" style="padding:9px 18px;border:none;border-radius:8px;background:#1B6E3A;color:#fff;font-size:14px;cursor:pointer;font-weight:600">✅ 辨識並帶入</button>
+    <button type="button" onclick="clearLineStash()" style="padding:9px 18px;border:1px solid #D5D3CC;border-radius:8px;background:#FAFAF8;color:#666;font-size:14px;cursor:pointer">清空文字框與暫存</button>
+  </div>
 </div>
 </div><!-- /tp-basic -->
 
