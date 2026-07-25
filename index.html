@@ -39,7 +39,7 @@ body{font-family:'PingFang TC','Helvetica Neue',sans-serif;background:#FAF6EE;co
 .calc-tabpanel .shift-desc{margin-bottom:8px !important}
 .calc-tabpanel.active{display:block !important}
 
-.section{background:#fff;border:1px solid #BF9241;border-radius:14px;padding:20px;margin-bottom:14px}
+.section{background:#fff;border:2px solid #BF9241;border-radius:14px;padding:20px;margin-bottom:14px}
 .sec-title{font-size:15px;font-weight:600;color:#1a1a1a;margin-bottom:14px;display:flex;align-items:center;gap:6px;letter-spacing:.04em}
 .sec-title .icon{font-size:17px}
 .icon{font-size:0 !important;display:inline-block;vertical-align:middle}
@@ -52,7 +52,7 @@ body{font-family:'PingFang TC','Helvetica Neue',sans-serif;background:#FAF6EE;co
 .field .hint{font-size:13px;color:#666}
 .iw{position:relative;display:flex;align-items:center}
 .iw .unit{position:absolute;right:10px;font-size:15px;color:#666;pointer-events:none}
-input[type=number],input[type=text],input[type=date],select{height:42px;border:1px solid #BF9241;border-radius:8px;background:#FAFAF8;color:#1a1a1a;font-size:16px;font-family:inherit;outline:none;transition:border .15s;-webkit-appearance:none;appearance:none}
+input[type=number],input[type=text],input[type=date],select{height:42px;border:2px solid #BF9241;border-radius:8px;background:#FAFAF8;color:#1a1a1a;font-size:16px;font-family:inherit;outline:none;transition:border .15s;-webkit-appearance:none;appearance:none}
 input[type=number],input[type=text]{width:100%;padding:0 32px 0 12px}
 input[type=number]:focus,input[type=text]:focus,input[type=date]:focus,select:focus{border-color:#C0392B;box-shadow:0 0 0 3px rgba(192,57,43,.1)}
 input[type=number].sm{width:72px;padding:0 8px;height:36px;font-size:15px}
@@ -62,12 +62,12 @@ select:focus{border-color:#C0392B}
 /* 早晚值班 */
 .shift-desc{font-size:14px;color:#333;line-height:1.7;background:#FAFAF8;border-radius:8px;padding:10px 14px;margin-bottom:14px;border:1px solid #EEECEA}
 .shift-tabs{display:flex;gap:8px;margin-bottom:10px}
-.shift-tab{padding:8px 16px;border:1px solid #BF9241;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;background:#FAFAF8;color:#333;font-family:inherit;transition:all .15s}
+.shift-tab{padding:8px 16px;border:2px solid #BF9241;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;background:#FAFAF8;color:#333;font-family:inherit;transition:all .15s}
 .shift-tab.active.morning{background:#EAF3DE;color:#375623;border-color:#A9D18E}
 .shift-tab.active.evening{background:#FFF3CD;color:#856404;border-color:#FFD966}
 .date-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:10px}
 .day-label{text-align:center;font-size:13px;color:#1a1a1a;padding:2px 0;font-weight:500}
-.day-btn{width:100%;border:1px solid #BF9241;border-radius:8px;padding:6px 2px;font-size:14px;cursor:pointer;background:#FAFAF8;color:#444;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:0;line-height:1.1;transition:background .1s;font-family:inherit}
+.day-btn{width:100%;border:2px solid #BF9241;border-radius:8px;padding:6px 2px;font-size:14px;cursor:pointer;background:#FAFAF8;color:#444;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:0;line-height:1.1;transition:background .1s;font-family:inherit}
 .day-btn:hover{background:#F0EEE8}
 .day-btn.empty{opacity:0;pointer-events:none;background:none;border:none}
 .day-btn.morning{background:#EAF3DE;border-color:#A9D18E;color:#375623}
@@ -81,14 +81,14 @@ select:focus{border-color:#C0392B}
 .day-clear:hover{color:#B91C1C}
 .day-btn{position:relative}
 .shift-summary{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:6px}
-.scard{border:1px solid #BF9241;border-radius:8px;padding:10px;text-align:center;background:#FAFAF8}
+.scard{border:2px solid #BF9241;border-radius:8px;padding:10px;text-align:center;background:#FAFAF8}
 .scard .slbl{font-size:13px;color:#1a1a1a;margin-bottom:4px;font-weight:500}
 .scard .sval{font-size:18px;font-weight:600}
 .sv-m{color:#375623}.sv-e{color:#856404}.sv-h{color:#5B2D8E}.sv-g{color:#C0392B}
 
 /* 彈性加班 */
 .flex-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.flex-card{border:1px solid #BF9241;border-radius:10px;padding:14px;background:#FAFAF8}
+.flex-card{border:2px solid #BF9241;border-radius:10px;padding:14px;background:#FAFAF8}
 .ftag{font-size:13px;font-weight:600;padding:2px 9px;border-radius:6px;margin-bottom:10px;display:inline-block}
 .flex-row{display:flex;align-items:center;gap:8px;margin-top:10px}
 .flex-row label{font-size:14px;color:#333;min-width:64px;font-weight:500}
@@ -98,7 +98,7 @@ select:focus{border-color:#C0392B}
 
 /* 加班 */
 .ot-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.ot-card{border:1px solid #BF9241;border-radius:10px;padding:14px;background:#FAFAF8}
+.ot-card{border:2px solid #BF9241;border-radius:10px;padding:14px;background:#FAFAF8}
 .otag{font-size:13px;font-weight:600;padding:2px 9px;border-radius:6px;margin-bottom:10px;display:inline-block}
 .ot-row{display:flex;align-items:center;gap:8px;margin-top:8px}
 .ot-row label{font-size:14px;color:#333;min-width:46px;font-weight:500}
@@ -111,7 +111,7 @@ select:focus{border-color:#C0392B}
 
 /* 請假 */
 .leave-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.leave-card{border:1px solid #BF9241;border-radius:10px;padding:14px}
+.leave-card{border:2px solid #BF9241;border-radius:10px;padding:14px}
 .leave-row{display:flex;align-items:center;gap:8px;margin-top:8px}
 .leave-row label{font-size:14px;color:#333;min-width:36px;font-weight:500}
 .ltag{font-size:13px;font-weight:600;padding:2px 9px;border-radius:6px;margin-bottom:8px;display:inline-block}
@@ -119,7 +119,7 @@ select:focus{border-color:#C0392B}
 
 /* 保險 */
 .ins-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.ins-card{border:1px solid #BF9241;border-radius:10px;padding:14px}
+.ins-card{border:2px solid #BF9241;border-radius:10px;padding:14px}
 .itag{font-size:13px;font-weight:600;padding:2px 9px;border-radius:6px;margin-bottom:10px;display:inline-block}
 .ins-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;font-size:15px}
 .ins-row label{color:#333;font-weight:500}
@@ -134,14 +134,14 @@ select:focus{border-color:#C0392B}
 .extra-col-title.earn{background:#E8F5E2;color:#1B6E3A}
 .extra-col-title.deduct{background:#FDE8E8;color:#B91C1C}
 .extra-item{display:grid;grid-template-columns:1fr 110px 30px;gap:6px;align-items:center;margin-bottom:6px}
-.del-btn{width:30px;height:30px;border:1px solid #BF9241;border-radius:7px;background:#FAFAF8;color:#1a1a1a;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;font-family:inherit;flex-shrink:0;transition:all .15s}
+.del-btn{width:30px;height:30px;border:2px solid #BF9241;border-radius:7px;background:#FAFAF8;color:#1a1a1a;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;font-family:inherit;flex-shrink:0;transition:all .15s}
 .del-btn:hover{background:#FDE8E8;color:#B91C1C;border-color:#F9A8A8}
 .add-btn{display:flex;align-items:center;gap:5px;padding:6px 12px;border:1px dashed #C5C3BB;border-radius:8px;background:transparent;color:#1a1a1a;cursor:pointer;font-size:14px;font-family:inherit;font-weight:500;width:100%;transition:all .15s}
 .add-btn:hover{background:#FAF6EE;color:#666;border-color:#1a1a1a}
 
 /* 結果區 */
 .result-wrap{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
-.result-col{border-radius:12px;overflow:hidden;border:1px solid #BF9241}
+.result-col{border-radius:12px;overflow:hidden;border:2px solid #BF9241}
 .col-header{padding:11px 16px;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:space-between}
 .col-header.earn{background:#D4EDDA;color:#1B6E3A}
 .col-header.deduct{background:#F9D7D7;color:#B91C1C}
@@ -168,19 +168,19 @@ select:focus{border-color:#C0392B}
 .leave-date-row{display:flex;flex-direction:column;gap:6px;margin-top:10px}
 .leave-date-row label{font-size:14px;color:#333;font-weight:500}
 .leave-date-inputs{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.leave-date-inputs input[type=date]{height:38px;border:1px solid #BF9241;border-radius:8px;background:#FAFAF8;color:#1a1a1a;font-size:15px;font-family:inherit;padding:0 10px;outline:none;flex:1;min-width:120px}
+.leave-date-inputs input[type=date]{height:38px;border:2px solid #BF9241;border-radius:8px;background:#FAFAF8;color:#1a1a1a;font-size:15px;font-family:inherit;padding:0 10px;outline:none;flex:1;min-width:120px}
 .leave-date-inputs input[type=date]:focus{border-color:#C0392B;box-shadow:0 0 0 3px rgba(192,57,43,.1)}
 .leave-date-inputs .date-sep{font-size:14px;color:#1a1a1a}
 .leave-days-show{font-size:14px;color:#C0392B;font-weight:600;margin-top:4px;min-height:20px}
 /* 請假日明細 */
 .leave-day-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
-.leave-day-item{border:1px solid #BF9241;border-radius:8px;padding:10px 12px;background:#FAFAF8}
+.leave-day-item{border:2px solid #BF9241;border-radius:8px;padding:10px 12px;background:#FAFAF8}
 .leave-day-item .day-label{font-size:14px;font-weight:600;color:#333;margin-bottom:8px}
 .leave-mode-tabs{display:flex;gap:6px;margin-bottom:8px}
-.leave-mode-btn{padding:5px 12px;border:1px solid #BF9241;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;background:#fff;color:#1a1a1a;font-family:inherit;transition:all .15s}
+.leave-mode-btn{padding:5px 12px;border:2px solid #BF9241;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;background:#fff;color:#1a1a1a;font-family:inherit;transition:all .15s}
 .leave-mode-btn.active{background:#C0392B;color:#fff;border-color:#C0392B}
 .leave-time-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.leave-time-row select{height:42px;border:1px solid #BF9241;border-radius:8px;background:#FAFAF8;color:#1a1a1a;font-size:16px;font-family:inherit;padding:0 10px;outline:none;flex:1;cursor:pointer}
+.leave-time-row select{height:42px;border:2px solid #BF9241;border-radius:8px;background:#FAFAF8;color:#1a1a1a;font-size:16px;font-family:inherit;padding:0 10px;outline:none;flex:1;cursor:pointer}
 .leave-time-row select:focus{border-color:#C0392B;box-shadow:0 0 0 3px rgba(192,57,43,.1)}
 .leave-time-row .time-sep{font-size:14px;color:#1a1a1a}
 .leave-time-result{font-size:13px;color:#C0392B;font-weight:600;margin-top:4px}
@@ -192,13 +192,13 @@ select:focus{border-color:#C0392B}
 
 /* 收折區塊 */
 .collapsible-group{margin-bottom:14px}
-.collapsible-header{background:#FDF0DC;border:1px solid #BF9241;border-radius:14px;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;transition:border-radius .2s}
+.collapsible-header{background:#FDF0DC;border:2px solid #BF9241;border-radius:14px;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;transition:border-radius .2s}
 .collapsible-header.open{border-radius:14px 14px 0 0;border-bottom:1px solid #F0C989}
 .collapsible-header-left{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:#1a1a1a}
 .collapsible-header-left .icon{font-size:17px}
 .collapsible-arrow{font-size:15px;font-weight:700;color:#1a1a1a;transition:transform .25s}
 .collapsible-arrow.open{transform:rotate(180deg)}
-.collapsible-body{display:block;border:1px solid #BF9241;border-top:none;border-radius:0 0 14px 14px;overflow:hidden}
+.collapsible-body{display:block;border:2px solid #BF9241;border-top:none;border-radius:0 0 14px 14px;overflow:hidden}
 .collapsible-body.open{display:block}
 .collapsible-body .section{border:none;border-radius:0;margin-bottom:0;border-bottom:1px solid #F0EEE8}
 .collapsible-body .section:last-child{border-bottom:none}
@@ -367,7 +367,7 @@ input[type=date]::-webkit-calendar-picker-indicator{
 .leave-cal-day {
   text-align:center; font-size:14px; font-weight:600;
   padding:6px 2px; border-radius:8px; cursor:pointer;
-  color:#1a1a1a; background:#FAFAF8; border:1px solid #BF9241;
+  color:#1a1a1a; background:#FAFAF8; border:2px solid #BF9241;
   transition:all .15s;
 }
 .leave-cal-day.holiday { color:#C0392B; }
@@ -383,7 +383,7 @@ body.gate-lock{overflow:hidden}
 #login-gate .lg-sub{font-size:13px;color:#888;text-align:center;margin-bottom:20px}
 #login-gate label{font-size:14px;color:#333;font-weight:500;display:block;margin-bottom:5px}
 #login-gate .lg-field{margin-bottom:14px}
-#login-gate input{width:100%;height:44px;border:1px solid #BF9241;border-radius:8px;background:#FAFAF8;color:#1a1a1a;font-size:16px;font-family:inherit;padding:0 12px;outline:none}
+#login-gate input{width:100%;height:44px;border:2px solid #BF9241;border-radius:8px;background:#FAFAF8;color:#1a1a1a;font-size:16px;font-family:inherit;padding:0 12px;outline:none}
 #login-gate input:focus{border-color:#C0392B;box-shadow:0 0 0 3px rgba(192,57,43,.1)}
 #login-gate button{width:100%;height:46px;border:none;border-radius:8px;background:#C0392B;color:#fff;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:6px}
 #login-gate button:hover{background:#A93226}
@@ -478,11 +478,11 @@ async function tryAdminLogin(){
     <div style="font-size:13px;color:#666">
       <div style="margin-bottom:10px">選擇薪資月份，系統會自動從 Supabase 讀取所有已提交的老師回報：</div>
       <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-        <select id="supa-year" style="height:36px;border:1px solid #BF9241;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 10px">
+        <select id="supa-year" style="height:36px;border:2px solid #BF9241;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 10px">
           <option value="115">民國 115 年</option>
           <option value="116">民國 116 年</option>
         </select>
-        <select id="supa-month" style="height:36px;border:1px solid #BF9241;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 10px">
+        <select id="supa-month" style="height:36px;border:2px solid #BF9241;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 10px">
           <option value="">-- 選擇月份 --</option>
           <option value="1">1月</option>
           <option value="2">2月</option>
@@ -511,18 +511,18 @@ async function tryAdminLogin(){
   </div>
 </div>
 
-<div id="line-report-result" style="display:none;margin-bottom:14px;padding:10px 12px;background:#fff;border:1px solid #BF9241;border-radius:8px;font-size:13px;line-height:1.8"></div>
+<div id="line-report-result" style="display:none;margin-bottom:14px;padding:10px 12px;background:#fff;border:2px solid #BF9241;border-radius:8px;font-size:13px;line-height:1.8"></div>
 
 <!-- LINE回報辨識 -->
 <div class="section" style="background:#BDE4E9;border:2px solid #BF9241">
   <div class="sec-title"><span class="icon">📋</span> 貼上老師 LINE 回報（自動帶入）<span style="font-size:11px;color:#999;font-weight:400;margin-left:8px">版本 v5（2026/07/04）</span></div>
   <div style="font-size:13px;color:#666;margin-bottom:8px">將老師回傳的完整訊息內容貼到下方。<b>建議做法：貼一位 → 按「➕ 加入暫存」→ 框會清空，再貼下一位</b>，全部加完按「✅ 辨識並帶入」一次處理。也可以把多位的訊息直接疊在框裡一起辨識。多位時會列出名單讓您點選「載入計算」逐一切換（切換時自動清空前一位的資料）。</div>
-  <textarea id="line-report-text" placeholder="請貼上老師的LINE回報內容…" style="width:100%;min-height:280px;border:1px solid #BF9241;border-radius:8px;padding:10px;font-size:14px;font-family:inherit;box-sizing:border-box;resize:vertical"></textarea>
+  <textarea id="line-report-text" placeholder="請貼上老師的LINE回報內容…" style="width:100%;min-height:280px;border:2px solid #BF9241;border-radius:8px;padding:10px;font-size:14px;font-family:inherit;box-sizing:border-box;resize:vertical"></textarea>
   <div id="line-stash-info" style="display:none;margin-top:8px;padding:8px 12px;background:#ECFDF5;border:1px solid #A7F3D0;border-radius:8px;font-size:13px"></div>
   <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
     <button type="button" onclick="stashLineReport()" style="padding:9px 18px;border:none;border-radius:8px;background:#B45309;color:#fff;font-size:14px;cursor:pointer;font-weight:600">➕ 加入暫存（繼續貼下一位）</button>
     <button type="button" onclick="parseLineReport()" style="padding:9px 18px;border:none;border-radius:8px;background:#1B6E3A;color:#fff;font-size:14px;cursor:pointer;font-weight:600">✅ 辨識並帶入</button>
-    <button type="button" onclick="clearLineStash()" style="padding:9px 18px;border:1px solid #BF9241;border-radius:8px;background:#FAFAF8;color:#666;font-size:14px;cursor:pointer">清空文字框與暫存</button>
+    <button type="button" onclick="clearLineStash()" style="padding:9px 18px;border:2px solid #BF9241;border-radius:8px;background:#FAFAF8;color:#666;font-size:14px;cursor:pointer">清空文字框與暫存</button>
   </div>
 </div>
 </div><!-- /tp-basic -->
@@ -617,7 +617,7 @@ async function tryAdminLogin(){
           <button class="shift-tab active morning" id="tab-m" onclick="setTab('m')">▲ 標記早值</button>
           <button class="shift-tab evening" id="tab-e" onclick="setTab('e')">▼ 標記晚值</button>
         </div>
-        <button onclick="clearAllDays()" style="padding:7px 14px;border:1px solid #BF9241;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;background:#FAFAF8;color:#333;font-family:inherit;transition:all .15s" onmouseover="this.style.background='#FDE8E8';this.style.color='#B91C1C';this.style.borderColor='#F9A8A8'" onmouseout="this.style.background='#FAFAF8';this.style.color='#888';this.style.borderColor='#D5D3CC'">✕ 清除全部</button>
+        <button onclick="clearAllDays()" style="padding:7px 14px;border:2px solid #BF9241;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;background:#FAFAF8;color:#333;font-family:inherit;transition:all .15s" onmouseover="this.style.background='#FDE8E8';this.style.color='#B91C1C';this.style.borderColor='#F9A8A8'" onmouseout="this.style.background='#FAFAF8';this.style.color='#888';this.style.borderColor='#D5D3CC'">✕ 清除全部</button>
       </div>
       <div style="font-size:12px;color:#1a1a1a;margin-bottom:8px">點選日期標記；<strong>再次點選</strong>可取消單一標記（紫色◆需點兩次）。</div>
       <div class="date-grid" id="day-labels"></div>
@@ -687,7 +687,7 @@ async function tryAdminLogin(){
 <div class="section">
   <div class="sec-title"><span class="icon">🛡️</span> 勞保 / 健保設定</div>
   <div style="text-align:right;margin-bottom:8px">
-    <button type="button" onclick="resetInsuranceSpecial()" style="font-size:12px;padding:5px 10px;border:1px solid #BF9241;border-radius:6px;background:#FAFAF8;color:#666;cursor:pointer">🔄 清空本次補收/特殊設定（換人算薪水前請先按此）</button>
+    <button type="button" onclick="resetInsuranceSpecial()" style="font-size:12px;padding:5px 10px;border:2px solid #BF9241;border-radius:6px;background:#FAFAF8;color:#666;cursor:pointer">🔄 清空本次補收/特殊設定（換人算薪水前請先按此）</button>
   </div>
 
   <!-- 共用投保級距 -->
@@ -830,26 +830,26 @@ async function tryAdminLogin(){
   </div>
 
   <!-- 年度統計 -->
-  <div class="section" style="background:#EDEEF3;border:1px solid #BF9241">
+  <div class="section" style="background:#EDEEF3;border:2px solid #BF9241">
     <div id="yearly-panel" style="display:none">
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
         <span style="font-size:14px">選擇年度：</span>
-        <select id="yearly-year-sel" onchange="renderYearlyStats()" style="height:36px;border:1px solid #BF9241;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 10px"></select>
+        <select id="yearly-year-sel" onchange="renderYearlyStats()" style="height:36px;border:2px solid #BF9241;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 10px"></select>
         <span style="font-size:14px">老師：</span>
-        <select id="yearly-name-sel" onchange="renderYearlyStats()" style="height:36px;border:1px solid #BF9241;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 10px"><option value="">全部老師</option></select>
+        <select id="yearly-name-sel" onchange="renderYearlyStats()" style="height:36px;border:2px solid #BF9241;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 10px"><option value="">全部老師</option></select>
         <button type="button" onclick="exportYearlyCSV()" style="padding:8px 14px;border:none;border-radius:8px;background:#1B6E3A;color:#fff;cursor:pointer;font-size:13px">⬇️ 匯出 Excel（CSV）</button>
         <button type="button" id="export-yearly-form-btn" onclick="exportYearlyEmployeeForm()" style="padding:8px 14px;border:none;border-radius:8px;background:#B45309;color:#fff;cursor:pointer;font-size:13px">📋 匯出老師統計表（每人一分頁）</button>
-        <button type="button" onclick="exportYearlyBackup()" style="padding:8px 14px;border:1px solid #BF9241;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">⬇️ 匯出備份</button>
-        <button type="button" onclick="showYearlyImport()" style="padding:8px 14px;border:1px solid #BF9241;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">⬆️ 匯入備份</button>
+        <button type="button" onclick="exportYearlyBackup()" style="padding:8px 14px;border:2px solid #BF9241;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">⬇️ 匯出備份</button>
+        <button type="button" onclick="showYearlyImport()" style="padding:8px 14px;border:2px solid #BF9241;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">⬆️ 匯入備份</button>
       </div>
-      <textarea id="yearly-io" style="display:none;width:100%;min-height:100px;border:1px solid #BF9241;border-radius:8px;padding:10px;font-size:12px;font-family:monospace;box-sizing:border-box;margin-bottom:6px"></textarea>
+      <textarea id="yearly-io" style="display:none;width:100%;min-height:100px;border:2px solid #BF9241;border-radius:8px;padding:10px;font-size:12px;font-family:monospace;box-sizing:border-box;margin-bottom:6px"></textarea>
       <button id="yearly-import-btn" type="button" style="display:none;margin-bottom:10px;padding:8px 14px;border:none;border-radius:8px;background:#1B6E3A;color:#fff;cursor:pointer;font-size:13px" onclick="importYearlyBackup()">確認匯入</button>
       <div id="yearly-stats" style="overflow-x:auto"></div>
-      <div id="yearly-detail" style="display:none;margin-top:10px;padding:12px;background:#fff;border:1px solid #BF9241;border-radius:8px">
+      <div id="yearly-detail" style="display:none;margin-top:10px;padding:12px;background:#fff;border:2px solid #BF9241;border-radius:8px">
         <pre id="yearly-detail-text" style="white-space:pre-wrap;font-family:inherit;font-size:13px;margin:0 0 10px"></pre>
         <button type="button" id="yearly-detail-copy-btn" onclick="exportYearlyDetailImage()" style="padding:6px 12px;border:1px solid #1B6E3A;border-radius:8px;background:#fff;color:#1B6E3A;cursor:pointer;font-size:13px">🖼 匯出圖片(JPG)</button>
         <button type="button" onclick="deleteYearlyRecord()" style="padding:6px 12px;border:1px solid #DC2626;border-radius:8px;background:#fff;color:#DC2626;cursor:pointer;font-size:13px;margin-left:6px">🗑 刪除此筆紀錄</button>
-        <button type="button" onclick="document.getElementById('yearly-detail').style.display='none'" style="padding:6px 12px;border:1px solid #BF9241;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;margin-left:6px">關閉</button>
+        <button type="button" onclick="document.getElementById('yearly-detail').style.display='none'" style="padding:6px 12px;border:2px solid #BF9241;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;margin-left:6px">關閉</button>
       </div>
       <div style="font-size:12px;color:#92400E;margin-top:10px">⚠️ 紀錄儲存在這台電腦的瀏覽器中，清除瀏覽資料會遺失。建議每月存完按「匯出備份」把內容另存保管。</div>
       <div style="font-size:12px;color:#666;margin-top:8px;background:#F7F6F3;border-radius:8px;padding:8px 10px;line-height:1.8">
@@ -1034,21 +1034,21 @@ function renderAdjustments(){
     const suggested=suggestAdjAmount(insuranceType,premiumAmount);
     const gradeWarn=(premiumAmount&&suggested==null)?'<span style="color:#B45309">⚠️此金額不在官方級距表，請確認</span>':'';
     return '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px;padding:8px;background:#F7F6F3;border-radius:8px">'
-      +'<select onchange="updateAdjustmentField('+a.id+',\'direction\',this.value)" style="height:34px;border:1px solid #BF9241;border-radius:6px">'
+      +'<select onchange="updateAdjustmentField('+a.id+',\'direction\',this.value)" style="height:34px;border:2px solid #BF9241;border-radius:6px">'
       +'<option value="deduct"'+(a.direction==='deduct'?' selected':'')+'>補扣（進應扣區）</option>'
       +'<option value="refund"'+(a.direction==='refund'?' selected':'')+'>退還（進應領區）</option>'
       +'</select>'
-      +'<select onchange="updateAdjustmentField('+a.id+',\'insuranceType\',this.value)" style="height:34px;border:1px solid #BF9241;border-radius:6px">'
+      +'<select onchange="updateAdjustmentField('+a.id+',\'insuranceType\',this.value)" style="height:34px;border:2px solid #BF9241;border-radius:6px">'
       +'<option value="health"'+(insuranceType==='health'?' selected':'')+'>健保</option>'
       +'<option value="labor"'+(insuranceType==='labor'?' selected':'')+'>勞保</option>'
       +'</select>'
-      +'<select onchange="updateAdjustmentField('+a.id+',\'reason\',this.value)" style="height:34px;border:1px solid #BF9241;border-radius:6px">'
+      +'<select onchange="updateAdjustmentField('+a.id+',\'reason\',this.value)" style="height:34px;border:2px solid #BF9241;border-radius:6px">'
       +reasons.map(r=>'<option value="'+r+'"'+(a.reason===r?' selected':'')+'>'+r+'</option>').join('')
       +'</select>'
-      +(isOther?('<input type="text" value="'+(a.otherNote||'').replace(/"/g,'&quot;')+'" maxlength="50" placeholder="其他說明（必填，50字以內）" style="width:220px;height:34px;border:1px solid #BF9241;border-radius:6px;padding:0 6px" oninput="updateAdjustmentField('+a.id+',\'otherNote\',this.value)">'):'')
-      +'<input type="text" value="'+(a.targetMonth||'').replace(/"/g,'&quot;')+'" placeholder="所屬月份，例115/04" style="width:110px;height:34px;border:1px solid #BF9241;border-radius:6px;padding:0 6px" oninput="updateAdjustmentField('+a.id+',\'targetMonth\',this.value)">'
-      +'<input type="number" list="adj-premium-list" value="'+(premiumAmount||0)+'" placeholder="投保金額" style="width:100px;height:34px;border:1px solid #BF9241;border-radius:6px;padding:0 6px" oninput="updateAdjustmentField('+a.id+',\'premiumAmount\',+this.value)">'
-      +'<input type="number" value="'+(a.amount||0)+'" placeholder="金額" style="width:90px;height:34px;border:1px solid #BF9241;border-radius:6px;padding:0 6px" oninput="updateAdjustmentField('+a.id+',\'amount\',+this.value)">'
+      +(isOther?('<input type="text" value="'+(a.otherNote||'').replace(/"/g,'&quot;')+'" maxlength="50" placeholder="其他說明（必填，50字以內）" style="width:220px;height:34px;border:2px solid #BF9241;border-radius:6px;padding:0 6px" oninput="updateAdjustmentField('+a.id+',\'otherNote\',this.value)">'):'')
+      +'<input type="text" value="'+(a.targetMonth||'').replace(/"/g,'&quot;')+'" placeholder="所屬月份，例115/04" style="width:110px;height:34px;border:2px solid #BF9241;border-radius:6px;padding:0 6px" oninput="updateAdjustmentField('+a.id+',\'targetMonth\',this.value)">'
+      +'<input type="number" list="adj-premium-list" value="'+(premiumAmount||0)+'" placeholder="投保金額" style="width:100px;height:34px;border:2px solid #BF9241;border-radius:6px;padding:0 6px" oninput="updateAdjustmentField('+a.id+',\'premiumAmount\',+this.value)">'
+      +'<input type="number" value="'+(a.amount||0)+'" placeholder="金額" style="width:90px;height:34px;border:2px solid #BF9241;border-radius:6px;padding:0 6px" oninput="updateAdjustmentField('+a.id+',\'amount\',+this.value)">'
       +'<button type="button" onclick="removeAdjustment('+a.id+')" style="color:#C0392B;background:none;border:none;cursor:pointer;font-size:13px">✕</button>'
       +'<div style="width:100%;font-size:12px;color:#666">'+note+' '+gradeWarn+'</div>'
       +'</div>';
@@ -1401,7 +1401,7 @@ function renderBatchList(){
   html+='<div style="margin-bottom:10px"><button type="button" id="batch-calc-btn" onclick="batchCalcAll()" style="padding:10px 20px;border:none;border-radius:8px;background:#B45309;color:#fff;font-size:15px;cursor:pointer;font-weight:700">🚀 一鍵計算全部並存入年度紀錄</button><span style="font-size:12px;color:#92400E;margin-left:8px">（一般月份用這個最快；有特殊保險狀況的老師，批次後再單獨載入調整）</span></div>';
   html+='<div id="batch-summary-top"></div>';
   batchReports.forEach((r,i)=>{
-    html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;margin-bottom:6px;background:#FAFAF8;border:1px solid #BF9241;border-radius:8px">'
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;margin-bottom:6px;background:#FAFAF8;border:2px solid #BF9241;border-radius:8px">'
       +'<span>'+(i+1)+'. '+(r.name||'（未偵測到姓名）')+(r.month?'　'+r.rocYear+'年'+r.month+'月':'')+'</span>'
       +'<button type="button" onclick="loadBatchReport('+i+')" style="padding:6px 14px;border:none;border-radius:6px;background:#1B6E3A;color:#fff;font-size:13px;cursor:pointer">載入計算</button>'
       +'</div>';
@@ -1642,21 +1642,21 @@ function batchCalcAll(){
   var fmtN = function(x){ return Number(x).toLocaleString('zh-TW'); };
   var h = '<div style="font-weight:700;margin:10px 0 6px;font-size:15px;color:#166534">✅ 批次計算完成！共 '+results.length+' 位，已全部自動存入年度紀錄：</div>';
   h += '<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:13px;min-width:100%"><tr style="background:#FDE68A">';
-  ['姓名','應領','應扣','本月勞保','本月健保','上月勞保','上月健保','實領','狀態'].forEach(function(th){ h += '<th style="padding:5px 8px;border:1px solid #BF9241;white-space:nowrap">'+th+'</th>'; });
+  ['姓名','應領','應扣','本月勞保','本月健保','上月勞保','上月健保','實領','狀態'].forEach(function(th){ h += '<th style="padding:5px 8px;border:2px solid #BF9241;white-space:nowrap">'+th+'</th>'; });
   h += '</tr>';
   results.forEach(function(rs){
     var status = rs.error ? ('❌ 錯誤：'+rs.error) : (rs.saved ? (rs.dbMatched ? '✅' : '⚠️ 資料庫無此人') : '❌ 未存入');
     var insWarn = rs.prev && (rs.prev.labor !== rs.labor || rs.prev.health !== rs.health);
     h += '<tr>'
-      + '<td style="padding:5px 8px;border:1px solid #BF9241;white-space:nowrap;font-weight:600">'+rs.name+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #BF9241;text-align:right">'+fmtN(rs.earn)+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #BF9241;text-align:right">'+fmtN(rs.deduct)+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #BF9241;text-align:right">'+fmtN(rs.labor)+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #BF9241;text-align:right">'+fmtN(rs.health)+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #BF9241;text-align:right;color:'+(insWarn?'#DC2626':'#666')+'">'+(rs.prev?fmtN(rs.prev.labor):'—')+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #BF9241;text-align:right;color:'+(insWarn?'#DC2626':'#666')+'">'+(rs.prev?fmtN(rs.prev.health):'—')+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #BF9241;text-align:right;font-weight:700">'+fmtN(rs.net)+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #BF9241;white-space:nowrap">'+status+'</td>'
+      + '<td style="padding:5px 8px;border:2px solid #BF9241;white-space:nowrap;font-weight:600">'+rs.name+'</td>'
+      + '<td style="padding:5px 8px;border:2px solid #BF9241;text-align:right">'+fmtN(rs.earn)+'</td>'
+      + '<td style="padding:5px 8px;border:2px solid #BF9241;text-align:right">'+fmtN(rs.deduct)+'</td>'
+      + '<td style="padding:5px 8px;border:2px solid #BF9241;text-align:right">'+fmtN(rs.labor)+'</td>'
+      + '<td style="padding:5px 8px;border:2px solid #BF9241;text-align:right">'+fmtN(rs.health)+'</td>'
+      + '<td style="padding:5px 8px;border:2px solid #BF9241;text-align:right;color:'+(insWarn?'#DC2626':'#666')+'">'+(rs.prev?fmtN(rs.prev.labor):'—')+'</td>'
+      + '<td style="padding:5px 8px;border:2px solid #BF9241;text-align:right;color:'+(insWarn?'#DC2626':'#666')+'">'+(rs.prev?fmtN(rs.prev.health):'—')+'</td>'
+      + '<td style="padding:5px 8px;border:2px solid #BF9241;text-align:right;font-weight:700">'+fmtN(rs.net)+'</td>'
+      + '<td style="padding:5px 8px;border:2px solid #BF9241;white-space:nowrap">'+status+'</td>'
       + '</tr>';
   });
   h += '</table></div>';
@@ -1727,34 +1727,34 @@ function renderYearlyStats(){
   }
   var fmtN = function(n){ return Number(n).toLocaleString('zh-TW'); };
   var h = '<table style="border-collapse:collapse;font-size:13px;min-width:100%"><tr style="background:#FDE68A">';
-  h += '<th style="padding:6px 8px;border:1px solid #BF9241;white-space:nowrap;position:sticky;left:0;background:#FDE68A">NO.</th>';
-  h += '<th style="padding:6px 8px;border:1px solid #BF9241;white-space:nowrap;position:sticky;left:36px;background:#FDE68A">姓名</th>';
-  for(var m=1;m<=12;m++) h += '<th style="padding:6px 8px;border:1px solid #BF9241;white-space:nowrap">'+m+'月</th>';
-  h += '<th style="padding:6px 8px;border:1px solid #BF9241;white-space:nowrap;background:#FCD34D">年度合計</th></tr>';
+  h += '<th style="padding:6px 8px;border:2px solid #BF9241;white-space:nowrap;position:sticky;left:0;background:#FDE68A">NO.</th>';
+  h += '<th style="padding:6px 8px;border:2px solid #BF9241;white-space:nowrap;position:sticky;left:36px;background:#FDE68A">姓名</th>';
+  for(var m=1;m<=12;m++) h += '<th style="padding:6px 8px;border:2px solid #BF9241;white-space:nowrap">'+m+'月</th>';
+  h += '<th style="padding:6px 8px;border:2px solid #BF9241;white-space:nowrap;background:#FCD34D">年度合計</th></tr>';
   var grandTotal = 0;
   var monthTotals = {};
   names.forEach(function(nm,idx){
     var rowTotal = 0;
-    h += '<tr><td style="padding:6px 8px;border:1px solid #BF9241;white-space:nowrap;color:#999;position:sticky;left:0;background:#FFFBEB">'+(idx+1)+'</td>';
-    h += '<td style="padding:6px 8px;border:1px solid #BF9241;white-space:nowrap;font-weight:600;position:sticky;left:36px;background:#FFFBEB">'+nm+'</td>';
+    h += '<tr><td style="padding:6px 8px;border:2px solid #BF9241;white-space:nowrap;color:#999;position:sticky;left:0;background:#FFFBEB">'+(idx+1)+'</td>';
+    h += '<td style="padding:6px 8px;border:2px solid #BF9241;white-space:nowrap;font-weight:600;position:sticky;left:36px;background:#FFFBEB">'+nm+'</td>';
     for(var m=1;m<=12;m++){
       var rec = data[nm][String(m)];
       if(rec){
         rowTotal += rec.net;
         monthTotals[m] = (monthTotals[m]||0) + rec.net;
-        h += '<td style="padding:6px 8px;border:1px solid #BF9241;text-align:right;white-space:nowrap;cursor:pointer;color:#1B6E3A;text-decoration:underline" onclick="showYearlyDetail(\''+y+'\',\''+nm.replace(/'/g,"\\'")+'\',\''+m+'\')">'+fmtN(rec.net)+'</td>';
+        h += '<td style="padding:6px 8px;border:2px solid #BF9241;text-align:right;white-space:nowrap;cursor:pointer;color:#1B6E3A;text-decoration:underline" onclick="showYearlyDetail(\''+y+'\',\''+nm.replace(/'/g,"\\'")+'\',\''+m+'\')">'+fmtN(rec.net)+'</td>';
       } else {
-        h += '<td style="padding:6px 8px;border:1px solid #BF9241;text-align:center;color:#ccc">—</td>';
+        h += '<td style="padding:6px 8px;border:2px solid #BF9241;text-align:center;color:#ccc">—</td>';
       }
     }
     grandTotal += rowTotal;
-    h += '<td style="padding:6px 8px;border:1px solid #BF9241;text-align:right;white-space:nowrap;font-weight:700;background:#FFFBEB">'+fmtN(rowTotal)+'</td></tr>';
+    h += '<td style="padding:6px 8px;border:2px solid #BF9241;text-align:right;white-space:nowrap;font-weight:700;background:#FFFBEB">'+fmtN(rowTotal)+'</td></tr>';
   });
-  h += '<tr style="background:#FDE68A;font-weight:700"><td style="padding:6px 8px;border:1px solid #BF9241;position:sticky;left:0;background:#FDE68A"></td><td style="padding:6px 8px;border:1px solid #BF9241;position:sticky;left:36px;background:#FDE68A">當月合計</td>';
+  h += '<tr style="background:#FDE68A;font-weight:700"><td style="padding:6px 8px;border:2px solid #BF9241;position:sticky;left:0;background:#FDE68A"></td><td style="padding:6px 8px;border:2px solid #BF9241;position:sticky;left:36px;background:#FDE68A">當月合計</td>';
   for(var m2=1;m2<=12;m2++){
-    h += '<td style="padding:6px 8px;border:1px solid #BF9241;text-align:right;white-space:nowrap">'+(monthTotals[m2]?fmtN(monthTotals[m2]):'—')+'</td>';
+    h += '<td style="padding:6px 8px;border:2px solid #BF9241;text-align:right;white-space:nowrap">'+(monthTotals[m2]?fmtN(monthTotals[m2]):'—')+'</td>';
   }
-  h += '<td style="padding:6px 8px;border:1px solid #BF9241;text-align:right;white-space:nowrap;background:#FCD34D">'+fmtN(grandTotal)+'</td></tr></table>';
+  h += '<td style="padding:6px 8px;border:2px solid #BF9241;text-align:right;white-space:nowrap;background:#FCD34D">'+fmtN(grandTotal)+'</td></tr></table>';
   h += '<div style="font-size:12px;color:#666;margin-top:6px">表格數字為「實領金額」，點擊數字可查看該月完整明細或刪除。</div>';
   box.innerHTML = h;
 }
