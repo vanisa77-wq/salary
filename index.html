@@ -26,7 +26,7 @@ body{font-family:'PingFang TC','Helvetica Neue',sans-serif;background:#FAF6EE;co
 .calc-tab{font-family:inherit;font-size:14px;font-weight:600;color:#666;background:none;border:none;padding:10px 14px;cursor:pointer;border-radius:8px 8px 0 0;border-bottom:3px solid transparent;margin-bottom:-2px}
 .calc-tab:hover{color:#1a1a1a;background:#F7F6F3}
 .calc-tab:focus-visible{outline:2px solid #B91C1C;outline-offset:2px}
-.calc-tab[aria-selected="true"]{color:#3F435E;border-bottom-color:#3F435E;background:#EDEEF3}
+.calc-tab[aria-selected="true"]{color:#BF9241;border-bottom-color:#BF9241;background:#FAF3E7}
 .calc-tabpanel{display:none !important}
 .calc-tabpanel.active>*:first-child{margin-top:0 !important}
 .calc-tabpanel .section{padding:14px 16px;margin-bottom:10px}
@@ -474,7 +474,7 @@ async function tryAdminLogin(){
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
   <!-- Supabase 讀取本月回報 -->
   <div class="section" style="background:#BDE4E9;border:2px solid #BF9241;margin-bottom:0">
-    <div class="sec-title" style="color:#3F435E"><span class="icon">📡</span> 從 Supabase 載入本月老師回報</div>
+    <div class="sec-title"><span class="icon">📡</span> 從 Supabase 載入本月老師回報</div>
     <div style="font-size:13px;color:#666">
       <div style="margin-bottom:10px">選擇薪資月份，系統會自動從 Supabase 讀取所有已提交的老師回報：</div>
       <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
@@ -505,7 +505,7 @@ async function tryAdminLogin(){
 
   <!-- 員工資料庫 -->
   <div class="section" style="background:#BDE4E9;border:2px solid #BF9241;margin-bottom:0;display:flex;align-items:center">
-    <a href="employees.html" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:#1a1a1a;font-weight:600">
+    <a href="employees.html" style="display:flex;align-items:center;gap:6px;text-decoration:none;color:#1a1a1a;font-weight:600;font-size:15px;letter-spacing:.04em">
       <span class="icon">📇</span> 員工基本資料庫管理　<span style="font-size:12px;color:#1B6E3A;font-weight:400">（點此開啟員工資料管理頁面）→</span>
     </a>
   </div>
@@ -2168,11 +2168,11 @@ document.querySelectorAll('.calc-tab').forEach(function(t){
   t.addEventListener('click', function(ev){ ev.stopPropagation(); });
 });
 var ICON_MAP = {
-  '📋':'apple01.png','👤':'apple04.png','💰':'apple05.png','➕':'apple08.png',
-  '🛡️':'apple11.png','📅':'apple12.png','🕐':'apple13.png','👨‍👩‍👧':'apple01.png',
-  '⚡':'apple04.png','✏️':'apple05.png','🖼':'apple08.png','💾':'apple11.png',
-  '📊':'apple12.png','🔄':'apple13.png','📇':'apple01.png','📡':'apple04.png',
-  '🧾':'apple05.png'
+  '📋':'apple01.png','👤':'apple02.png','💰':'apple03.png','➕':'apple04.png',
+  '🛡️':'apple05.png','📅':'apple01.png','🕐':'apple02.png','👨‍👩‍👧':'apple03.png',
+  '⚡':'apple04.png','✏️':'apple05.png','🖼':'apple01.png','💾':'apple02.png',
+  '📊':'apple03.png','🔄':'apple04.png','📇':'apple05.png','📡':'apple01.png',
+  '🧾':'apple02.png'
 };
 document.querySelectorAll('.icon').forEach(function(el){
   var emoji = el.textContent.trim();
