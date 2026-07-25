@@ -187,7 +187,7 @@ select:focus{border-color:#C0392B}
 .collapsible-header-left .icon{font-size:17px}
 .collapsible-arrow{font-size:15px;font-weight:700;color:#1a1a1a;transition:transform .25s}
 .collapsible-arrow.open{transform:rotate(180deg)}
-.collapsible-body{display:none;border:1px solid #E4DCE2;border-top:none;border-radius:0 0 14px 14px;overflow:hidden}
+.collapsible-body{display:block;border:1px solid #E4DCE2;border-top:none;border-radius:0 0 14px 14px;overflow:hidden}
 .collapsible-body.open{display:block}
 .collapsible-body .section{border:none;border-radius:0;margin-bottom:0;border-bottom:1px solid #F0EEE8}
 .collapsible-body .section:last-child{border-bottom:none}
@@ -451,7 +451,6 @@ async function tryAdminLogin(){
   <span style="font-size:13px;font-weight:600;color:#93BAD9;letter-spacing:.1em">薪　資　系　統</span>
 </div>
 <div class="container">
-<div class="layout-grid"><div class="col-main">
 <div class="calc-tabbar" role="tablist" aria-label="薪資輸入分頁">
   <button type="button" class="calc-tab" role="tab" aria-selected="true" data-tabpanel="tp-basic" onclick="switchCalcTab('tp-basic',this)">👤 基本資料</button>
   <button type="button" class="calc-tab" role="tab" aria-selected="false" data-tabpanel="tp-salary" onclick="switchCalcTab('tp-salary',this)">💰 應領薪資項目</button>
@@ -459,7 +458,7 @@ async function tryAdminLogin(){
   <button type="button" class="calc-tab" role="tab" aria-selected="false" data-tabpanel="tp-ins" onclick="switchCalcTab('tp-ins',this)">🛡️ 保險・扣款設定</button>
   <button type="button" class="calc-tab" role="tab" aria-selected="false" data-tabpanel="tp-leave" onclick="switchCalcTab('tp-leave',this)">📅 請假・其它扣款</button>
 </div>
-
+<div class="layout-grid"><div class="col-main">
 <div class="calc-tabpanel active" id="tp-basic">
 <!-- LINE回報辨識 -->
 <div class="section" style="background:#FBF0F3;border:1px solid #E9C6CE">
@@ -585,13 +584,9 @@ async function tryAdminLogin(){
 <div class="calc-tabpanel" id="tp-extra">
 <!-- 可收折：加班與其它應領 -->
 <div class="collapsible-group">
-  <div class="collapsible-header" id="extra-earn-header" onclick="toggleCollapse('extra-earn')">
+  <div class="collapsible-header" id="extra-earn-header" style="cursor:default">
     <div class="collapsible-header-left">
       <span class="icon">➕</span> 加班費 ／ 其它應領項目
-    </div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <span id="extra-earn-hint" style="font-size:15px;font-weight:700;color:#1a1a1a">（點此展開）</span>
-      <span class="collapsible-arrow" id="extra-earn-arrow">▼</span>
     </div>
   </div>
   <div class="collapsible-body" id="extra-earn-body">
@@ -804,22 +799,24 @@ async function tryAdminLogin(){
   勞基法計薪基準：月薪制以 30 天 / 240 小時折算日薪與時薪
 </div>
 
-  <!-- 匯出 PDF 按鈕 -->
-  <div style="text-align:center;margin:10px 0 30px">
-    <button onclick="safeExportPDF()" style="padding:14px 40px;background:#8C5470;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.05em;display:inline-flex;align-items:center;gap:8px">
+  <!-- 匯出／年度操作按鈕（2x2） -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 20px">
+    <button onclick="safeExportPDF()" style="padding:14px 10px;background:#3D6E93;color:#fff;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center">
       🖼 匯出薪資單圖片(JPG)
     </button>
-    <button id="copy-result-btn" onclick="copyResultText()" style="padding:14px 40px;background:#1B6E3A;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.05em;display:inline-flex;align-items:center;gap:8px;margin-left:10px">
+    <button id="copy-result-btn" onclick="copyResultText()" style="padding:14px 10px;background:#5C7A45;color:#fff;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center">
       📋 複製結果
     </button>
-    <button id="save-yearly-btn" onclick="saveToYearly()" style="padding:14px 40px;background:#B45309;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.05em;display:inline-flex;align-items:center;gap:8px;margin-left:10px">
+    <button id="save-yearly-btn" onclick="saveToYearly()" style="padding:14px 10px;background:#8C7A3D;color:#fff;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center">
       💾 存入年度紀錄
+    </button>
+    <button type="button" onclick="toggleYearlyPanel()" style="padding:14px 10px;background:#8C5470;color:#fff;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center">
+      📊 年度統計紀錄
     </button>
   </div>
 
   <!-- 年度統計 -->
   <div class="section" style="background:#FAF7EC;border:1px solid #CFC987">
-    <div class="sec-title" onclick="toggleYearlyPanel()" style="cursor:pointer"><span class="icon">📊</span> 年度統計紀錄（點擊展開/收合）</div>
     <div id="yearly-panel" style="display:none">
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
         <span style="font-size:14px">選擇年度：</span>
