@@ -827,6 +827,8 @@ async function tryAdminLogin(){
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
         <span style="font-size:14px">選擇年度：</span>
         <select id="yearly-year-sel" onchange="renderYearlyStats()" style="height:36px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 10px"></select>
+        <span style="font-size:14px">老師：</span>
+        <select id="yearly-name-sel" onchange="renderYearlyStats()" style="height:36px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 10px"><option value="">全部老師</option></select>
         <button type="button" onclick="exportYearlyCSV()" style="padding:8px 14px;border:none;border-radius:8px;background:#1B6E3A;color:#fff;cursor:pointer;font-size:13px">⬇️ 匯出 Excel（CSV）</button>
         <button type="button" onclick="exportYearlyBackup()" style="padding:8px 14px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">⬇️ 匯出備份</button>
         <button type="button" onclick="showYearlyImport()" style="padding:8px 14px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">⬆️ 匯入備份</button>
@@ -1695,15 +1697,24 @@ function refreshYearlySel(){
 function renderYearlyStats(){
   var box = document.getElementById('yearly-stats');
   var sel = document.getElementById('yearly-year-sel');
+  var nameSel = document.getElementById('yearly-name-sel');
   if(!box || !sel) return;
   var y = sel.value;
   var data = yearlyRecords[y] || {};
-  var names = Object.keys(data);
+  var allNames = Object.keys(data).sort();
+  if(nameSel){
+    var curName = nameSel.value;
+    nameSel.innerHTML = '<option value="">全部老師</option>' + allNames.map(function(n){
+      return '<option value="'+n.replace(/"/g,'&quot;')+'"'+(n===curName?' selected':'')+'>'+n+'</option>';
+    }).join('');
+    if(allNames.indexOf(curName) === -1) nameSel.value = '';
+  }
+  var names = allNames;
+  if(nameSel && nameSel.value){ names = names.filter(function(n){ return n === nameSel.value; }); }
   if(names.length === 0){
     box.innerHTML = '<div style="font-size:14px;color:#666;padding:10px 0">此年度尚無紀錄。算完薪水後按「💾 存入年度紀錄」即可累積。</div>';
     return;
   }
-  names.sort();
   var fmtN = function(n){ return Number(n).toLocaleString('zh-TW'); };
   var h = '<table style="border-collapse:collapse;font-size:13px;min-width:100%"><tr style="background:#FDE68A">';
   h += '<th style="padding:6px 8px;border:1px solid #E5E3DC;white-space:nowrap;position:sticky;left:0;background:#FDE68A">NO.</th>';
@@ -1813,6 +1824,8 @@ function exportYearlyCSV(){
   var y = sel ? sel.value : '';
   var data = yearlyRecords[y] || {};
   var names = Object.keys(data).sort();
+  var nameSel = document.getElementById('yearly-name-sel');
+  if(nameSel && nameSel.value){ names = names.filter(function(n){ return n === nameSel.value; }); }
   if(names.length===0){ alert('此年度尚無紀錄可匯出'); return; }
   var q = function(s){ return '"' + String(s==null?'':s).replace(/"/g,'""') + '"'; };
   var lines = [];
