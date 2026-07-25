@@ -384,6 +384,7 @@ body.gate-unlocked{padding-top:26px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <body class="gate-lock">
 
 <div id="site-nav-bar" style="position:fixed;top:0;left:0;right:0;z-index:100000;background:#2c2c2c;padding:8px 10px;display:flex;gap:8px;overflow-x:auto;font-family:'Microsoft JhengHei','PingFang TC',sans-serif;font-size:13px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.2);">
@@ -830,6 +831,7 @@ async function tryAdminLogin(){
         <span style="font-size:14px">老師：</span>
         <select id="yearly-name-sel" onchange="renderYearlyStats()" style="height:36px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 10px"><option value="">全部老師</option></select>
         <button type="button" onclick="exportYearlyCSV()" style="padding:8px 14px;border:none;border-radius:8px;background:#1B6E3A;color:#fff;cursor:pointer;font-size:13px">⬇️ 匯出 Excel（CSV）</button>
+        <button type="button" id="export-yearly-form-btn" onclick="exportYearlyEmployeeForm()" style="padding:8px 14px;border:none;border-radius:8px;background:#B45309;color:#fff;cursor:pointer;font-size:13px">📋 匯出老師統計表（每人一分頁）</button>
         <button type="button" onclick="exportYearlyBackup()" style="padding:8px 14px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">⬇️ 匯出備份</button>
         <button type="button" onclick="showYearlyImport()" style="padding:8px 14px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">⬆️ 匯入備份</button>
       </div>
@@ -1866,6 +1868,110 @@ function exportYearlyCSV(){
   a.click();
   document.body.removeChild(a);
   setTimeout(function(){ URL.revokeObjectURL(a.href); }, 5000);
+}
+function exportYearlyEmployeeForm(){
+  if(typeof XLSX === 'undefined'){ alert('Excel 匯出套件載入失敗，請重新整理頁面再試一次'); return; }
+  var sel = document.getElementById('yearly-year-sel');
+  var y = sel ? sel.value : '';
+  var data = yearlyRecords[y] || {};
+  var names = Object.keys(data).sort();
+  if(names.length===0){ alert('此年度尚無紀錄可匯出'); return; }
+
+  function bucketEarn(items){
+    var b = {base:0, ot:0, other1:0};
+    (items||[]).forEach(function(it){
+      var v = amtNum(it.a);
+      if(it.t.indexOf('在職底薪')!==-1) b.base += v;
+      else if(it.t.indexOf('值班')!==-1 || it.t.indexOf('親師會談')!==-1 || it.t.indexOf('彈性加班')!==-1) b.ot += v;
+      else b.other1 += v;
+    });
+    return b;
+  }
+  function bucketDeduct(items){
+    var b = {labor:0, health:0, sick:0, personal:0, other1:0};
+    (items||[]).forEach(function(it){
+      var v = amtNum(it.a);
+      if(it.t.indexOf('勞保')!==-1) b.labor += v;
+      else if(it.t.indexOf('健保')!==-1) b.health += v;
+      else if(it.t.indexOf('病假')!==-1) b.sick += v;
+      else if(it.t.indexOf('事假')!==-1) b.personal += v;
+      else b.other1 += v;
+    });
+    return b;
+  }
+  function pensionFromItems(items){
+    var result = 0;
+    (items||[]).forEach(function(it){
+      if(it.t.indexOf('勞保自付')===-1) return;
+      var g = it.t.match(/級距\s*([\d,]+)/);
+      if(!g) return;
+      var grade = parseFloat(g[1].replace(/,/g,''));
+      var ratio = 1;
+      var r = it.t.match(/×(\d+)\/30/);
+      if(r) ratio = (+r[1])/30;
+      result = Math.round(grade*0.06*ratio);
+    });
+    return result;
+  }
+
+  var monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  var wb = XLSX.utils.book_new();
+  var usedSheetNames = {};
+
+  names.forEach(function(nm){
+    var emp = (typeof employeeDB!=='undefined' ? employeeDB : []).filter(function(e){ return e.name===nm; })[0];
+    var hireDate = emp && emp.hireDate ? emp.hireDate : '';
+
+    var baseRow=['基本薪資'], otRow=['加班費'], other1Row=['其它1'], other2Row=['其它2'], earnTotalRow=['合計'];
+    var laborRow=['勞保費'], healthRow=['健保費'], sickRow=['病假'], personalRow=['事假'], dOther1Row=['其它1'], deductTotalRow=['合計'];
+    var netRow=['總計'], pensionRow=['小蘋果提撥6%勞退金至個人專戶'];
+    var payMethodRow=['領薪方式'], payDateRow=['發薪日期'], approveRow=['主管核章'], signRow=['領薪簽收'];
+
+    for(var m=1;m<=12;m++){
+      var rec = data[nm][String(m)];
+      if(!rec){
+        [baseRow,otRow,other1Row,other2Row,earnTotalRow,laborRow,healthRow,sickRow,personalRow,dOther1Row,deductTotalRow,netRow,pensionRow,payMethodRow,payDateRow,approveRow,signRow].forEach(function(r){r.push('');});
+        continue;
+      }
+      var eb = bucketEarn(rec.items && rec.items.earn);
+      var db = bucketDeduct(rec.items && rec.items.deduct);
+      baseRow.push(eb.base);
+      otRow.push(eb.ot);
+      other1Row.push(eb.other1);
+      other2Row.push('');
+      earnTotalRow.push(rec.earn);
+      laborRow.push(db.labor);
+      healthRow.push(db.health);
+      sickRow.push(db.sick);
+      personalRow.push(db.personal);
+      dOther1Row.push(db.other1);
+      deductTotalRow.push(rec.deduct);
+      netRow.push(rec.net);
+      pensionRow.push(pensionFromItems(rec.items && rec.items.deduct));
+      payMethodRow.push('');
+      payDateRow.push('');
+      approveRow.push('');
+      signRow.push('');
+    }
+
+    var rows = [
+      [y+'年度薪資統計表', '到職日：'+hireDate],
+      ['姓名', nm],
+      ['項目'].concat(monthNames),
+      baseRow, otRow, other1Row, other2Row, earnTotalRow,
+      laborRow, healthRow, sickRow, personalRow, dOther1Row, deductTotalRow,
+      netRow, pensionRow, payMethodRow, payDateRow, approveRow, signRow
+    ];
+
+    var ws = XLSX.utils.aoa_to_sheet(rows);
+    var sheetName = nm.replace(/[\\\/\?\*\[\]:]/g,'').slice(0,28) || 'sheet';
+    var uniqueName = sheetName, n2 = 1;
+    while(usedSheetNames[uniqueName]){ n2++; uniqueName = sheetName.slice(0,26)+'_'+n2; }
+    usedSheetNames[uniqueName] = true;
+    XLSX.utils.book_append_sheet(wb, ws, uniqueName);
+  });
+
+  XLSX.writeFile(wb, '小蘋果托嬰中心_民國'+y+'年度薪資統計表.xlsx');
 }
 function exportYearlyBackup(){
   var io = document.getElementById('yearly-io');
