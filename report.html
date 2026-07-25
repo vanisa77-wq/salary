@@ -11,13 +11,15 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'PingFang TC','Helvetica Neue',sans-serif;background:#F8F5F7;color:#1a1a1a;font-size:16px;line-height:1.6}
+body{font-family:'PingFang TC','Helvetica Neue',sans-serif;background:#F7F8F5;color:#1a1a1a;font-size:16px;line-height:1.6}
 
 .container{max-width:860px;margin:0 auto;padding:0 16px 60px}
 
-.section{background:#fff;border:1px solid #E4DCE2;border-radius:14px;padding:20px;margin-bottom:14px}
+.section{background:#fff;border:1px solid #DCE0E6;border-radius:14px;padding:20px;margin-bottom:14px}
 .sec-title{font-size:15px;font-weight:600;color:#1a1a1a;margin-bottom:14px;display:flex;align-items:center;gap:6px;letter-spacing:.04em}
 .sec-title .icon{font-size:17px}
+.icon{font-size:0 !important;display:inline-block;vertical-align:middle}
+.icon::before{content:'';display:inline-block;width:18px;height:14px;background:url('apple-icon.png') center/contain no-repeat;vertical-align:middle}
 
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
 .field-row.tri{grid-template-columns:1fr 1fr 1fr}
@@ -41,7 +43,7 @@ select:focus{border-color:#C0392B}
 .shift-tab.active.evening{background:#FFF3CD;color:#856404;border-color:#FFD966}
 .date-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:10px}
 .day-label{text-align:center;font-size:13px;color:#1a1a1a;padding:2px 0;font-weight:500}
-.day-btn{width:100%;border:1px solid #E4DCE2;border-radius:8px;padding:6px 2px;font-size:14px;cursor:pointer;background:#FAFAF8;color:#444;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:0;line-height:1.1;transition:background .1s;font-family:inherit}
+.day-btn{width:100%;border:1px solid #DCE0E6;border-radius:8px;padding:6px 2px;font-size:14px;cursor:pointer;background:#FAFAF8;color:#444;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:0;line-height:1.1;transition:background .1s;font-family:inherit}
 .day-btn:hover{background:#F0EEE8}
 .day-btn.empty{opacity:0;pointer-events:none;background:none;border:none}
 .day-btn.morning{background:#EAF3DE;border-color:#A9D18E;color:#375623}
@@ -55,14 +57,14 @@ select:focus{border-color:#C0392B}
 .day-clear:hover{color:#B91C1C}
 .day-btn{position:relative}
 .shift-summary{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:6px}
-.scard{border:1px solid #E4DCE2;border-radius:8px;padding:10px;text-align:center;background:#FAFAF8}
+.scard{border:1px solid #DCE0E6;border-radius:8px;padding:10px;text-align:center;background:#FAFAF8}
 .scard .slbl{font-size:13px;color:#1a1a1a;margin-bottom:4px;font-weight:500}
 .scard .sval{font-size:18px;font-weight:600}
 .sv-m{color:#375623}.sv-e{color:#856404}.sv-h{color:#5B2D8E}.sv-g{color:#C0392B}
 
 /* 彈性加班 */
 .flex-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.flex-card{border:1px solid #E4DCE2;border-radius:10px;padding:14px;background:#FAFAF8}
+.flex-card{border:1px solid #DCE0E6;border-radius:10px;padding:14px;background:#FAFAF8}
 .ftag{font-size:13px;font-weight:600;padding:2px 9px;border-radius:6px;margin-bottom:10px;display:inline-block}
 .flex-row{display:flex;align-items:center;gap:8px;margin-top:10px}
 .flex-row label{font-size:14px;color:#333;min-width:64px;font-weight:500}
@@ -72,7 +74,7 @@ select:focus{border-color:#C0392B}
 
 /* 加班 */
 .ot-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.ot-card{border:1px solid #E4DCE2;border-radius:10px;padding:14px;background:#FAFAF8}
+.ot-card{border:1px solid #DCE0E6;border-radius:10px;padding:14px;background:#FAFAF8}
 .otag{font-size:13px;font-weight:600;padding:2px 9px;border-radius:6px;margin-bottom:10px;display:inline-block}
 .ot-row{display:flex;align-items:center;gap:8px;margin-top:8px}
 .ot-row label{font-size:14px;color:#333;min-width:46px;font-weight:500}
@@ -85,7 +87,7 @@ select:focus{border-color:#C0392B}
 
 /* 請假 */
 .leave-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.leave-card{border:1px solid #E4DCE2;border-radius:10px;padding:14px}
+.leave-card{border:1px solid #DCE0E6;border-radius:10px;padding:14px}
 .leave-row{display:flex;align-items:center;gap:8px;margin-top:8px}
 .leave-row label{font-size:14px;color:#333;min-width:36px;font-weight:500}
 .ltag{font-size:13px;font-weight:600;padding:2px 9px;border-radius:6px;margin-bottom:8px;display:inline-block}
@@ -93,7 +95,7 @@ select:focus{border-color:#C0392B}
 
 /* 保險 */
 .ins-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.ins-card{border:1px solid #E4DCE2;border-radius:10px;padding:14px}
+.ins-card{border:1px solid #DCE0E6;border-radius:10px;padding:14px}
 .itag{font-size:13px;font-weight:600;padding:2px 9px;border-radius:6px;margin-bottom:10px;display:inline-block}
 .ins-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;font-size:15px}
 .ins-row label{color:#333;font-weight:500}
@@ -111,11 +113,11 @@ select:focus{border-color:#C0392B}
 .del-btn{width:30px;height:30px;border:1px solid #D5D3CC;border-radius:7px;background:#FAFAF8;color:#1a1a1a;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;font-family:inherit;flex-shrink:0;transition:all .15s}
 .del-btn:hover{background:#FDE8E8;color:#B91C1C;border-color:#F9A8A8}
 .add-btn{display:flex;align-items:center;gap:5px;padding:6px 12px;border:1px dashed #C5C3BB;border-radius:8px;background:transparent;color:#1a1a1a;cursor:pointer;font-size:14px;font-family:inherit;font-weight:500;width:100%;transition:all .15s}
-.add-btn:hover{background:#F8F5F7;color:#666;border-color:#1a1a1a}
+.add-btn:hover{background:#F7F8F5;color:#666;border-color:#1a1a1a}
 
 /* 結果區 */
 .result-wrap{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
-.result-col{border-radius:12px;overflow:hidden;border:1px solid #E4DCE2}
+.result-col{border-radius:12px;overflow:hidden;border:1px solid #DCE0E6}
 .col-header{padding:11px 16px;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:space-between}
 .col-header.earn{background:#D4EDDA;color:#1B6E3A}
 .col-header.deduct{background:#F9D7D7;color:#B91C1C}
@@ -129,7 +131,7 @@ select:focus{border-color:#C0392B}
 .amt.green{color:#1B6E3A}
 .amt.red{color:#B91C1C}
 
-.final-box{background:#F3D9E0;border-radius:14px;padding:22px 24px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;border:none}
+.final-box{background:#FBE0DA;border-radius:14px;padding:22px 24px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;border:none}
 .final-val{font-size:34px;font-weight:700;color:#1a1a1a;letter-spacing:.01em}
 .final-val span{font-size:17px;color:#333;font-weight:400;margin-left:4px}
 .final-label{font-size:20px;color:#1a1a1a;font-weight:700}
@@ -148,7 +150,7 @@ select:focus{border-color:#C0392B}
 .leave-days-show{font-size:14px;color:#C0392B;font-weight:600;margin-top:4px;min-height:20px}
 /* 請假日明細 */
 .leave-day-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
-.leave-day-item{border:1px solid #E4DCE2;border-radius:8px;padding:10px 12px;background:#FAFAF8}
+.leave-day-item{border:1px solid #DCE0E6;border-radius:8px;padding:10px 12px;background:#FAFAF8}
 .leave-day-item .day-label{font-size:14px;font-weight:600;color:#333;margin-bottom:8px}
 .leave-mode-tabs{display:flex;gap:6px;margin-bottom:8px}
 .leave-mode-btn{padding:5px 12px;border:1px solid #D5D3CC;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;background:#fff;color:#1a1a1a;font-family:inherit;transition:all .15s}
@@ -172,7 +174,7 @@ select:focus{border-color:#C0392B}
 .collapsible-header-left .icon{font-size:17px}
 .collapsible-arrow{font-size:15px;font-weight:700;color:#1a1a1a;transition:transform .25s}
 .collapsible-arrow.open{transform:rotate(180deg)}
-.collapsible-body{display:none;border:1px solid #E4DCE2;border-top:none;border-radius:0 0 14px 14px;overflow:hidden}
+.collapsible-body{display:none;border:1px solid #DCE0E6;border-top:none;border-radius:0 0 14px 14px;overflow:hidden}
 .collapsible-body.open{display:block}
 .collapsible-body .section{border:none;border-radius:0;margin-bottom:0;border-bottom:1px solid #F0EEE8}
 .collapsible-body .section:last-child{border-bottom:none}
@@ -183,7 +185,7 @@ select:focus{border-color:#C0392B}
   .collapsible-header{display:none !important}
   .collapsible-body{display:block !important;border:none !important;border-radius:0 !important}
   .add-btn,button{display:none !important}
-  .final-box{background:#F3D9E0 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .final-box{background:#FBE0DA !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .section{box-shadow:none !important;border:1px solid #ddd !important}
   @page{margin:15mm;size:A4}
 }
@@ -341,7 +343,7 @@ input[type=date]::-webkit-calendar-picker-indicator{
 .leave-cal-day {
   text-align:center; font-size:14px; font-weight:600;
   padding:6px 2px; border-radius:8px; cursor:pointer;
-  color:#1a1a1a; background:#FAFAF8; border:1px solid #E4DCE2;
+  color:#1a1a1a; background:#FAFAF8; border:1px solid #DCE0E6;
   transition:all .15s;
 }
 .leave-cal-day.holiday { color:#C0392B; }
