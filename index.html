@@ -43,7 +43,7 @@ body{font-family:'PingFang TC','Helvetica Neue',sans-serif;background:#F7F8F5;co
 .sec-title{font-size:15px;font-weight:600;color:#1a1a1a;margin-bottom:14px;display:flex;align-items:center;gap:6px;letter-spacing:.04em}
 .sec-title .icon{font-size:17px}
 .icon{font-size:0 !important;display:inline-block;vertical-align:middle}
-.icon::before{content:'';display:inline-block;width:18px;height:14px;background:url('apple-icon.png') center/contain no-repeat;vertical-align:middle}
+.icon::before{content:'';display:inline-block;width:20px;height:16px;background:var(--icon-img,url('apple-icon.png')) center/contain no-repeat;vertical-align:middle}
 
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
 .field-row.tri{grid-template-columns:1fr 1fr 1fr}
@@ -2166,6 +2166,18 @@ function switchCalcTab(id,btn){
 }
 document.querySelectorAll('.calc-tab').forEach(function(t){
   t.addEventListener('click', function(ev){ ev.stopPropagation(); });
+});
+var ICON_MAP = {
+  '📋':'apple01.png','👤':'apple02.png','💰':'apple03.png','➕':'apple04.png',
+  '🛡️':'apple05.png','📅':'apple06.png','🕐':'apple07.png','👨‍👩‍👧':'apple08.png',
+  '⚡':'apple09.png','✏️':'apple10.png','🖼':'apple11.png','💾':'apple12.png',
+  '📊':'apple13.png','🔄':'apple01.png','📇':'apple02.png','📡':'apple03.png',
+  '🧾':'apple04.png'
+};
+document.querySelectorAll('.icon').forEach(function(el){
+  var emoji = el.textContent.trim();
+  var file = ICON_MAP[emoji];
+  if(file) el.style.setProperty('--icon-img', "url('"+file+"')");
 });
 </script>
 </body>
