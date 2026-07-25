@@ -1878,7 +1878,7 @@ function exportYearlyEmployeeForm(){
   if(names.length===0){ alert('此年度尚無紀錄可匯出'); return; }
 
   function bucketEarn(items){
-    var b = {base:0, shift:0, meeting:0, flexEarly:0, flexLate:0, unusedLeave:0, refund:0, other:0};
+    var b = {base:0, shift:0, meeting:0, flexEarly:0, flexLate:0, refund:0, other:0};
     (items||[]).forEach(function(it){
       var v = amtNum(it.a);
       if(it.t.indexOf('在職底薪')!==-1 || it.t.indexOf('全勤')!==-1) b.base += v;
@@ -1886,7 +1886,6 @@ function exportYearlyEmployeeForm(){
       else if(it.t.indexOf('親師會談')!==-1) b.meeting += v;
       else if(it.t.indexOf('7:30')!==-1) b.flexEarly += v;
       else if(it.t.indexOf('18:30')!==-1) b.flexLate += v;
-      else if(it.t.indexOf('特休未休')!==-1) b.unusedLeave += v;
       else if(it.t.indexOf('溢扣退還')!==-1) b.refund += v;
       else b.other += v;
     });
@@ -1929,14 +1928,14 @@ function exportYearlyEmployeeForm(){
     var hireDate = emp && emp.hireDate ? emp.hireDate : '';
 
     var baseRow=['基本薪資（含全勤）'], shiftRow=['值班加班費'], meetingRow=['親師會談加班費'],
-        flexEarlyRow=['彈性加班（7:30前）'], flexLateRow=['彈性加班（18:30後）'], unusedLeaveRow=['特休未休折算'],
+        flexEarlyRow=['彈性加班（7:30前）'], flexLateRow=['彈性加班（18:30後）'],
         refundRow=['勞健保溢扣退還'], otherEarnRow=['其它應領項目'], earnTotalRow=['合計'];
     var laborRow=['勞保費'], healthRow=['健保費'], sickRow=['病假'], personalRow=['事假'],
         adjustRow=['勞健保補扣'], otherDeductRow=['其它應扣項目'], deductTotalRow=['合計'];
     var netRow=['總計'], pensionRow=['小蘋果提撥6%勞退金至個人專戶'];
     var payMethodRow=['領薪方式'], payDateRow=['發薪日期'], approveRow=['主管核章'], signRow=['領薪簽收'];
 
-    var allRows = [baseRow,shiftRow,meetingRow,flexEarlyRow,flexLateRow,unusedLeaveRow,refundRow,otherEarnRow,earnTotalRow,
+    var allRows = [baseRow,shiftRow,meetingRow,flexEarlyRow,flexLateRow,refundRow,otherEarnRow,earnTotalRow,
                     laborRow,healthRow,sickRow,personalRow,adjustRow,otherDeductRow,deductTotalRow,
                     netRow,pensionRow,payMethodRow,payDateRow,approveRow,signRow];
 
@@ -1953,7 +1952,6 @@ function exportYearlyEmployeeForm(){
       meetingRow.push(eb.meeting);
       flexEarlyRow.push(eb.flexEarly);
       flexLateRow.push(eb.flexLate);
-      unusedLeaveRow.push(eb.unusedLeave);
       refundRow.push(eb.refund);
       otherEarnRow.push(eb.other);
       earnTotalRow.push(rec.earn);
