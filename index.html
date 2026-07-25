@@ -1878,24 +1878,30 @@ function exportYearlyEmployeeForm(){
   if(names.length===0){ alert('此年度尚無紀錄可匯出'); return; }
 
   function bucketEarn(items){
-    var b = {base:0, ot:0, other1:0};
+    var b = {base:0, shift:0, meeting:0, flexEarly:0, flexLate:0, unusedLeave:0, refund:0, other:0};
     (items||[]).forEach(function(it){
       var v = amtNum(it.a);
-      if(it.t.indexOf('在職底薪')!==-1) b.base += v;
-      else if(it.t.indexOf('值班')!==-1 || it.t.indexOf('親師會談')!==-1 || it.t.indexOf('彈性加班')!==-1) b.ot += v;
-      else b.other1 += v;
+      if(it.t.indexOf('在職底薪')!==-1 || it.t.indexOf('全勤')!==-1) b.base += v;
+      else if(it.t.indexOf('值班')!==-1) b.shift += v;
+      else if(it.t.indexOf('親師會談')!==-1) b.meeting += v;
+      else if(it.t.indexOf('7:30')!==-1) b.flexEarly += v;
+      else if(it.t.indexOf('18:30')!==-1) b.flexLate += v;
+      else if(it.t.indexOf('特休未休')!==-1) b.unusedLeave += v;
+      else if(it.t.indexOf('溢扣退還')!==-1) b.refund += v;
+      else b.other += v;
     });
     return b;
   }
   function bucketDeduct(items){
-    var b = {labor:0, health:0, sick:0, personal:0, other1:0};
+    var b = {labor:0, health:0, sick:0, personal:0, adjust:0, other:0};
     (items||[]).forEach(function(it){
       var v = amtNum(it.a);
-      if(it.t.indexOf('勞保')!==-1) b.labor += v;
-      else if(it.t.indexOf('健保')!==-1) b.health += v;
-      else if(it.t.indexOf('病假')!==-1) b.sick += v;
-      else if(it.t.indexOf('事假')!==-1) b.personal += v;
-      else b.other1 += v;
+      if(it.t.indexOf('勞保自付')!==-1) b.labor += v;
+      else if(it.t.indexOf('健保自付')!==-1) b.health += v;
+      else if(it.t.indexOf('病假扣款')!==-1) b.sick += v;
+      else if(it.t.indexOf('事假扣款')!==-1) b.personal += v;
+      else if(it.t.indexOf('補扣')!==-1) b.adjust += v;
+      else b.other += v;
     });
     return b;
   }
@@ -1922,29 +1928,41 @@ function exportYearlyEmployeeForm(){
     var emp = (typeof employeeDB!=='undefined' ? employeeDB : []).filter(function(e){ return e.name===nm; })[0];
     var hireDate = emp && emp.hireDate ? emp.hireDate : '';
 
-    var baseRow=['基本薪資'], otRow=['加班費'], other1Row=['其它1'], other2Row=['其它2'], earnTotalRow=['合計'];
-    var laborRow=['勞保費'], healthRow=['健保費'], sickRow=['病假'], personalRow=['事假'], dOther1Row=['其它1'], deductTotalRow=['合計'];
+    var baseRow=['基本薪資（含全勤）'], shiftRow=['值班加班費'], meetingRow=['親師會談加班費'],
+        flexEarlyRow=['彈性加班（7:30前）'], flexLateRow=['彈性加班（18:30後）'], unusedLeaveRow=['特休未休折算'],
+        refundRow=['勞健保溢扣退還'], otherEarnRow=['其它應領項目'], earnTotalRow=['合計'];
+    var laborRow=['勞保費'], healthRow=['健保費'], sickRow=['病假'], personalRow=['事假'],
+        adjustRow=['勞健保補扣'], otherDeductRow=['其它應扣項目'], deductTotalRow=['合計'];
     var netRow=['總計'], pensionRow=['小蘋果提撥6%勞退金至個人專戶'];
     var payMethodRow=['領薪方式'], payDateRow=['發薪日期'], approveRow=['主管核章'], signRow=['領薪簽收'];
+
+    var allRows = [baseRow,shiftRow,meetingRow,flexEarlyRow,flexLateRow,unusedLeaveRow,refundRow,otherEarnRow,earnTotalRow,
+                    laborRow,healthRow,sickRow,personalRow,adjustRow,otherDeductRow,deductTotalRow,
+                    netRow,pensionRow,payMethodRow,payDateRow,approveRow,signRow];
 
     for(var m=1;m<=12;m++){
       var rec = data[nm][String(m)];
       if(!rec){
-        [baseRow,otRow,other1Row,other2Row,earnTotalRow,laborRow,healthRow,sickRow,personalRow,dOther1Row,deductTotalRow,netRow,pensionRow,payMethodRow,payDateRow,approveRow,signRow].forEach(function(r){r.push('');});
+        allRows.forEach(function(r){r.push('');});
         continue;
       }
       var eb = bucketEarn(rec.items && rec.items.earn);
       var db = bucketDeduct(rec.items && rec.items.deduct);
       baseRow.push(eb.base);
-      otRow.push(eb.ot);
-      other1Row.push(eb.other1);
-      other2Row.push('');
+      shiftRow.push(eb.shift);
+      meetingRow.push(eb.meeting);
+      flexEarlyRow.push(eb.flexEarly);
+      flexLateRow.push(eb.flexLate);
+      unusedLeaveRow.push(eb.unusedLeave);
+      refundRow.push(eb.refund);
+      otherEarnRow.push(eb.other);
       earnTotalRow.push(rec.earn);
       laborRow.push(db.labor);
       healthRow.push(db.health);
       sickRow.push(db.sick);
       personalRow.push(db.personal);
-      dOther1Row.push(db.other1);
+      adjustRow.push(db.adjust);
+      otherDeductRow.push(db.other);
       deductTotalRow.push(rec.deduct);
       netRow.push(rec.net);
       pensionRow.push(pensionFromItems(rec.items && rec.items.deduct));
@@ -1957,11 +1975,8 @@ function exportYearlyEmployeeForm(){
     var rows = [
       [y+'年度薪資統計表', '到職日：'+hireDate],
       ['姓名', nm],
-      ['項目'].concat(monthNames),
-      baseRow, otRow, other1Row, other2Row, earnTotalRow,
-      laborRow, healthRow, sickRow, personalRow, dOther1Row, deductTotalRow,
-      netRow, pensionRow, payMethodRow, payDateRow, approveRow, signRow
-    ];
+      ['項目'].concat(monthNames)
+    ].concat(allRows);
 
     var ws = XLSX.utils.aoa_to_sheet(rows);
     var sheetName = nm.replace(/[\\\/\?\*\[\]:]/g,'').slice(0,28) || 'sheet';
