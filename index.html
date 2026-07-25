@@ -43,7 +43,7 @@ body{font-family:'PingFang TC','Helvetica Neue',sans-serif;background:#F7F8F5;co
 .sec-title{font-size:15px;font-weight:600;color:#1a1a1a;margin-bottom:14px;display:flex;align-items:center;gap:6px;letter-spacing:.04em}
 .sec-title .icon{font-size:17px}
 .icon{font-size:0 !important;display:inline-block;vertical-align:middle}
-.icon::before{content:'';display:inline-block;width:20px;height:16px;background:var(--icon-img,url('apple-icon.png')) center/contain no-repeat;vertical-align:middle}
+.icon::before{content:'';display:inline-block;width:28px;height:22px;background:var(--icon-img,url('apple-icon.png')) center/contain no-repeat;vertical-align:middle}
 
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
 .field-row.tri{grid-template-columns:1fr 1fr 1fr}
@@ -504,7 +504,7 @@ async function tryAdminLogin(){
   </div>
 
   <!-- 員工資料庫 -->
-  <div class="section" style="background:#FAF3E7;border:1px solid #D9B876;margin-bottom:0;display:flex;align-items:center">
+  <div class="section" style="background:#EAF6F7;border:1px solid #BDE4E9;margin-bottom:0;display:flex;align-items:center">
     <a href="employees.html" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:#1a1a1a;font-weight:600">
       <span class="icon">📇</span> 員工基本資料庫管理　<span style="font-size:12px;color:#1B6E3A;font-weight:400">（點此開啟員工資料管理頁面）→</span>
     </a>
@@ -514,7 +514,7 @@ async function tryAdminLogin(){
 <div id="line-report-result" style="display:none;margin-bottom:14px;padding:10px 12px;background:#fff;border:1px solid #D5D3CC;border-radius:8px;font-size:13px;line-height:1.8"></div>
 
 <!-- LINE回報辨識 -->
-<div class="section" style="background:#FDF0EE;border:1px solid #F0C4BB">
+<div class="section" style="background:#EAF6F7;border:1px solid #BDE4E9">
   <div class="sec-title"><span class="icon">📋</span> 貼上老師 LINE 回報（自動帶入）<span style="font-size:11px;color:#999;font-weight:400;margin-left:8px">版本 v5（2026/07/04）</span></div>
   <div style="font-size:13px;color:#666;margin-bottom:8px">將老師回傳的完整訊息內容貼到下方。<b>建議做法：貼一位 → 按「➕ 加入暫存」→ 框會清空，再貼下一位</b>，全部加完按「✅ 辨識並帶入」一次處理。也可以把多位的訊息直接疊在框裡一起辨識。多位時會列出名單讓您點選「載入計算」逐一切換（切換時自動清空前一位的資料）。</div>
   <textarea id="line-report-text" placeholder="請貼上老師的LINE回報內容…" style="width:100%;min-height:280px;border:1px solid #D5D3CC;border-radius:8px;padding:10px;font-size:14px;font-family:inherit;box-sizing:border-box;resize:vertical"></textarea>
