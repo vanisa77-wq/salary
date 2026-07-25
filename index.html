@@ -17,7 +17,7 @@ body{font-family:'PingFang TC','Helvetica Neue',sans-serif;background:#F5F4F0;co
 .col-main{min-width:0}
 .col-preview{min-width:0}
 @media (min-width:1080px){
-  .container{max-width:1240px}
+  .container{max-width:min(1680px,96vw)}
   .layout-grid{display:flex;align-items:flex-start;gap:24px}
   .col-main{flex:1 1 62%}
   .col-preview{flex:1 1 36%;position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto;padding-right:2px}
@@ -455,7 +455,14 @@ async function tryAdminLogin(){
 </div>
 <div class="container">
 <div class="layout-grid"><div class="col-main">
+<div class="calc-tabbar" role="tablist" aria-label="薪資輸入分頁">
+  <button type="button" class="calc-tab" role="tab" aria-selected="true" data-tabpanel="tp-basic" onclick="switchCalcTab('tp-basic',this)">👤 基本資料</button>
+  <button type="button" class="calc-tab" role="tab" aria-selected="false" data-tabpanel="tp-extra" onclick="switchCalcTab('tp-extra',this)">➕ 加班・津貼</button>
+  <button type="button" class="calc-tab" role="tab" aria-selected="false" data-tabpanel="tp-ins" onclick="switchCalcTab('tp-ins',this)">🛡️ 保險・扣款設定</button>
+  <button type="button" class="calc-tab" role="tab" aria-selected="false" data-tabpanel="tp-leave" onclick="switchCalcTab('tp-leave',this)">📅 請假・其它扣款</button>
+</div>
 
+<div class="calc-tabpanel" id="tp-basic">
 <!-- LINE回報辨識 -->
 <div class="section" style="background:#FFFBEB;border:1px solid #FDE68A">
   <div class="sec-title"><span class="icon">📋</span> 貼上老師 LINE 回報（自動帶入）<span style="font-size:11px;color:#999;font-weight:400;margin-left:8px">版本 v5（2026/07/04）</span></div>
@@ -507,14 +514,6 @@ async function tryAdminLogin(){
   </a>
 </div>
 
-<div class="calc-tabbar" role="tablist" aria-label="薪資輸入分頁">
-  <button type="button" class="calc-tab" role="tab" aria-selected="true" data-tabpanel="tp-basic" onclick="switchCalcTab('tp-basic',this)">👤 基本資料</button>
-  <button type="button" class="calc-tab" role="tab" aria-selected="false" data-tabpanel="tp-extra" onclick="switchCalcTab('tp-extra',this)">➕ 加班・津貼</button>
-  <button type="button" class="calc-tab" role="tab" aria-selected="false" data-tabpanel="tp-ins" onclick="switchCalcTab('tp-ins',this)">🛡️ 保險・扣款設定</button>
-  <button type="button" class="calc-tab" role="tab" aria-selected="false" data-tabpanel="tp-leave" onclick="switchCalcTab('tp-leave',this)">📅 請假・其它扣款</button>
-</div>
-
-<div class="calc-tabpanel" id="tp-basic">
 <div style="margin:24px 0 8px;padding:10px 16px;background:#D4EDDA;background:#D4EDDA;border-radius:10px;font-size:16px;font-weight:700;color:#1B6E3A;display:flex;align-items:center;gap:8px;">
   <span>＋</span> 應領薪資項目
 </div>
