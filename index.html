@@ -756,8 +756,15 @@ async function tryAdminLogin(){
   <div style="margin-bottom:16px">
     <span class="ltag" style="background:#FEF3C7;color:#92400E;display:inline-block;margin-bottom:10px">病假（半薪）</span>
     <div class="rule" style="margin-bottom:10px">底薪扣半薪；全勤按比例扣（日÷30、時÷240）</div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;padding:8px 10px;background:#FAFAF8;border:1px dashed #D5D3CC;border-radius:8px">
+      <span style="font-size:13px;color:#666">連續請假：</span>
+      <input type="date" id="sick-range-from" style="height:36px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 8px">
+      <span style="font-size:13px;color:#666">至</span>
+      <input type="date" id="sick-range-to" style="height:36px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 8px">
+      <button type="button" onclick="applyLeaveRange('sick')" style="padding:8px 14px;border:none;border-radius:8px;background:#B45309;color:#fff;font-size:13px;font-weight:600;cursor:pointer">套用整段區間</button>
+    </div>
     <div id="sick-entries"></div>
-    <button class="add-btn" onclick="addLeaveEntry('sick')" style="margin-top:6px">＋ 新增病假記錄</button>
+    <button class="add-btn" onclick="addLeaveEntry('sick')" style="margin-top:6px">＋ 新增單一病假記錄</button>
     <div id="sick-total-show" style="display:none;margin-top:8px;font-size:14px;color:#C0392B;font-weight:700;padding:8px 12px;background:#FEF3C7;border-radius:8px"></div>
     <input type="hidden" id="sick-d" value="0">
     <input type="hidden" id="sick-h" value="0">
@@ -769,8 +776,15 @@ async function tryAdminLogin(){
   <div>
     <span class="ltag" style="background:#FEE2E2;color:#991B1B;display:inline-block;margin-bottom:10px">事假（不支薪）</span>
     <div class="rule" style="margin-bottom:10px">底薪扣全薪；事假全勤獎金全額扣除</div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;padding:8px 10px;background:#FAFAF8;border:1px dashed #D5D3CC;border-radius:8px">
+      <span style="font-size:13px;color:#666">連續請假：</span>
+      <input type="date" id="pers-range-from" style="height:36px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 8px">
+      <span style="font-size:13px;color:#666">至</span>
+      <input type="date" id="pers-range-to" style="height:36px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 8px">
+      <button type="button" onclick="applyLeaveRange('pers')" style="padding:8px 14px;border:none;border-radius:8px;background:#B45309;color:#fff;font-size:13px;font-weight:600;cursor:pointer">套用整段區間</button>
+    </div>
     <div id="pers-entries"></div>
-    <button class="add-btn" onclick="addLeaveEntry('pers')" style="margin-top:6px">＋ 新增事假記錄</button>
+    <button class="add-btn" onclick="addLeaveEntry('pers')" style="margin-top:6px">＋ 新增單一事假記錄</button>
     <div id="pers-total-show" style="display:none;margin-top:8px;font-size:14px;color:#C0392B;font-weight:700;padding:8px 12px;background:#FEE2E2;border-radius:8px"></div>
     <input type="hidden" id="pers-d" value="0">
     <input type="hidden" id="pers-h" value="0">
@@ -2179,6 +2193,24 @@ document.querySelectorAll('.icon').forEach(function(el){
   var file = ICON_MAP[emoji];
   if(file) el.style.setProperty('--icon-img', "url('"+file+"')");
 });
+function applyLeaveRange(type){
+  var fromEl = document.getElementById(type+'-range-from');
+  var toEl = document.getElementById(type+'-range-to');
+  var from = fromEl.value, to = toEl.value;
+  if(!from || !to){ alert('請先選擇起始日與結束日'); return; }
+  var start = new Date(from+'T00:00:00'), end = new Date(to+'T00:00:00');
+  if(start > end){ alert('結束日期不能早於起始日期'); return; }
+  var dayCount = Math.round((end-start)/86400000)+1;
+  if(dayCount > 31){ alert('一次最多套用31天，請分次新增'); return; }
+  var d = new Date(start);
+  for(var i=0;i<dayCount;i++){
+    var dateStr = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    addLeaveEntry(type);
+    selectLeaveDate(type, leaveIdCounter-1, dateStr);
+    d.setDate(d.getDate()+1);
+  }
+  fromEl.value=''; toEl.value='';
+}
 </script>
 </body>
 </html>
