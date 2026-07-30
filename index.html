@@ -2041,32 +2041,36 @@ function importYearlyBackup(){
 }
 loadYearlyRecords();
 
+window.supaLoadToken = 0;
 async function loadFromSupabase(){
   var year = document.getElementById('supa-year').value;
   var month = document.getElementById('supa-month').value;
   var status = document.getElementById('supa-status');
-  
+
   if(!month){ alert('請選擇月份'); return; }
-  
+
+  var myToken = ++window.supaLoadToken;
   status.innerHTML = '⏳ 讀取中...';
-  
+
   try{
     var client = initSupabase();
-    if(!client){ status.innerHTML = '❌ Supabase 載入失敗'; return; }
-    
+    if(!client){ if(myToken===window.supaLoadToken) status.innerHTML = '❌ Supabase 載入失敗'; return; }
+
     var { data, error } = await client
       .from('salary_reports')
       .select('*')
       .eq('year_roc', parseInt(year))
       .eq('month', parseInt(month));
-    
+
+    if(myToken !== window.supaLoadToken) return; // 已有更新的查詢，這筆結果作廢，避免背景自動載入蓋掉手動查詢
+
     if(error) throw error;
-    
+
     if(!data || data.length === 0){
       status.innerHTML = '⚠️ 此月份尚無回報';
       return;
     }
-    
+
     // 轉換為LINE格式並存入暫存
     window.lineStash = [];
     data.forEach(function(r){
@@ -2094,7 +2098,7 @@ async function loadFromSupabase(){
     status.innerHTML = '✅ 成功讀取 '+data.length+' 位老師的回報，已加入暫存，正在自動辨識...';
     parseLineReport();
   }catch(err){
-    status.innerHTML = '❌ 讀取失敗：'+err.message;
+    if(myToken===window.supaLoadToken) status.innerHTML = '❌ 讀取失敗：'+err.message;
   }
 }
 
