@@ -1031,7 +1031,7 @@ function updateAdjustmentField(id,field,val){
   if(field==='amount'){
     a.amountAuto=false;
   }
-  if(field==='reason'||field==='targetMonth'||field==='premiumAmount'||field==='insuranceType'||field==='otherNote'){
+  if(field==='reason'||field==='targetMonth'||field==='premiumAmount'||field==='insuranceType'){
     renderAdjustments();
   }
   calc();
@@ -1059,7 +1059,7 @@ function renderAdjustments(){
       +'<select onchange="updateAdjustmentField('+a.id+',\'reason\',this.value)" style="height:34px;border:1px solid #D5D3CC;border-radius:6px">'
       +reasons.map(r=>'<option value="'+r+'"'+(a.reason===r?' selected':'')+'>'+r+'</option>').join('')
       +'</select>'
-      +(isOther?('<input type="text" value="'+(a.otherNote||'').replace(/"/g,'&quot;')+'" maxlength="50" placeholder="其他說明（必填，50字以內）" style="width:220px;height:34px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateAdjustmentField('+a.id+',\'otherNote\',this.value)">'):'')
+      +(isOther?('<input type="text" value="'+(a.otherNote||'').replace(/"/g,'&quot;')+'" maxlength="50" placeholder="其他說明（必填，50字以內）" style="width:220px;height:34px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateAdjustmentField('+a.id+',\'otherNote\',this.value)" onblur="renderAdjustments()">'):'')
       +'<input type="text" value="'+(a.targetMonth||'').replace(/"/g,'&quot;')+'" placeholder="所屬月份，例115/04" style="width:110px;height:34px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateAdjustmentField('+a.id+',\'targetMonth\',this.value)">'
       +'<input type="number" list="adj-premium-list" value="'+(premiumAmount||0)+'" placeholder="投保金額" style="width:100px;height:34px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateAdjustmentField('+a.id+',\'premiumAmount\',+this.value)">'
       +'<input type="number" value="'+(a.amount||0)+'" placeholder="金額" style="width:90px;height:34px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateAdjustmentField('+a.id+',\'amount\',+this.value)">'
