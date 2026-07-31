@@ -1457,10 +1457,25 @@ function renderBatchList(){
   resultBox.style.display='block';
   resultBox.innerHTML=html;
 }
+function loadBatchDoneMap(){
+  try{ return JSON.parse(localStorage.getItem('scBatchDone')||'{}'); }catch(e){ return {}; }
+}
+function saveBatchDoneMap(map){
+  try{ localStorage.setItem('scBatchDone',JSON.stringify(map)); }catch(e){}
+}
+function batchDoneKey(r){ return (r.rocYear||'')+'-'+(r.month||'')+'-'+(r.name||''); }
+function applySavedBatchDone(){
+  var map=loadBatchDoneMap();
+  batchReports.forEach(function(r){ if(map[batchDoneKey(r)]) r.done=true; });
+}
 function toggleBatchDone(i){
   const data=batchReports[i];
   if(!data)return;
   data.done=!data.done;
+  var map=loadBatchDoneMap();
+  var key=batchDoneKey(data);
+  if(data.done) map[key]=true; else delete map[key];
+  saveBatchDoneMap(map);
   renderBatchList();
 }
 function loadBatchReport(i){
@@ -1485,6 +1500,7 @@ function parseLineReport(){
   const blocks=text.split(/(?=[－—–ー-]?\s*請假加班回報)/).map(s=>s.trim()).filter(s=>s&&/請假加班回報/.test(s));
   if(blocks.length===0){resultBox.style.display='block';resultBox.innerHTML='⚠️ 未偵測到「－請假加班回報－」格式，請確認貼上的內容是否完整';return;}
   batchReports=blocks.map(b=>extractReportData(b));
+  applySavedBatchDone();
   if(batchReports.length===1){
     applyReportData(batchReports[0]);
     resultBox.style.display='block';
