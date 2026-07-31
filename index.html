@@ -1741,7 +1741,6 @@ function getPrevIns(y, name, mo){
 function batchCalcAll(){
   if(typeof batchReports === 'undefined' || !batchReports || !batchReports.length){ alert('目前沒有已辨識的批次名單'); return; }
   var n = batchReports.length;
-  if(!confirm('將依序計算 '+n+' 位老師並存入年度紀錄（同月已有的紀錄會被覆蓋更新）。\n\n注意：特殊保險設定（差額補收、首月遞延等）會先全部清空，如有個別特殊情況的老師，請在批次完成後單獨「載入計算」調整，再按「存入年度紀錄」覆蓋。\n\n確定執行？')) return;
   var bbtn0 = document.getElementById('batch-calc-btn');
   if(bbtn0){ bbtn0.textContent = '⏳ 計算中…'; }
   try{
