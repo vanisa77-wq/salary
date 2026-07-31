@@ -1226,7 +1226,7 @@ function getLeaveDatesText(kind,mode){
     var isFull=!fullBtn||fullBtn.classList.contains('active');
     if(mode==='day'&&!isFull)return;
     if(mode==='hour'&&isFull)return;
-    var label=(fromD.getMonth()+1)+'/'+fromD.getDate();
+    var label=(fromD.getMonth()+1)+'/'+fromD.getDate()+'('+getWeekDay(fromEl.value)+')';
     var days=1;
     if(isFull){
       var toEl=document.getElementById(kind+'-to-'+item.id);
@@ -1234,7 +1234,7 @@ function getLeaveDatesText(kind,mode){
         var toD=new Date(toEl.value);
         if(!isNaN(toD)&&toD>=fromD){
           days=Math.round((toD-fromD)/86400000)+1;
-          if(days>1)label+='~'+(toD.getMonth()+1)+'/'+toD.getDate();
+          if(days>1)label+='~'+(toD.getMonth()+1)+'/'+toD.getDate()+'('+getWeekDay(toEl.value)+')';
         }
       }
     }else{
