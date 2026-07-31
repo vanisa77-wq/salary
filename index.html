@@ -1486,26 +1486,16 @@ function applyReportData(data){
   applyFlex(data.lateFlex,'late');
   calc();
 }
+var lastBatchResults=null;
 function renderBatchList(){
   const resultBox=document.getElementById('line-report-result');
   let html='<div style="font-weight:700;margin-bottom:8px">偵測到 '+batchReports.length+' 位老師的回報：</div>';
-  html+='<div style="margin-bottom:10px"><button type="button" id="batch-calc-btn" onclick="batchCalcAll()" style="padding:10px 20px;border:none;border-radius:8px;background:#B45309;color:#fff;font-size:15px;cursor:pointer;font-weight:700">🚀 一鍵計算全部並存入年度紀錄</button><span style="font-size:12px;color:#92400E;margin-left:8px">（一般月份用這個最快；有特殊保險狀況的老師，批次後再單獨載入調整）</span></div>';
+  html+='<div style="margin-bottom:10px"><button type="button" id="batch-calc-btn" onclick="batchCalcAll()" style="padding:10px 20px;border:none;border-radius:8px;background:#B45309;color:#fff;font-size:15px;cursor:pointer;font-weight:700">🚀 一鍵計算全部並存入年度紀錄</button><span style="font-size:12px;color:#92400E;margin-left:8px">（按下去之後，下方會出現每位老師的明細表格，「核薪完成」「載入計算」按鈕都在表格最後一欄）</span></div>';
   html+='<div id="batch-summary-top"></div>';
-  var doneCount=batchReports.filter(function(r){return r.done;}).length;
-  html+='<div style="font-size:13px;color:#666;margin-bottom:6px">已核薪：'+doneCount+' / '+batchReports.length+'</div>';
-  batchReports.forEach((r,i)=>{
-    var done=!!r.done;
-    html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;margin-bottom:6px;background:'+(done?'#E5F5EC':'#FAFAF8')+';border:1px solid '+(done?'#A7D8BC':'#D5D3CC')+';border-radius:8px">'
-      +'<span style="'+(done?'color:#1B6E3A;text-decoration:line-through;text-decoration-color:#A7D8BC':'')+'">'+(i+1)+'. '+(r.name||'（未偵測到姓名）')+(r.month?'　'+r.rocYear+'年'+r.month+'月':'')+'</span>'
-      +'<span style="display:flex;gap:6px;align-items:center">'
-      +'<button type="button" onclick="toggleBatchDone('+i+')" style="padding:6px 12px;border:1px solid '+(done?'#1B6E3A':'#D5D3CC')+';border-radius:6px;background:'+(done?'#1B6E3A':'#fff')+';color:'+(done?'#fff':'#666')+';font-size:13px;cursor:pointer">'+(done?'✅ 已核薪':'核薪完成')+'</button>'
-      +'<button type="button" onclick="loadBatchReport('+i+')" style="padding:6px 14px;border:none;border-radius:6px;background:#1B6E3A;color:#fff;font-size:13px;cursor:pointer">載入計算</button>'
-      +'</span>'
-      +'</div>';
-  });
   html+='<div id="batch-detail-log" style="margin-top:10px;font-size:13px;line-height:1.8"></div>';
   resultBox.style.display='block';
   resultBox.innerHTML=html;
+  lastBatchResults=null;
 }
 function loadBatchDoneMap(){
   try{ return JSON.parse(localStorage.getItem('scBatchDone')||'{}'); }catch(e){ return {}; }
@@ -1526,7 +1516,7 @@ function toggleBatchDone(i){
   var key=batchDoneKey(data);
   if(data.done) map[key]=true; else delete map[key];
   saveBatchDoneMap(map);
-  renderBatchList();
+  if(lastBatchResults) renderBatchResultsTable(); else renderBatchList();
 }
 function loadBatchReport(i){
   const data=batchReports[i];
@@ -1756,7 +1746,7 @@ function batchCalcAll(){
   if(bbtn0){ bbtn0.textContent = '⏳ 計算中…'; }
   try{
   var results = [];
-  batchReports.forEach(function(r){
+  batchReports.forEach(function(r,origIndex){
     try{
       resetInsuranceSpecial();
       applyReportData(r);
@@ -1769,28 +1759,60 @@ function batchCalcAll(){
       var laborNow = db.labor, healthNow = db.health;
       var pv = null;
       try{ pv = getPrevIns(y, name, mo); }catch(e){}
+      var empRec = (typeof employeeDB!=='undefined'?employeeDB:[]).filter(function(e){ return e.name===name; })[0];
       results.push({
-        name: name || '（未命名）', y: y, mo: mo,
+        name: name || '（未命名）', y: y, mo: mo, origIndex: origIndex,
+        hireDate: (empRec&&empRec.hireDate)||'',
         earn: numFrom('h-earn'), deduct: numFrom('h-deduct'), net: numFrom('r-net'),
         eb: eb, db: db,
         labor: laborNow, health: healthNow, prev: pv,
         dbMatched: !!r.dbMatched, saved: saved, error: ''
       });
     }catch(personErr){
-      results.push({ name: (r&&r.name)||'（未命名）', y:'', mo:'', earn:0, deduct:0, net:0,
+      results.push({ name: (r&&r.name)||'（未命名）', y:'', mo:'', origIndex: origIndex, hireDate:'', earn:0, deduct:0, net:0,
         eb:{base:0,attendance:0,ot:0,other:0}, db:{labor:0,health:0,sick:0,personal:0,other:0},
         labor:0, health:0, prev:null, dbMatched:false, saved:false, error: personErr.message });
     }
   });
+  results.sort(function(a,b){
+    if(!a.hireDate && !b.hireDate) return 0;
+    if(!a.hireDate) return 1;
+    if(!b.hireDate) return -1;
+    return a.hireDate < b.hireDate ? -1 : (a.hireDate > b.hireDate ? 1 : 0);
+  });
+  lastBatchResults = results;
+  renderBatchResultsTable();
+  var logBox0 = document.getElementById('batch-detail-log');
+  if(logBox0) logBox0.innerHTML = '';
+  var topBox0 = document.getElementById('batch-summary-top');
+  if(topBox0){ try{ topBox0.scrollIntoView({behavior:'smooth', block:'start'}); }catch(e){} }
+  var bbtn = document.getElementById('batch-calc-btn');
+  if(bbtn){
+    bbtn.textContent = '✅ 已完成 '+results.length+' 位（可重按重算）';
+    bbtn.style.background = '#166534';
+  }
+  }catch(bigErr){
+    alert('批次計算發生錯誤，請把這段訊息回報給開發者：\n' + bigErr.message);
+    var bbtn2 = document.getElementById('batch-calc-btn');
+    if(bbtn2){ bbtn2.textContent = '🚀 一鍵計算全部並存入年度紀錄'; }
+  }
+}
+function renderBatchResultsTable(){
+  var topBox = document.getElementById('batch-summary-top');
+  if(!topBox || !lastBatchResults) return;
+  var results = lastBatchResults;
   var fmtN = function(x){ return Number(x).toLocaleString('zh-TW'); };
-  var h = '<div style="font-weight:700;margin:10px 0 6px;font-size:15px;color:#166534">✅ 批次計算完成！共 '+results.length+' 位，已全部自動存入年度紀錄：</div>';
+  var doneCount = results.filter(function(rs){ return batchReports[rs.origIndex] && batchReports[rs.origIndex].done; }).length;
+  var h = '<div style="font-weight:700;margin:10px 0 6px;font-size:15px;color:#166534">✅ 批次計算完成！共 '+results.length+' 位，已全部自動存入年度紀錄（依到職日舊到新排序）。已核薪：'+doneCount+' / '+results.length+'</div>';
   h += '<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:13px;min-width:100%"><tr style="background:#FDE68A">';
-  ['姓名','薪資','全勤','加班費','其它','應領小計','勞保','健保','病假','事假','其它','應扣小計','總計','上月勞保','上月健保','狀態'].forEach(function(th){ h += '<th style="padding:5px 8px;border:1px solid #D5D3CC;white-space:nowrap">'+th+'</th>'; });
+  ['NO.','姓名','薪資','全勤','加班費','其它','應領小計','勞保','健保','病假','事假','其它','應扣小計','總計','上月勞保','上月健保','狀態','操作'].forEach(function(th){ h += '<th style="padding:5px 8px;border:1px solid #D5D3CC;white-space:nowrap">'+th+'</th>'; });
   h += '</tr>';
-  results.forEach(function(rs){
+  results.forEach(function(rs,idx){
     var status = rs.error ? ('❌ 錯誤：'+rs.error) : (rs.saved ? (rs.dbMatched ? '✅' : '⚠️ 資料庫無此人') : '❌ 未存入');
     var insWarn = rs.prev && (rs.prev.labor !== rs.labor || rs.prev.health !== rs.health);
+    var done = !!(batchReports[rs.origIndex] && batchReports[rs.origIndex].done);
     h += '<tr>'
+      + '<td style="padding:5px 8px;border:1px solid #D5D3CC;text-align:center;color:#999">'+(idx+1)+'</td>'
       + '<td style="padding:5px 8px;border:1px solid #D5D3CC;white-space:nowrap;font-weight:600">'+rs.name+'</td>'
       + '<td style="padding:5px 8px;border:1px solid #D5D3CC;text-align:right">'+fmtN(rs.eb.base)+'</td>'
       + '<td style="padding:5px 8px;border:1px solid #D5D3CC;text-align:right">'+fmtN(rs.eb.attendance)+'</td>'
@@ -1807,30 +1829,15 @@ function batchCalcAll(){
       + '<td style="padding:5px 8px;border:1px solid #D5D3CC;text-align:right;color:'+(insWarn?'#DC2626':'#666')+'">'+(rs.prev?fmtN(rs.prev.labor):'—')+'</td>'
       + '<td style="padding:5px 8px;border:1px solid #D5D3CC;text-align:right;color:'+(insWarn?'#DC2626':'#666')+'">'+(rs.prev?fmtN(rs.prev.health):'—')+'</td>'
       + '<td style="padding:5px 8px;border:1px solid #D5D3CC;white-space:nowrap">'+status+'</td>'
+      + '<td style="padding:5px 8px;border:1px solid #D5D3CC;white-space:nowrap">'
+        + '<button type="button" onclick="toggleBatchDone('+rs.origIndex+')" style="padding:5px 10px;border:1px solid '+(done?'#1B6E3A':'#D5D3CC')+';border-radius:6px;background:'+(done?'#1B6E3A':'#fff')+';color:'+(done?'#fff':'#666')+';font-size:12px;cursor:pointer;margin-right:4px">'+(done?'✅ 已核薪':'核薪完成')+'</button>'
+        + '<button type="button" onclick="loadBatchReport('+rs.origIndex+')" style="padding:5px 10px;border:none;border-radius:6px;background:#1B6E3A;color:#fff;font-size:12px;cursor:pointer">載入計算</button>'
+      + '</td>'
       + '</tr>';
   });
   h += '</table></div>';
-  h += '<div style="font-size:12px;color:#92400E;margin-top:6px;margin-bottom:10px">「上月勞保／健保」取自年度紀錄，供核對用；若與本月不同會以紅字顯示，請確認是否為級距調整或特殊狀況。要修改某位老師時，點下方名單的「載入計算」調整後再按「💾 存入年度紀錄」覆蓋即可。</div>';
-  var topBox = document.getElementById('batch-summary-top');
-  var logBox = document.getElementById('batch-detail-log');
-  if(topBox){
-    topBox.innerHTML = h;
-    if(logBox) logBox.innerHTML = '';
-    try{ topBox.scrollIntoView({behavior:'smooth', block:'start'}); }catch(e){}
-  } else if(logBox){
-    logBox.innerHTML = h;
-    try{ logBox.scrollIntoView({behavior:'smooth', block:'start'}); }catch(e){}
-  }
-  var bbtn = document.getElementById('batch-calc-btn');
-  if(bbtn){
-    bbtn.textContent = '✅ 已完成 '+results.length+' 位（可重按重算）';
-    bbtn.style.background = '#166534';
-  }
-  }catch(bigErr){
-    alert('批次計算發生錯誤，請把這段訊息回報給開發者：\n' + bigErr.message);
-    var bbtn2 = document.getElementById('batch-calc-btn');
-    if(bbtn2){ bbtn2.textContent = '🚀 一鍵計算全部並存入年度紀錄'; }
-  }
+  h += '<div style="font-size:12px;color:#92400E;margin-top:6px;margin-bottom:10px">「上月勞保／健保」取自年度紀錄，供核對用；若與本月不同會以紅字顯示，請確認是否為級距調整或特殊狀況。要修改某位老師時，點「載入計算」調整後再按「💾 存入年度紀錄」覆蓋即可。NO.依員工資料庫的到職日排序（舊到新），無到職日資料的排在最後。</div>';
+  topBox.innerHTML = h;
 }
 function safeExportPDF(){
   try{ exportPDF(); }
