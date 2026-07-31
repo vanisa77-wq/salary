@@ -538,8 +538,9 @@ async function tryAdminLogin(){
   <div class="sec-title"><span class="icon">👤</span> 基本薪資設定</div>
   <div class="field" style="margin-bottom:14px">
     <label>員工姓名</label>
-    <div class="iw"><input type="text" id="emp-name" placeholder="請輸入員工姓名" style="max-width:200px" oninput="onEmpNameInput(this.value)"></div>
+    <div class="iw"><input type="text" id="emp-name" placeholder="請輸入員工姓名" style="max-width:200px" oninput="onEmpNameInput(this.value);renderEmpNotes(this.value)"></div>
     <span id="empdb-match-status" style="font-size:12px;margin-top:4px;display:block"></span>
+    <div id="emp-notes-box" style="margin-top:8px"></div>
   </div>
   <div class="field-row">
     <div class="field"><label>本薪（底薪）</label><div class="iw"><input type="number" id="base" value="" min="0" step="100" placeholder="請輸入底薪"><span class="unit">元</span></div></div>
@@ -962,9 +963,85 @@ function updateNameBadge(){
   var name=((document.getElementById('emp-name')||{}).value||'').trim();
   var y=((document.getElementById('cal-year')||{}).value||'').trim();
   var mo=((document.getElementById('cal-month')||{}).value||'').trim();
-  if(!name){ badge.style.display='none'; return; }
-  badge.style.display='block';
-  badge.textContent='🧑‍🏫 目前計算：'+name+(y&&mo?'　'+y+'年'+mo+'月':'');
+  if(!name){ badge.style.display='none'; }
+  else{
+    badge.style.display='block';
+    badge.textContent='🧑‍🏫 目前計算：'+name+(y&&mo?'　'+y+'年'+mo+'月':'');
+  }
+  renderEmpNotes(name);
+}
+/* ===== 員工加減帳備註 ===== */
+function loadEmpNotes(){
+  try{ return JSON.parse(localStorage.getItem('scEmpNotes')||'{}'); }catch(e){ return {}; }
+}
+function saveEmpNotes(notes){
+  try{ localStorage.setItem('scEmpNotes',JSON.stringify(notes)); }catch(e){}
+}
+function addEmpNote(){
+  var nameEl=document.getElementById('emp-name');
+  var name=(nameEl&&nameEl.value||'').trim();
+  if(!name){ alert('請先填寫員工姓名，再新增備註'); return; }
+  var input=document.getElementById('emp-note-input');
+  var text=(input&&input.value||'').trim();
+  if(!text){ alert('請輸入備註內容'); return; }
+  var notes=loadEmpNotes();
+  if(!notes[name])notes[name]=[];
+  notes[name].push({id:Date.now(),text:text,createdAt:new Date().toLocaleDateString('zh-TW'),resolved:false});
+  saveEmpNotes(notes);
+  if(input)input.value='';
+  renderEmpNotes(name);
+}
+function resolveEmpNote(name,id){
+  var notes=loadEmpNotes();
+  var arr=notes[name]||[];
+  var n=arr.find(function(x){return x.id===id;});
+  if(n)n.resolved=!n.resolved;
+  saveEmpNotes(notes);
+  renderEmpNotes(name);
+}
+function deleteEmpNote(name,id){
+  var notes=loadEmpNotes();
+  notes[name]=(notes[name]||[]).filter(function(x){return x.id!==id;});
+  saveEmpNotes(notes);
+  renderEmpNotes(name);
+}
+function renderEmpNotes(name){
+  var box=document.getElementById('emp-notes-box');
+  if(!box)return;
+  name=(name||'').trim();
+  if(!name){ box.innerHTML=''; return; }
+  var notes=(loadEmpNotes()[name])||[];
+  var html='';
+  var pending=notes.filter(function(n){return !n.resolved;});
+  if(pending.length){
+    html+='<div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:8px;padding:8px 10px;margin-bottom:6px">'
+      +'<div style="font-size:12px;font-weight:700;color:#92400E;margin-bottom:4px">⚠️ 加減帳備註（未處理）</div>';
+    pending.forEach(function(n){
+      html+='<div style="font-size:13px;color:#1a1a1a;display:flex;justify-content:space-between;align-items:center;padding:3px 0">'
+        +'<span>'+n.text+'　<span style="font-size:11px;color:#999">('+n.createdAt+')</span></span>'
+        +'<span style="white-space:nowrap;margin-left:8px">'
+        +'<button type="button" onclick="resolveEmpNote(\''+name.replace(/'/g,"\\'")+'\','+n.id+')" style="padding:2px 8px;border:1px solid #1B6E3A;border-radius:5px;background:#fff;color:#1B6E3A;font-size:11px;cursor:pointer;margin-right:4px">✅ 已處理</button>'
+        +'<button type="button" onclick="deleteEmpNote(\''+name.replace(/'/g,"\\'")+'\','+n.id+')" style="padding:2px 8px;border:1px solid #DC2626;border-radius:5px;background:#fff;color:#DC2626;font-size:11px;cursor:pointer">刪除</button>'
+        +'</span></div>';
+    });
+    html+='</div>';
+  }
+  var resolved=notes.filter(function(n){return n.resolved;});
+  if(resolved.length){
+    html+='<details style="margin-bottom:6px"><summary style="font-size:12px;color:#999;cursor:pointer">已處理的備註（'+resolved.length+'）</summary>';
+    resolved.forEach(function(n){
+      html+='<div style="font-size:12px;color:#999;text-decoration:line-through;display:flex;justify-content:space-between;padding:2px 0">'
+        +'<span>'+n.text+'</span>'
+        +'<button type="button" onclick="deleteEmpNote(\''+name.replace(/'/g,"\\'")+'\','+n.id+')" style="padding:1px 6px;border:1px solid #D5D3CC;border-radius:5px;background:#fff;color:#999;font-size:11px;cursor:pointer;margin-left:8px">刪除</button>'
+        +'</div>';
+    });
+    html+='</details>';
+  }
+  html+='<div style="display:flex;gap:6px">'
+    +'<input type="text" id="emp-note-input" placeholder="例如：下月要補扣3天事假" style="flex:1;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 8px;font-size:12px;font-family:inherit">'
+    +'<button type="button" onclick="addEmpNote()" style="padding:0 12px;border:none;border-radius:6px;background:#B45309;color:#fff;font-size:12px;cursor:pointer;white-space:nowrap">＋加減帳備註</button>'
+    +'</div>';
+  box.innerHTML=html;
 }
 function personalLeaveAllClosedDays(){
   var entries = leaveEntries['pers'];
