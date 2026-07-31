@@ -1587,7 +1587,7 @@ var lastBatchResults=null;
 function renderBatchList(){
   const resultBox=document.getElementById('line-report-result');
   let html='<div style="font-weight:700;margin-bottom:8px">偵測到 '+batchReports.length+' 位老師的回報：</div>';
-  html+='<div style="margin-bottom:10px"><button type="button" id="batch-calc-btn" onclick="batchCalcAll()" style="padding:10px 20px;border:none;border-radius:8px;background:#B45309;color:#fff;font-size:15px;cursor:pointer;font-weight:700">🚀 一鍵計算全部並存入年度紀錄</button><span style="font-size:12px;color:#92400E;margin-left:8px">（按下去之後，下方會出現每位老師的明細表格，「核薪完成」「載入計算」按鈕都在表格最後一欄）</span></div>';
+  html+='<div style="margin-bottom:10px"><button type="button" id="batch-calc-btn" onclick="batchCalcAll()" style="padding:10px 20px;border:none;border-radius:8px;background:#E1AC4F;color:#4A3A17;font-size:15px;cursor:pointer;font-weight:700">一鍵計算全部並存入年度紀錄</button><span style="font-size:12px;color:#8a7657;margin-left:8px">（按下去之後，下方會出現每位老師的明細表格，「核薪完成」「載入計算」按鈕都在表格最後一欄）</span></div>';
   html+='<div id="batch-summary-top"></div>';
   html+='<div id="batch-detail-log" style="margin-top:10px;font-size:13px;line-height:1.8"></div>';
   resultBox.style.display='block';
@@ -1884,14 +1884,23 @@ function batchCalcAll(){
   if(topBox0){ try{ topBox0.scrollIntoView({behavior:'smooth', block:'start'}); }catch(e){} }
   var bbtn = document.getElementById('batch-calc-btn');
   if(bbtn){
-    bbtn.textContent = '✅ 已完成 '+results.length+' 位（可重按重算）';
-    bbtn.style.background = '#166534';
+    bbtn.textContent = '已完成 '+results.length+' 位（可重按重算）';
+    bbtn.style.background = '#93A7B4';
   }
   }catch(bigErr){
     alert('批次計算發生錯誤，請把這段訊息回報給開發者：\n' + bigErr.message);
     var bbtn2 = document.getElementById('batch-calc-btn');
-    if(bbtn2){ bbtn2.textContent = '🚀 一鍵計算全部並存入年度紀錄'; }
+    if(bbtn2){ bbtn2.textContent = '一鍵計算全部並存入年度紀錄'; }
   }
+}
+function statusIcon(kind){
+  var stroke = kind==='ok' ? '#7CA98A' : (kind==='warn' ? '#C99A45' : '#C97B6F');
+  var inner = kind==='ok'
+    ? '<path d="M8 12.5l2.5 2.5 5.5-6"/>'
+    : (kind==='warn'
+      ? '<line x1="12" y1="7.5" x2="12" y2="13"/><circle cx="12" cy="16.3" r="0.9" fill="'+stroke+'" stroke="none"/>'
+      : '<line x1="8.5" y1="8.5" x2="15.5" y2="15.5"/><line x1="15.5" y1="8.5" x2="8.5" y2="15.5"/>');
+  return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="'+stroke+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><circle cx="12" cy="12" r="9.5"/>'+inner+'</svg>';
 }
 function renderBatchResultsTable(){
   var topBox = document.getElementById('batch-summary-top');
@@ -1899,40 +1908,43 @@ function renderBatchResultsTable(){
   var results = lastBatchResults;
   var fmtN = function(x){ return Number(x).toLocaleString('zh-TW'); };
   var doneCount = results.filter(function(rs){ return batchReports[rs.origIndex] && batchReports[rs.origIndex].done; }).length;
-  var h = '<div style="font-weight:700;margin:10px 0 6px;font-size:15px;color:#166534">✅ 批次計算完成！共 '+results.length+' 位，已全部自動存入年度紀錄（依到職日舊到新排序）。已核薪：'+doneCount+' / '+results.length+'</div>';
-  h += '<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:13px;min-width:100%"><tr style="background:#FDE68A">';
-  ['NO.','姓名','薪資','全勤','加班費','其它','應領小計','勞保','健保','病假','事假','其它','應扣小計','總計','上月勞保','上月健保','狀態','操作'].forEach(function(th){ h += '<th style="padding:5px 8px;border:1px solid #D5D3CC;white-space:nowrap">'+th+'</th>'; });
+  var C_SAGE='#C4D3C3', C_MUSTARD='#E1AC4F', C_TERRA='#DE9F8B', C_BLUSH='#F2D9D2', C_BLUE='#93A7B4';
+  var h = '<div style="display:inline-block;font-weight:700;margin:10px 0 6px;font-size:14px;color:#3F4A3F;background:'+C_SAGE+';padding:8px 14px;border-radius:20px">批次計算完成，共 '+results.length+' 位，已全部自動存入年度紀錄（依到職日舊到新排序）。已核薪 '+doneCount+' / '+results.length+'</div>';
+  h += '<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:13px;min-width:100%;text-align:center"><tr style="background:'+C_BLUE+';color:#fff">';
+  ['NO.','姓名','薪資','全勤','加班費','其它','應領小計','勞保','健保','病假','事假','其它','應扣小計','總計','上月勞保','上月健保','狀態','操作'].forEach(function(th){ h += '<th style="padding:8px;border:1px solid #E5E3DC;white-space:nowrap;text-align:center;font-weight:600">'+th+'</th>'; });
   h += '</tr>';
   results.forEach(function(rs,idx){
-    var status = rs.error ? ('❌ 錯誤：'+rs.error) : (rs.saved ? (rs.dbMatched ? '✅' : '⚠️ 資料庫無此人') : '❌ 未存入');
+    var statusKind = rs.error ? 'err' : (rs.saved ? (rs.dbMatched ? 'ok' : 'warn') : 'err');
+    var statusTitle = rs.error ? rs.error : (rs.saved ? (rs.dbMatched ? '已存入年度紀錄' : '員工資料庫中無此人，請確認資料') : '未存入');
     var insWarn = rs.prev && (rs.prev.labor !== rs.labor || rs.prev.health !== rs.health);
     var done = !!(batchReports[rs.origIndex] && batchReports[rs.origIndex].done);
-    h += '<tr>'
-      + '<td style="padding:5px 8px;border:1px solid #D5D3CC;text-align:center;color:#999">'+(idx+1)+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #D5D3CC;white-space:nowrap;font-weight:600">'+rs.name+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #D5D3CC;text-align:right">'+fmtN(rs.eb.base)+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #D5D3CC;text-align:right">'+fmtN(rs.eb.attendance)+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #D5D3CC;text-align:right">'+fmtN(rs.eb.ot)+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #D5D3CC;text-align:right">'+fmtN(rs.eb.other)+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #D5D3CC;text-align:right;font-weight:700">'+fmtN(rs.earn)+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #D5D3CC;text-align:right">'+fmtN(rs.db.labor)+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #D5D3CC;text-align:right">'+fmtN(rs.db.health)+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #D5D3CC;text-align:right">'+fmtN(rs.db.sick)+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #D5D3CC;text-align:right">'+fmtN(rs.db.personal)+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #D5D3CC;text-align:right">'+fmtN(rs.db.other)+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #D5D3CC;text-align:right;font-weight:700">'+fmtN(rs.deduct)+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #D5D3CC;text-align:right;font-weight:700;background:#FFFBEB">'+fmtN(rs.net)+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #D5D3CC;text-align:right;color:'+(insWarn?'#DC2626':'#666')+'">'+(rs.prev?fmtN(rs.prev.labor):'—')+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #D5D3CC;text-align:right;color:'+(insWarn?'#DC2626':'#666')+'">'+(rs.prev?fmtN(rs.prev.health):'—')+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #D5D3CC;white-space:nowrap">'+status+'</td>'
-      + '<td style="padding:5px 8px;border:1px solid #D5D3CC;white-space:nowrap">'
-        + '<button type="button" onclick="toggleBatchDone('+rs.origIndex+')" style="padding:5px 10px;border:1px solid '+(done?'#1B6E3A':'#D5D3CC')+';border-radius:6px;background:'+(done?'#1B6E3A':'#fff')+';color:'+(done?'#fff':'#666')+';font-size:12px;cursor:pointer;margin-right:4px">'+(done?'✅ 已核薪':'核薪完成')+'</button>'
-        + '<button type="button" onclick="loadBatchReport('+rs.origIndex+')" style="padding:5px 10px;border:none;border-radius:6px;background:#1B6E3A;color:#fff;font-size:12px;cursor:pointer">載入計算</button>'
+    var td = 'padding:8px;border:1px solid #E5E3DC;text-align:center';
+    h += '<tr style="background:#fff">'
+      + '<td style="'+td+';color:#999">'+(idx+1)+'</td>'
+      + '<td style="'+td+';white-space:nowrap;font-weight:600">'+rs.name+'</td>'
+      + '<td style="'+td+'">'+fmtN(rs.eb.base)+'</td>'
+      + '<td style="'+td+'">'+fmtN(rs.eb.attendance)+'</td>'
+      + '<td style="'+td+'">'+fmtN(rs.eb.ot)+'</td>'
+      + '<td style="'+td+'">'+fmtN(rs.eb.other)+'</td>'
+      + '<td style="'+td+';font-weight:700;background:'+C_BLUSH+'40">'+fmtN(rs.earn)+'</td>'
+      + '<td style="'+td+'">'+fmtN(rs.db.labor)+'</td>'
+      + '<td style="'+td+'">'+fmtN(rs.db.health)+'</td>'
+      + '<td style="'+td+'">'+fmtN(rs.db.sick)+'</td>'
+      + '<td style="'+td+'">'+fmtN(rs.db.personal)+'</td>'
+      + '<td style="'+td+'">'+fmtN(rs.db.other)+'</td>'
+      + '<td style="'+td+';font-weight:700;background:'+C_TERRA+'40">'+fmtN(rs.deduct)+'</td>'
+      + '<td style="'+td+';font-weight:700;background:'+C_MUSTARD+'55">'+fmtN(rs.net)+'</td>'
+      + '<td style="'+td+';color:'+(insWarn?'#B5533C':'#999')+'">'+(rs.prev?fmtN(rs.prev.labor):'—')+'</td>'
+      + '<td style="'+td+';color:'+(insWarn?'#B5533C':'#999')+'">'+(rs.prev?fmtN(rs.prev.health):'—')+'</td>'
+      + '<td style="'+td+';white-space:nowrap" title="'+statusTitle.replace(/"/g,'&quot;')+'">'+statusIcon(statusKind)+'</td>'
+      + '<td style="'+td+';white-space:nowrap">'
+        + '<button type="button" onclick="toggleBatchDone('+rs.origIndex+')" style="padding:5px 10px;border:1px solid '+(done?C_SAGE:'#D5D3CC')+';border-radius:14px;background:'+(done?C_SAGE:'#fff')+';color:'+(done?'#3F4A3F':'#666')+';font-size:12px;cursor:pointer;margin-right:4px">'+(done?'已核薪':'核薪完成')+'</button>'
+        + '<button type="button" onclick="loadBatchReport('+rs.origIndex+')" style="padding:5px 10px;border:none;border-radius:14px;background:'+C_BLUE+';color:#fff;font-size:12px;cursor:pointer">載入計算</button>'
       + '</td>'
       + '</tr>';
   });
   h += '</table></div>';
-  h += '<div style="font-size:12px;color:#92400E;margin-top:6px;margin-bottom:10px">「上月勞保／健保」取自年度紀錄，供核對用；若與本月不同會以紅字顯示，請確認是否為級距調整或特殊狀況。要修改某位老師時，點「載入計算」調整後再按「💾 存入年度紀錄」覆蓋即可。NO.依員工資料庫的到職日排序（舊到新），無到職日資料的排在最後。</div>';
+  h += '<div style="font-size:12px;color:#8a7657;margin-top:6px;margin-bottom:10px">「上月勞保／健保」取自年度紀錄，供核對用；若與本月不同會以橘紅字顯示，請確認是否為級距調整或特殊狀況。要修改某位老師時，點「載入計算」調整後再按「存入年度紀錄」覆蓋即可。NO.依員工資料庫的到職日排序（舊到新），無到職日資料的排在最後。</div>';
   topBox.innerHTML = h;
 }
 function safeExportPDF(){
