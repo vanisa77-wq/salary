@@ -1617,9 +1617,11 @@ function toggleBatchDone(i){
   saveBatchDoneMap(map);
   if(lastBatchResults) renderBatchResultsTable(); else renderBatchList();
 }
+var currentBatchIndex=null;
 function loadBatchReport(i){
   const data=batchReports[i];
   if(!data)return;
+  currentBatchIndex=i;
   applyReportData(data);
   const logBox=document.getElementById('batch-detail-log');
   if(logBox){
@@ -1791,6 +1793,20 @@ function saveToYearly(silent){
   saveYearlyRecords();
   refreshYearlySel();
   renderYearlyStats();
+  if(lastBatchResults && currentBatchIndex!==null){
+    var row=lastBatchResults.find(function(rs){ return rs.origIndex===currentBatchIndex; });
+    if(row){
+      var pv=null;
+      try{ pv=getPrevIns(y,name,mo); }catch(e){}
+      row.name=name; row.y=y; row.mo=mo;
+      row.earn=earn; row.deduct=deduct; row.net=net;
+      row.eb=batchBucketEarn(collectRows('earn-body'));
+      row.db=batchBucketDeduct(collectRows('deduct-body'));
+      row.labor=row.db.labor; row.health=row.db.health;
+      row.prev=pv; row.error='';
+      renderBatchResultsTable();
+    }
+  }
   if(btn && !silent){
     var orig = '💾 存入年度紀錄';
     btn.textContent = existed ? '✅ 已更新（覆蓋'+mo+'月舊資料）' : '✅ 已存入 '+y+'年'+mo+'月';
@@ -1953,7 +1969,7 @@ function renderBatchResultsTable(){
   });
   var tdSum = 'padding:8px;border:1px solid #E5E3DC;text-align:center;font-weight:700';
   h += '<tr style="background:'+C_MUSTARD+'30">'
-    + '<td style="'+tdSum+'" colspan="2">總計</td>'
+    + '<td style="'+tdSum+'" colspan="2"><div style="width:100%;text-align:center">總計</div></td>'
     + '<td style="'+tdSum+'">'+fmtN(sum.base)+'</td>'
     + '<td style="'+tdSum+'">'+fmtN(sum.attendance)+'</td>'
     + '<td style="'+tdSum+'">'+fmtN(sum.ot)+'</td>'
