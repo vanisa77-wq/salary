@@ -1217,6 +1217,7 @@ function getShiftDatesText(){
 function getLeaveDatesText(kind,mode){
   var list=[];
   var totalDays=0;
+  var totalHours=0;
   (leaveEntries[kind]||[]).forEach(function(item){
     var fromEl=document.getElementById(kind+'-from-'+item.id);
     if(!fromEl||!fromEl.value)return;
@@ -1239,14 +1240,19 @@ function getLeaveDatesText(kind,mode){
       }
     }else{
       var ts=document.getElementById(kind+'-ts-'+item.id),te=document.getElementById(kind+'-te-'+item.id);
-      if(ts&&te&&ts.value&&te.value)label+='('+ts.value+'~'+te.value+')';
+      if(ts&&te&&ts.value&&te.value){
+        label+='('+ts.value+'~'+te.value+')';
+        var sp=ts.value.split(':').map(Number),ep=te.value.split(':').map(Number);
+        var mins=(ep[0]*60+ep[1])-(sp[0]*60+sp[1]);
+        if(mins>0)totalHours+=mins/60;
+      }
     }
     list.push(label);
     totalDays+=days;
   });
   if(!list.length)return '';
   if(mode==='day')return list.join('、')+'，共'+totalDays+'日';
-  return list.join('、')+'，共'+list.length+'筆';
+  return list.join('、')+'，共'+(+totalHours.toFixed(2))+'小時';
 }
 function applyEmployeeAllowances(empId){
   extraItems.earn=extraItems.earn.filter(it=>!it.fromEmp);
