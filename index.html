@@ -160,7 +160,7 @@ select:focus{border-color:#C0392B}
 .amt.red{color:#B91C1C}
 
 .final-box{background:#BF9241;border-radius:14px;padding:16px 20px;display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-bottom:10px;border:none}
-.final-val{font-size:26px;font-weight:700;color:#fff;letter-spacing:.01em}
+.final-val{font-size:26px;font-weight:700;color:#fff;letter-spacing:.01em;align-self:flex-end}
 .final-val span{font-size:14px;color:#fff;font-weight:400;margin-left:4px}
 .final-label{font-size:16px;color:#fff;font-weight:700}
 .final-formula{font-size:13px;color:#fff;font-weight:500;margin-top:2px;opacity:.9}
@@ -842,27 +842,9 @@ async function tryAdminLogin(){
     <button id="save-yearly-btn" onclick="saveToYearly()" style="padding:14px 10px;background:#C97B6F;color:#fff;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center">
       <span class="icon">💾</span> 存入年度紀錄
     </button>
-    <button type="button" onclick="toggleYearlyPanel()" style="padding:14px 10px;background:#4F8B96;color:#fff;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center">
+    <button type="button" onclick="toggleYearlyPanel()" style="grid-column:span 2;padding:14px 10px;background:#4F8B96;color:#fff;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center">
       <span class="icon">📊</span> 年度統計紀錄
     </button>
-    <button type="button" onclick="toggleMonthDashboard()" style="grid-column:span 2;padding:14px 10px;background:#166534;color:#fff;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center">
-      <span class="icon">📊</span> 本月薪資儀表板（全部老師一覽表）
-    </button>
-  </div>
-
-  <!-- 本月薪資儀表板 -->
-  <div class="section" id="month-dashboard-panel" style="background:#EDEEF3;border:2px solid #BF9241;display:none">
-    <div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
-        <span style="font-size:14px">年度：</span>
-        <select id="dash-year-sel" onchange="renderMonthDashboard()" style="height:36px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 10px"></select>
-        <span style="font-size:14px">月份：</span>
-        <select id="dash-month-sel" onchange="renderMonthDashboard()" style="height:36px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 10px"></select>
-        <button type="button" onclick="refreshMonthDashboardSel();renderMonthDashboard()" style="padding:8px 14px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">🔄 重新整理</button>
-      </div>
-      <div id="month-dashboard-table" style="overflow-x:auto"></div>
-      <div style="font-size:12px;color:#666;margin-top:8px">資料來源：已「存入年度紀錄」的計算結果；核薪狀態讀取批次名單的打勾記錄。雇主勞退6%為概算金額，僅供參考。</div>
-    </div>
   </div>
 
   <!-- 年度統計 -->
