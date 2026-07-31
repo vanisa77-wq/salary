@@ -1615,6 +1615,9 @@ function toggleBatchDone(i){
   var key=batchDoneKey(data);
   if(data.done) map[key]=true; else delete map[key];
   saveBatchDoneMap(map);
+  if(data.done && i===currentBatchIndex){
+    try{ saveToYearly(true); }catch(e){}
+  }
   if(lastBatchResults) renderBatchResultsTable(); else renderBatchList();
 }
 var currentBatchIndex=null;
