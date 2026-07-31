@@ -1943,6 +1943,29 @@ function renderBatchResultsTable(){
       + '</td>'
       + '</tr>';
   });
+  var sum = {base:0,attendance:0,ot:0,earnOther:0,earn:0,labor:0,health:0,sick:0,personal:0,deductOther:0,deduct:0,net:0};
+  results.forEach(function(rs){
+    sum.base+=rs.eb.base; sum.attendance+=rs.eb.attendance; sum.ot+=rs.eb.ot; sum.earnOther+=rs.eb.other; sum.earn+=rs.earn;
+    sum.labor+=rs.db.labor; sum.health+=rs.db.health; sum.sick+=rs.db.sick; sum.personal+=rs.db.personal; sum.deductOther+=rs.db.other; sum.deduct+=rs.deduct;
+    sum.net+=rs.net;
+  });
+  var tdSum = 'padding:8px;border:1px solid #E5E3DC;text-align:center;font-weight:700';
+  h += '<tr style="background:'+C_MUSTARD+'30">'
+    + '<td style="'+tdSum+'" colspan="2">總計</td>'
+    + '<td style="'+tdSum+'">'+fmtN(sum.base)+'</td>'
+    + '<td style="'+tdSum+'">'+fmtN(sum.attendance)+'</td>'
+    + '<td style="'+tdSum+'">'+fmtN(sum.ot)+'</td>'
+    + '<td style="'+tdSum+'">'+fmtN(sum.earnOther)+'</td>'
+    + '<td style="'+tdSum+';background:'+C_BLUSH+'80">'+fmtN(sum.earn)+'</td>'
+    + '<td style="'+tdSum+'">'+fmtN(sum.labor)+'</td>'
+    + '<td style="'+tdSum+'">'+fmtN(sum.health)+'</td>'
+    + '<td style="'+tdSum+'">'+fmtN(sum.sick)+'</td>'
+    + '<td style="'+tdSum+'">'+fmtN(sum.personal)+'</td>'
+    + '<td style="'+tdSum+'">'+fmtN(sum.deductOther)+'</td>'
+    + '<td style="'+tdSum+';background:'+C_TERRA+'80">'+fmtN(sum.deduct)+'</td>'
+    + '<td style="'+tdSum+';background:'+C_MUSTARD+'90">'+fmtN(sum.net)+'</td>'
+    + '<td style="'+tdSum+'" colspan="4"></td>'
+    + '</tr>';
   h += '</table></div>';
   h += '<div style="font-size:12px;color:#8a7657;margin-top:6px;margin-bottom:10px">「上月勞保／健保」取自年度紀錄，供核對用；若與本月不同會以橘紅字顯示，請確認是否為級距調整或特殊狀況。要修改某位老師時，點「載入計算」調整後再按「存入年度紀錄」覆蓋即可。NO.依員工資料庫的到職日排序（舊到新），無到職日資料的排在最後。</div>';
   topBox.innerHTML = h;
