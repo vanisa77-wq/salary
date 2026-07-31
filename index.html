@@ -842,6 +842,24 @@ async function tryAdminLogin(){
     <button type="button" onclick="toggleYearlyPanel()" style="padding:14px 10px;background:#4F8B96;color:#fff;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center">
       <span class="icon">📊</span> 年度統計紀錄
     </button>
+    <button type="button" onclick="toggleMonthDashboard()" style="grid-column:span 2;padding:14px 10px;background:#166534;color:#fff;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center">
+      <span class="icon">📊</span> 本月薪資儀表板（全部老師一覽表）
+    </button>
+  </div>
+
+  <!-- 本月薪資儀表板 -->
+  <div class="section" id="month-dashboard-panel" style="background:#EDEEF3;border:2px solid #BF9241;display:none">
+    <div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+        <span style="font-size:14px">年度：</span>
+        <select id="dash-year-sel" onchange="renderMonthDashboard()" style="height:36px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 10px"></select>
+        <span style="font-size:14px">月份：</span>
+        <select id="dash-month-sel" onchange="renderMonthDashboard()" style="height:36px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 10px"></select>
+        <button type="button" onclick="refreshMonthDashboardSel();renderMonthDashboard()" style="padding:8px 14px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">🔄 重新整理</button>
+      </div>
+      <div id="month-dashboard-table" style="overflow-x:auto"></div>
+      <div style="font-size:12px;color:#666;margin-top:8px">資料來源：已「存入年度紀錄」的計算結果；核薪狀態讀取批次名單的打勾記錄。雇主勞退6%為概算金額，僅供參考。</div>
+    </div>
   </div>
 
   <!-- 年度統計 -->
@@ -1786,6 +1804,120 @@ function batchCalcAll(){
 function safeExportPDF(){
   try{ exportPDF(); }
   catch(e){ alert('匯出 PDF 時發生錯誤，請把這段訊息回報給開發者：\n' + e.message); }
+}
+/* ===== 本月薪資儀表板 ===== */
+function dashBucketEarn(items){
+  var b={base:0,attendance:0};
+  (items||[]).forEach(function(it){
+    var v=amtNum(it.a);
+    if(it.t.indexOf('全勤')!==-1)b.attendance+=v;
+    else if(it.t.indexOf('在職底薪')!==-1)b.base+=v;
+  });
+  return b;
+}
+function dashBucketDeduct(items){
+  var b={labor:0,health:0};
+  (items||[]).forEach(function(it){
+    var v=amtNum(it.a);
+    if(it.t.indexOf('勞保自付')!==-1)b.labor+=v;
+    else if(it.t.indexOf('健保自付')!==-1)b.health+=v;
+  });
+  return b;
+}
+function dashPensionEstimate(items){
+  var result=0;
+  (items||[]).forEach(function(it){
+    if(it.t.indexOf('勞保自付')===-1)return;
+    var g=it.t.match(/級距\s*([\d,]+)/);
+    if(!g)return;
+    var grade=parseFloat(g[1].replace(/,/g,''));
+    var ratio=1;
+    var r=it.t.match(/×(\d+)\/30/);
+    if(r)ratio=(+r[1])/30;
+    result=Math.round(grade*0.06*ratio);
+  });
+  return result;
+}
+function refreshMonthDashboardSel(){
+  var ySel=document.getElementById('dash-year-sel'),mSel=document.getElementById('dash-month-sel');
+  if(!ySel||!mSel)return;
+  var years=Object.keys(yearlyRecords).sort();
+  var thisY=(document.getElementById('cal-year')||{}).value||'';
+  if(thisY&&years.indexOf(thisY)===-1)years.push(thisY);
+  years.sort();
+  var curY=ySel.value;
+  ySel.innerHTML=years.map(function(yy){return '<option value="'+yy+'"'+((curY||thisY)===yy?' selected':'')+'>民國 '+yy+' 年</option>';}).join('');
+  var curM=mSel.value;
+  var thisM=(document.getElementById('cal-month')||{}).value||'';
+  var opts='';
+  for(var m=1;m<=12;m++)opts+='<option value="'+m+'"'+(String(m)===(curM||thisM)?' selected':'')+'>'+m+'月</option>';
+  mSel.innerHTML=opts;
+}
+function renderMonthDashboard(){
+  var box=document.getElementById('month-dashboard-table');
+  var ySel=document.getElementById('dash-year-sel'),mSel=document.getElementById('dash-month-sel');
+  if(!box||!ySel||!mSel)return;
+  var y=ySel.value,mo=mSel.value;
+  var data=yearlyRecords[y]||{};
+  var names=Object.keys(data).sort();
+  var doneMap=loadBatchDoneMap();
+  var fmtN=function(n){return Number(n).toLocaleString('zh-TW');};
+  var haveAny=names.some(function(n){return data[n][mo];});
+  if(!haveAny){
+    box.innerHTML='<div style="font-size:14px;color:#666;padding:10px 0">民國'+y+'年'+mo+'月尚無已存入的薪資紀錄。算完薪水後按「💾 存入年度紀錄」即可累積。</div>';
+    return;
+  }
+  var doneCount=0,idx=0,totalEarn=0,totalDeduct=0,totalNet=0,totalPension=0;
+  var rows='';
+  names.forEach(function(nm){
+    var rec=data[nm][mo];
+    if(!rec)return;
+    idx++;
+    var eb=dashBucketEarn(rec.items&&rec.items.earn);
+    var db=dashBucketDeduct(rec.items&&rec.items.deduct);
+    var pension=dashPensionEstimate(rec.items&&rec.items.deduct);
+    var isDone=!!doneMap[y+'-'+mo+'-'+nm];
+    if(isDone)doneCount++;
+    totalEarn+=rec.earn;totalDeduct+=rec.deduct;totalNet+=rec.net;totalPension+=pension;
+    rows+='<tr style="background:'+(isDone?'#E5F5EC':'#fff')+'">'
+      +'<td style="padding:6px 8px;border:1px solid #D5D3CC;text-align:center">'+(isDone?'✅':'—')+'</td>'
+      +'<td style="padding:6px 8px;border:1px solid #D5D3CC;font-weight:600;white-space:nowrap">'+nm+'</td>'
+      +'<td style="padding:6px 8px;border:1px solid #D5D3CC;text-align:right">'+fmtN(rec.earn)+'</td>'
+      +'<td style="padding:6px 8px;border:1px solid #D5D3CC;text-align:right">'+fmtN(eb.attendance)+'</td>'
+      +'<td style="padding:6px 8px;border:1px solid #D5D3CC;text-align:right">'+fmtN(rec.deduct)+'</td>'
+      +'<td style="padding:6px 8px;border:1px solid #D5D3CC;text-align:right">'+fmtN(db.labor)+'</td>'
+      +'<td style="padding:6px 8px;border:1px solid #D5D3CC;text-align:right">'+fmtN(db.health)+'</td>'
+      +'<td style="padding:6px 8px;border:1px solid #D5D3CC;text-align:right;font-weight:700">'+fmtN(rec.net)+'</td>'
+      +'<td style="padding:6px 8px;border:1px solid #D5D3CC;text-align:right;color:#999">'+fmtN(pension)+'</td>'
+      +'</tr>';
+  });
+  var h='<table style="border-collapse:collapse;font-size:13px;min-width:100%"><tr style="background:#FDE68A">'
+    +'<th style="padding:6px 8px;border:1px solid #D5D3CC;white-space:nowrap">核薪</th>'
+    +'<th style="padding:6px 8px;border:1px solid #D5D3CC;white-space:nowrap">姓名</th>'
+    +'<th style="padding:6px 8px;border:1px solid #D5D3CC;white-space:nowrap">應領</th>'
+    +'<th style="padding:6px 8px;border:1px solid #D5D3CC;white-space:nowrap">全勤獎金</th>'
+    +'<th style="padding:6px 8px;border:1px solid #D5D3CC;white-space:nowrap">應扣</th>'
+    +'<th style="padding:6px 8px;border:1px solid #D5D3CC;white-space:nowrap">勞保自付</th>'
+    +'<th style="padding:6px 8px;border:1px solid #D5D3CC;white-space:nowrap">健保自付</th>'
+    +'<th style="padding:6px 8px;border:1px solid #D5D3CC;white-space:nowrap;background:#FCD34D">實領</th>'
+    +'<th style="padding:6px 8px;border:1px solid #D5D3CC;white-space:nowrap">雇主勞退6%(估)</th>'
+    +'</tr>'+rows
+    +'<tr style="background:#FDE68A;font-weight:700">'
+    +'<td style="padding:6px 8px;border:1px solid #D5D3CC" colspan="2">合計（已核薪 '+doneCount+' / '+idx+'）</td>'
+    +'<td style="padding:6px 8px;border:1px solid #D5D3CC;text-align:right">'+fmtN(totalEarn)+'</td>'
+    +'<td style="padding:6px 8px;border:1px solid #D5D3CC"></td>'
+    +'<td style="padding:6px 8px;border:1px solid #D5D3CC;text-align:right">'+fmtN(totalDeduct)+'</td>'
+    +'<td style="padding:6px 8px;border:1px solid #D5D3CC" colspan="2"></td>'
+    +'<td style="padding:6px 8px;border:1px solid #D5D3CC;text-align:right;background:#FCD34D">'+fmtN(totalNet)+'</td>'
+    +'<td style="padding:6px 8px;border:1px solid #D5D3CC;text-align:right">'+fmtN(totalPension)+'</td>'
+    +'</tr></table>';
+  box.innerHTML=h;
+}
+function toggleMonthDashboard(){
+  var p=document.getElementById('month-dashboard-panel');
+  var show=p.style.display==='none';
+  p.style.display=show?'block':'none';
+  if(show){refreshMonthDashboardSel();renderMonthDashboard();}
 }
 function toggleYearlyPanel(){
   var p = document.getElementById('yearly-panel');
