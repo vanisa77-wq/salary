@@ -202,10 +202,8 @@ select:focus{border-color:#C0392B}
 .collapsible-header-left .icon{font-size:17px}
 .collapsible-arrow{font-size:15px;font-weight:700;color:#1a1a1a;transition:transform .25s}
 .collapsible-arrow.open{transform:rotate(180deg)}
-.collapsible-body{display:block;border:2px solid #BF9241;border-top:none;border-radius:0 0 14px 14px;overflow:hidden}
+.collapsible-body{display:block}
 .collapsible-body.open{display:block}
-.collapsible-body .section{border:none;border-radius:0;margin-bottom:0;border-bottom:1px solid #F0EEE8}
-.collapsible-body .section:last-child{border-bottom:none}
 
 
 @media print {
@@ -676,10 +674,8 @@ async function tryAdminLogin(){
 <div>
 <!-- 可收折：加班與其它應領 -->
 <div class="collapsible-group">
-  <div class="collapsible-header" id="extra-earn-header" style="cursor:default">
-    <div class="collapsible-header-left">
-      <span class="icon">➕</span> 加班費 ／ 其它應領項目
-    </div>
+  <div style="margin:24px 0 8px;padding:10px 16px;background:#A9B29B;border:2px solid #BF9241;border-radius:10px;font-size:16px;font-weight:700;color:#1a1a1a;display:flex;align-items:center;gap:8px;">
+    <span class="icon">➕</span> 加班費 ／ 其它應領項目
   </div>
   <div class="collapsible-body" id="extra-earn-body">
 
@@ -757,7 +753,7 @@ async function tryAdminLogin(){
 </div><!-- end col1 -->
 <div>
 <!-- 請假 -->
-<div style="margin:24px 0 8px;padding:10px 16px;background:#F0D2C9;border:2px solid #BF9241;border-radius:10px;font-size:16px;font-weight:700;color:#1a1a1a;display:flex;align-items:center;gap:8px;">
+<div style="margin:24px 0 8px;padding:10px 16px;background:#9FB4C7;border:2px solid #BF9241;border-radius:10px;font-size:16px;font-weight:700;color:#1a1a1a;display:flex;align-items:center;gap:8px;">
   <span>📅</span> 請假・其它扣款
 </div>
 <div class="section" style="background:#FAFAF8">
