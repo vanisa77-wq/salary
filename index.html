@@ -1721,12 +1721,49 @@ function toggleBatchDone(i){
   if(lastBatchResults) renderBatchResultsTable(); else renderBatchList();
 }
 var currentBatchIndex=null;
+function restoreSavedManualState(){
+  var name=(document.getElementById('emp-name')||{}).value||'';
+  var y=(document.getElementById('cal-year')||{}).value||'';
+  var mo=(document.getElementById('cal-month')||{}).value||'';
+  var savedRec=yearlyRecords[y]&&yearlyRecords[y][name]&&yearlyRecords[y][name][mo];
+  var ms=savedRec&&savedRec.manualState;
+  if(!ms)return;
+  (ms.extraEarn||[]).forEach(function(it){ extraItems.earn.push(Object.assign({},it)); });
+  (ms.extraDeduct||[]).forEach(function(it){ extraItems.deduct.push(Object.assign({},it)); });
+  (ms.adjustments||[]).forEach(function(a){
+    var copy=Object.assign({},a);
+    copy.id=++adjIdCounter;
+    adjustments.push(copy);
+  });
+  if(ms.isResignMonth){
+    var resignBox=document.getElementById('is-resign-month');
+    if(resignBox){ resignBox.checked=true; toggleResignMonthFields(); }
+    var resignDateEl=document.getElementById('resign-date');
+    if(resignDateEl&&ms.resignDate)resignDateEl.value=ms.resignDate;
+    syncRocDisplay('resign-date-roc',ms.resignDate||'');
+    var unusedEl=document.getElementById('unused-annual-leave');
+    if(unusedEl)unusedEl.value=ms.unusedAnnualLeave||'0';
+    var totalEl=document.getElementById('annual-leave-total');
+    if(totalEl)totalEl.value=ms.annualLeaveTotal||'0';
+  }
+  if(ms.isHireMonth){
+    var hireBox=document.getElementById('is-hire-month');
+    if(hireBox){ hireBox.checked=true; toggleHireMonthFields(); }
+    var hireDateEl=document.getElementById('hire-date');
+    if(hireDateEl&&ms.hireDateManual)hireDateEl.value=ms.hireDateManual;
+    syncRocDisplay('hire-date-roc',ms.hireDateManual||'');
+  }
+  renderExtras();
+  renderAdjustments();
+  calc();
+}
 function loadBatchReport(i){
   const data=batchReports[i];
   if(!data)return;
   currentBatchIndex=i;
   resetInsuranceSpecial();
   applyReportData(data);
+  restoreSavedManualState();
   const logBox=document.getElementById('batch-detail-log');
   if(logBox){
     let prevLine='';
@@ -1892,7 +1929,18 @@ function saveToYearly(silent){
     earn: earn, deduct: deduct, net: net,
     items: { earn: collectRows('earn-body'), deduct: collectRows('deduct-body') },
     detail: buildResultText(),
-    savedAt: new Date().toLocaleString('zh-TW')
+    savedAt: new Date().toLocaleString('zh-TW'),
+    manualState: {
+      extraEarn: extraItems.earn.filter(function(it){ return !it.fromEmp; }),
+      extraDeduct: extraItems.deduct.filter(function(it){ return !it.fromEmp; }),
+      adjustments: JSON.parse(JSON.stringify(adjustments)),
+      isResignMonth: document.getElementById('is-resign-month').checked,
+      resignDate: (document.getElementById('resign-date')||{}).value || '',
+      unusedAnnualLeave: (document.getElementById('unused-annual-leave')||{}).value || '0',
+      annualLeaveTotal: (document.getElementById('annual-leave-total')||{}).value || '0',
+      isHireMonth: document.getElementById('is-hire-month').checked,
+      hireDateManual: (document.getElementById('hire-date')||{}).value || ''
+    }
   };
   saveYearlyRecords();
   refreshYearlySel();
