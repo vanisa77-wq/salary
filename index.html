@@ -1910,8 +1910,26 @@ function batchCalcAll(){
   var results = [];
   batchReports.forEach(function(r,origIndex){
     if(r.done){
-      var existing = lastBatchResults && lastBatchResults.find(function(rs){ return rs.origIndex===origIndex; });
-      if(existing){ results.push(existing); return; }
+      var lockedName = r.name || '';
+      var lockedY = r.rocYear || '';
+      var lockedMo = r.month || '';
+      var savedRec = yearlyRecords[lockedY] && yearlyRecords[lockedY][lockedName] && yearlyRecords[lockedY][lockedName][lockedMo];
+      if(savedRec && savedRec.items){
+        var lockedEb = batchBucketEarn(savedRec.items.earn);
+        var lockedDb = batchBucketDeduct(savedRec.items.deduct);
+        var lockedPv = null;
+        try{ lockedPv = getPrevIns(lockedY, lockedName, lockedMo); }catch(e){}
+        var lockedEmpRec = (typeof employeeDB!=='undefined'?employeeDB:[]).filter(function(e){ return e.name===lockedName; })[0];
+        results.push({
+          name: lockedName || '（未命名）', y: lockedY, mo: lockedMo, origIndex: origIndex,
+          hireDate: (lockedEmpRec&&lockedEmpRec.hireDate)||'',
+          earn: savedRec.earn, deduct: savedRec.deduct, net: savedRec.net,
+          eb: lockedEb, db: lockedDb,
+          labor: lockedDb.labor, health: lockedDb.health, prev: lockedPv,
+          dbMatched: !!r.dbMatched, saved: true, error: ''
+        });
+        return;
+      }
     }
     try{
       resetInsuranceSpecial();
