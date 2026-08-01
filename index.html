@@ -27,7 +27,7 @@ body{font-family:'PingFang TC','Helvetica Neue',sans-serif;background:#FAF6EE;co
   .tab-2col{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
 }
 .calc-tabbar{display:flex;gap:4px;margin:18px 0 14px;border-bottom:2px solid #E5E3DC;flex-wrap:wrap}
-.calc-tab{display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-size:20px;font-weight:600;color:#666;background:none;border:none;padding:12px 14px;cursor:pointer;border-radius:8px 8px 0 0;border-bottom:3px solid transparent;margin-bottom:-2px;line-height:1}
+.calc-tab{display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-size:20px;font-weight:600;color:#666;background:none;border:none;padding:8px 14px 10px;cursor:pointer;border-radius:8px 8px 0 0;border-bottom:4px solid transparent;margin-bottom:-2px;line-height:1;vertical-align:bottom}
 .calc-tab:hover{color:#1a1a1a;background:#F7F6F3}
 .calc-tab:focus-visible{outline:2px solid #B91C1C;outline-offset:2px}
 .calc-tab[aria-selected="true"]{color:#BF9241;border-bottom-color:#BF9241;background:#FAF3E7}
@@ -511,6 +511,7 @@ async function tryAdminLogin(){
     </a>
     <div id="batch-count-slot" style="font-size:13px;color:#666"></div>
     <div id="current-emp-badge" style="display:none;font-size:15px;font-weight:700;color:#1B6E3A;background:#fff;border:1px solid #A7D8BC;border-radius:8px;padding:10px 12px;text-align:center"></div>
+    <div id="batch-summary-slot"></div>
   </div>
 </div>
 
@@ -1954,8 +1955,11 @@ function renderBatchResultsTable(){
   var fmtN = function(x){ return Number(x).toLocaleString('zh-TW'); };
   var doneCount = results.filter(function(rs){ return batchReports[rs.origIndex] && batchReports[rs.origIndex].done; }).length;
   var C_SAGE='#C4D3C3', C_MUSTARD='#E1AC4F', C_TERRA='#DE9F8B', C_BLUSH='#F2D9D2', C_BLUE='#93A7B4';
-  var h = '<div style="display:inline-block;font-weight:700;margin:10px 0 6px;font-size:14px;color:#3F4A3F;background:'+C_SAGE+';padding:8px 14px;border-radius:20px">批次計算完成，共 '+results.length+' 位，已全部自動存入年度紀錄（依到職日舊到新排序）。已核薪 '+doneCount+' / '+results.length+'</div>';
-  h += '<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:13px;min-width:100%;text-align:center"><tr style="background:'+C_TERRA+';color:#fff">';
+  var summarySlot = document.getElementById('batch-summary-slot');
+  if(summarySlot){
+    summarySlot.innerHTML = '<div style="font-weight:700;font-size:13px;color:#3F4A3F;background:'+C_SAGE+';padding:8px 12px;border-radius:8px;text-align:center">批次計算完成，共 '+results.length+' 位，已全部自動存入年度紀錄（依到職日舊到新排序）。已核薪 '+doneCount+' / '+results.length+'</div>';
+  }
+  var h = '<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:13px;min-width:100%;text-align:center"><tr style="background:'+C_TERRA+';color:#fff">';
   ['NO.','姓名','薪資','全勤','加班費','其它','應領小計','勞保','健保','病假','事假','其它','應扣小計','總計','上月勞保','上月健保','狀態','操作'].forEach(function(th){ h += '<th style="padding:8px;border:1px solid #E5E3DC;white-space:nowrap;text-align:center;font-weight:600">'+th+'</th>'; });
   h += '</tr>';
   results.forEach(function(rs,idx){
