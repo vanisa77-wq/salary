@@ -112,6 +112,14 @@ let dependentsByEmp={};
 let allowancesByEmp={};
 let expandedEmpId=null;
 function rowToEmp(r){return {id:r.id,account:r.account||'',password:r.password||'',name:r.name||'',base:r.base||0,bonus:r.bonus||0,insGrade:r.ins_grade||0,dependents:r.dependents||0,hireDate:r.hire_date||'',resignDate:r.resign_date||'',jobTitle:r.job_title||'',healthInsGrade:r.health_ins_grade||0,laborInsExempt:r.labor_ins_exempt===true};}
+function toRocDateStr(iso){
+  if(!iso)return '';
+  const p=iso.split('-');
+  if(p.length!==3)return '';
+  const y=+p[0]-1911;
+  if(!y)return '';
+  return '民國'+y+'/'+p[1]+'/'+p[2];
+}
 function depAge(birthDate){
   if(!birthDate)return null;
   const b=new Date(birthDate);
@@ -174,9 +182,9 @@ function renderEmpDetail(e,i){
   const exemptCount=deps.length-billableCount;
   let html='<div style="padding:10px;background:#F7F6F3;border-radius:8px;margin:-4px 0 8px;display:flex;flex-direction:column;gap:8px">';
   html+='<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">';
-  html+='<label style="font-size:12px;color:#666">到職日</label><input type="date" value="'+(e.hireDate||'')+'" style="height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" onchange="updateEmpDBField('+i+',\'hireDate\',this.value)">';
-  html+=e.resignDate?('<label style="font-size:12px;color:#C0392B">離職日</label><input type="date" value="'+e.resignDate+'" style="height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" onchange="updateEmpDBField('+i+',\'resignDate\',this.value)"><button type="button" onclick="updateEmpDBField('+i+',\'resignDate\',\'\')" style="color:#999;background:none;border:none;cursor:pointer;font-size:12px">✕清除</button>')
-    :('<button type="button" onclick="updateEmpDBField('+i+',\'resignDate\',new Date().toISOString().slice(0,10))" style="padding:5px 8px;border:1px dashed #C5C3BB;border-radius:6px;background:transparent;font-size:12px;cursor:pointer;color:#999">＋設定離職日</button>');
+  html+='<label style="font-size:12px;color:#666">到職日</label><input type="date" id="hire-date-'+i+'" value="'+(e.hireDate||'')+'" style="height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" onchange="updateEmpDBField('+i+',\'hireDate\',this.value)" oninput="document.getElementById(\'hire-roc-'+i+'\').textContent=toRocDateStr(this.value)"><span id="hire-roc-'+i+'" style="font-size:12px;color:#999">'+toRocDateStr(e.hireDate)+'</span>';
+  html+=e.resignDate?('<label style="font-size:12px;color:#C0392B">離職日</label><input type="date" id="resign-date-'+i+'" value="'+e.resignDate+'" style="height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" onchange="updateEmpDBField('+i+',\'resignDate\',this.value)" oninput="document.getElementById(\'resign-roc-'+i+'\').textContent=toRocDateStr(this.value)"><span id="resign-roc-'+i+'" style="font-size:12px;color:#999">'+toRocDateStr(e.resignDate)+'</span><button type="button" onclick="updateEmpDBField('+i+',\'resignDate\',\'\');renderEmpDBList()" style="color:#999;background:none;border:none;cursor:pointer;font-size:12px">✕清除</button>')
+    :('<button type="button" onclick="updateEmpDBField('+i+',\'resignDate\',new Date().toISOString().slice(0,10));renderEmpDBList()" style="padding:5px 8px;border:1px dashed #C5C3BB;border-radius:6px;background:transparent;font-size:12px;cursor:pointer;color:#999">＋設定離職日</button>');
   html+='<label style="font-size:12px;color:#666">職稱</label><input type="text" value="'+(e.jobTitle||'').replace(/"/g,'&quot;')+'" style="width:100px;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateEmpDBField('+i+',\'jobTitle\',this.value)">';
   html+='<label style="font-size:12px;color:#666">勞保級距</label><select style="height:32px;border:1px solid #D5D3CC;border-radius:6px" onchange="updateEmpDBField('+i+',\'insGrade\',+this.value)">'+empDBInsGradeOptions(e.insGrade)+'</select>';
   html+='<label style="font-size:12px;color:#666">健保級距</label><select style="height:32px;border:1px solid #D5D3CC;border-radius:6px" onchange="updateEmpDBField('+i+',\'healthInsGrade\',+this.value)">'+empDBHealthGradeOptions(e.healthInsGrade)+'</select>';
@@ -191,7 +199,8 @@ function renderEmpDetail(e,i){
     return '<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap">'
       +'<input type="text" value="'+(d.name||'').replace(/"/g,'&quot;')+'" placeholder="姓名" style="width:80px;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateDependentField('+d.id+',\'name\',this.value)">'
       +'<input type="text" value="'+(d.relation||'').replace(/"/g,'&quot;')+'" placeholder="關係" style="width:70px;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateDependentField('+d.id+',\'relation\',this.value)">'
-      +'<input type="date" value="'+(d.birth_date||'')+'" style="height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" onchange="updateDependentField('+d.id+',\'birth_date\',this.value,true)">'
+      +'<input type="date" id="dep-birth-'+d.id+'" value="'+(d.birth_date||'')+'" style="height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" onchange="updateDependentField('+d.id+',\'birth_date\',this.value,true)" oninput="document.getElementById(\'dep-birth-roc-'+d.id+'\').textContent=toRocDateStr(this.value)">'
+      +'<span id="dep-birth-roc-'+d.id+'" style="font-size:12px;color:#999">'+toRocDateStr(d.birth_date)+'</span>'
       +'<span style="font-size:12px;color:#999">'+ageTag+'</span>'
       +tag
       +'<label style="font-size:12px;color:#666;display:flex;align-items:center;gap:3px"><input type="checkbox" '+(d.billable_override===true?'checked':'')+' onchange="updateDependentField('+d.id+',\'billable_override\',this.checked?true:null,true)">強制計費</label>'
@@ -216,8 +225,19 @@ function renderEmpDetail(e,i){
 function renderEmpDBList(){
   const box=document.getElementById('empdb-list');
   if(!employeeDB.length){box.innerHTML='<div style="color:#999;font-size:13px">尚未建立任何員工資料</div>';return;}
-  box.innerHTML=employeeDB.map((e,i)=>{
-    let row='<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap;padding:8px;background:#fff;border:1px solid #E5E3DC;border-radius:8px">'
+  const indices=employeeDB.map((e,i)=>i);
+  const byHireDate=(ia,ib)=>{
+    const a=employeeDB[ia].hireDate||'',b=employeeDB[ib].hireDate||'';
+    if(!a&&!b)return 0;
+    if(!a)return 1;
+    if(!b)return -1;
+    return a<b?-1:(a>b?1:0);
+  };
+  const active=indices.filter(i=>!employeeDB[i].resignDate).sort(byHireDate);
+  const resigned=indices.filter(i=>employeeDB[i].resignDate).sort(byHireDate);
+  const renderRow=(i)=>{
+    const e=employeeDB[i];
+    let row='<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap;padding:8px;background:#fff;border:1px solid #E5E3DC;border-radius:8px'+(e.resignDate?';opacity:.7':'')+'">'
     +'<span style="width:28px;text-align:center;color:#999;font-size:13px">'+(i+1)+'</span>'
     +'<input type="text" value="'+(e.name||'').replace(/"/g,'&quot;')+'" placeholder="姓名" style="width:80px;height:34px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateEmpDBField('+i+',\'name\',this.value)">'
     +'<input type="text" value="'+(e.account||'').replace(/"/g,'&quot;')+'" placeholder="登入帳號" style="width:150px;height:34px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateEmpDBField('+i+',\'account\',this.value)">'
@@ -229,7 +249,13 @@ function renderEmpDBList(){
     +'</div>';
     if(expandedEmpId===e.id)row+=renderEmpDetail(e,i);
     return row;
-  }).join('');
+  };
+  let out=active.map(renderRow).join('');
+  if(resigned.length){
+    out+='<div style="margin:14px 0 8px;padding-top:10px;border-top:2px dashed #D5D3CC;font-size:13px;font-weight:700;color:#999">🕓 已離職（'+resigned.length+'）</div>';
+    out+=resigned.map(renderRow).join('');
+  }
+  box.innerHTML=out;
 }
 function empFieldToColumn(field){
   const map={insGrade:'ins_grade',hireDate:'hire_date',resignDate:'resign_date',jobTitle:'job_title',healthInsGrade:'health_ins_grade',laborInsExempt:'labor_ins_exempt'};

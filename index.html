@@ -575,14 +575,14 @@ async function tryAdminLogin(){
       本月為到職月
     </label>
     <div class="field" id="hire-month-fields" style="display:none;margin-top:8px;padding:10px;background:#F7F6F3;border-radius:8px">
-      <label>到職日</label><input type="date" id="hire-date" onchange="calc()">
+      <label>到職日</label><input type="date" id="hire-date" onchange="calc()" oninput="var s=document.getElementById('hire-date-roc');if(s)s.textContent=toRocDateStr(this.value)"><span id="hire-date-roc" style="font-size:12px;color:#999;margin-left:6px"></span>
     </div>
     <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#1a1a1a;margin-top:8px;cursor:pointer">
       <input type="checkbox" id="is-resign-month" style="width:16px;height:16px;cursor:pointer" onchange="toggleResignMonthFields();calc()">
       本月為離職月(將顯示特休未休折算、健保退保說明)
     </label>
     <div class="field" id="resign-month-fields" style="display:none;margin-top:8px;padding:10px;background:#F7F6F3;border-radius:8px">
-      <label>離職日</label><input type="date" id="resign-date" onchange="calc()" style="margin-bottom:8px">
+      <label>離職日</label><input type="date" id="resign-date" onchange="calc()" oninput="var s=document.getElementById('resign-date-roc');if(s)s.textContent=toRocDateStr(this.value)" style="margin-bottom:8px"><span id="resign-date-roc" style="font-size:12px;color:#999;margin-left:6px"></span>
       <label>當年度特休總天數</label><div class="iw"><input type="number" id="annual-leave-total" value="0" min="0" onchange="calc()"><span class="unit">天</span></div>
       <label style="margin-top:8px;display:block">特休未休天數</label><div class="iw"><input type="number" id="unused-annual-leave" value="0" min="0" onchange="calc()"><span class="unit">天</span></div>
       <div class="hint">大多數員工離職前已休畢特休，此欄預設 0；若有未休完的天數才需要填</div>
@@ -1268,6 +1268,14 @@ function getAttendanceNote(persDays,persHours,sickDays,sickHours,salaryDays,full
   if(sickHours>0)notes.push('－病假'+sickHours+'時×1/240');
   return notes.join('　');
 }
+function toRocDateStr(iso){
+  if(!iso)return '';
+  var p=iso.split('-');
+  if(p.length!==3)return '';
+  var y=+p[0]-1911;
+  if(!y)return '';
+  return '民國'+y+'/'+p[1]+'/'+p[2];
+}
 function calcMonthDateStr(day){
   var y=+((document.getElementById('cal-year')||{}).value)||115,mo=+((document.getElementById('cal-month')||{}).value)||1;
   var ad=y+1911;
@@ -1280,12 +1288,16 @@ function toggleResignMonthFields(){
   if(healthBox)healthBox.checked=on;
   var dateBox=document.getElementById('resign-date');
   if(on&&dateBox&&!dateBox.value)dateBox.value=calcMonthDateStr(1);
+  var rocBox=document.getElementById('resign-date-roc');
+  if(rocBox)rocBox.textContent=dateBox?toRocDateStr(dateBox.value):'';
 }
 function toggleHireMonthFields(){
   var on=document.getElementById('is-hire-month').checked;
   document.getElementById('hire-month-fields').style.display=on?'block':'none';
   var dateBox=document.getElementById('hire-date');
   if(on&&dateBox&&!dateBox.value)dateBox.value=calcMonthDateStr(1);
+  var rocBox=document.getElementById('hire-date-roc');
+  if(rocBox)rocBox.textContent=dateBox?toRocDateStr(dateBox.value):'';
 }
 function toggleManualOverride(){
   var on=document.getElementById('manual-override-days').checked;
@@ -1471,6 +1483,8 @@ function autoLinkResignDate(){
   if(!box)return;
   if(!box.checked){box.checked=true;toggleResignMonthFields();}
   if(dateBox)dateBox.value=emp.resignDate;
+  var rocBox=document.getElementById('resign-date-roc');
+  if(rocBox)rocBox.textContent=toRocDateStr(emp.resignDate);
   calc();
 }
 function applyEmployeeLookup(name){
