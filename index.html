@@ -1490,6 +1490,12 @@ function isResignThisMonthEmp(emp,y,mo){
   var parts=emp.resignDate.split('-');
   return +parts[0]===ad&&+parts[1]===(+mo);
 }
+function isHireThisMonthEmp(emp,y,mo){
+  if(!emp||!emp.hireDate)return false;
+  var ad=(+y)+1911;
+  var parts=emp.hireDate.split('-');
+  return +parts[0]===ad&&+parts[1]===(+mo);
+}
 function autoLinkResignDate(){
   var name=((document.getElementById('emp-name')||{}).value||'').trim();
   var emp=name?lookupEmployee(name):null;
@@ -1985,7 +1991,8 @@ function batchCalcAll(){
           eb: lockedEb, db: lockedDb,
           labor: lockedDb.labor, health: lockedDb.health, prev: lockedPv,
           dbMatched: !!lockedEmpRec, saved: true, error: '',
-          resignLinked: isResignThisMonthEmp(lockedEmpRec, lockedY, lockedMo)
+          resignLinked: isResignThisMonthEmp(lockedEmpRec, lockedY, lockedMo),
+          hireLinked: isHireThisMonthEmp(lockedEmpRec, lockedY, lockedMo)
         });
         return;
       }
@@ -2009,7 +2016,8 @@ function batchCalcAll(){
         eb: eb, db: db,
         labor: laborNow, health: healthNow, prev: pv,
         dbMatched: !!r.dbMatched, saved: false, error: '',
-        resignLinked: isResignThisMonthEmp(empRec, y, mo)
+        resignLinked: isResignThisMonthEmp(empRec, y, mo),
+        hireLinked: isHireThisMonthEmp(empRec, y, mo)
       });
     }catch(personErr){
       results.push({ name: (r&&r.name)||'（未命名）', y:'', mo:'', origIndex: origIndex, hireDate:'', earn:0, deduct:0, net:0,
@@ -2069,9 +2077,12 @@ function renderBatchResultsTable(){
     var insWarn = rs.prev && (rs.prev.labor !== rs.labor || rs.prev.health !== rs.health);
     var done = !!(batchReports[rs.origIndex] && batchReports[rs.origIndex].done);
     var td = 'padding:8px;border:1px solid #E5E3DC;text-align:center';
-    h += '<tr style="background:#fff">'
+    var rowBg = rs.resignLinked ? '#F9E4DE' : (rs.hireLinked ? '#E5F0E1' : '#fff');
+    var rowBadge = rs.resignLinked ? '<br><span style="font-weight:700;font-size:11px;color:#B5533C;background:#F2D9D2;border-radius:8px;padding:1px 6px;white-space:nowrap">🔴本月離職已比例計算</span>'
+      : (rs.hireLinked ? '<br><span style="font-weight:700;font-size:11px;color:#3F6B3F;background:#D6E8CF;border-radius:8px;padding:1px 6px;white-space:nowrap">🟢本月到職已比例計算</span>' : '');
+    h += '<tr style="background:'+rowBg+'">'
       + '<td style="'+td+';color:#999">'+(idx+1)+'</td>'
-      + '<td style="'+td+';white-space:nowrap;font-weight:600">'+rs.name+(rs.resignLinked?'<br><span style="font-weight:700;font-size:11px;color:#B5533C;background:#F2D9D2;border-radius:8px;padding:1px 6px;white-space:nowrap">🔴本月離職已比例計算</span>':'')+'</td>'
+      + '<td style="'+td+';white-space:nowrap;font-weight:600">'+rs.name+rowBadge+'</td>'
       + '<td style="'+td+'">'+fmtN(rs.eb.base)+'</td>'
       + '<td style="'+td+'">'+fmtN(rs.eb.attendance)+'</td>'
       + '<td style="'+td+'">'+fmtN(rs.eb.ot)+'</td>'
