@@ -532,6 +532,7 @@ async function tryAdminLogin(){
 </div><!-- /tp-basic -->
 
 <div class="calc-tabpanel" id="tp-salary">
+<button type="button" onclick="quickSave(this)" style="display:block;width:100%;box-sizing:border-box;margin-bottom:10px;padding:10px 14px;border:1px solid #C97B6F;border-radius:8px;background:#fff;color:#C97B6F;cursor:pointer;font-size:14px;font-weight:700">儲存目前內容</button>
 <div class="tab-2col">
 <div>
 <div style="margin:0 0 8px;padding:10px 16px;background:#F0D2C9;border:2px solid #BF9241;border-radius:10px;font-size:16px;font-weight:700;color:#1a1a1a;display:flex;align-items:center;gap:8px;">
@@ -674,7 +675,6 @@ async function tryAdminLogin(){
     <div id="adjustments-list"></div>
     <datalist id="adj-premium-list"></datalist>
     <button type="button" onclick="addAdjustment()" style="padding:8px 14px;border:1px dashed #C5C3BB;border-radius:8px;background:transparent;cursor:pointer;font-size:13px">＋ 新增調整項</button>
-    <button type="button" onclick="quickSave(this)" style="padding:8px 14px;margin-left:8px;border:1px solid #C97B6F;border-radius:8px;background:#fff;color:#C97B6F;cursor:pointer;font-size:13px;font-weight:700">儲存</button>
   </div>
 </div>
 </div><!-- end col2 -->
@@ -682,6 +682,7 @@ async function tryAdminLogin(){
 </div><!-- /tp-salary -->
 
 <div class="calc-tabpanel" id="tp-extra">
+<button type="button" onclick="quickSave(this)" style="display:block;width:100%;box-sizing:border-box;margin-bottom:10px;padding:10px 14px;border:1px solid #C97B6F;border-radius:8px;background:#fff;color:#C97B6F;cursor:pointer;font-size:14px;font-weight:700">儲存目前內容</button>
 <div class="tab-2col">
 <div>
 <!-- 可收折：加班與其它應領 -->
@@ -758,7 +759,6 @@ async function tryAdminLogin(){
       <div class="sec-title"><span class="icon">✏️</span> 其它應領項目（自訂）</div>
       <div id="extra-earn-list"></div>
       <button class="add-btn" onclick="addItem('earn')">＋ 新增應領項目</button>
-      <button class="add-btn" onclick="quickSave(this)" style="margin-top:6px;border-color:#C97B6F;color:#C97B6F">儲存目前內容</button>
     </div>
 
   </div>
@@ -803,7 +803,6 @@ async function tryAdminLogin(){
   <div class="sec-title"><span class="icon">✏️</span> 其它應扣項目（自訂）</div>
   <div id="extra-deduct-list"></div>
   <button class="add-btn" onclick="addItem('deduct')">＋ 新增應扣項目</button>
-  <button class="add-btn" onclick="quickSave(this)" style="margin-top:6px;border-color:#C97B6F;color:#C97B6F">儲存目前內容</button>
 </div>
 </div><!-- end col2 -->
 </div><!-- /tab-2col -->
