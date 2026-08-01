@@ -2529,11 +2529,16 @@ function exportYearlyCSV(){
   var nameSel = document.getElementById('yearly-name-sel');
   if(nameSel && nameSel.value){ names = names.filter(function(n){ return n === nameSel.value; }); }
   if(names.length===0){ alert('此年度尚無紀錄可匯出'); return; }
-  var summaryRows = [['姓名','月份','應領小計','應扣小計','實領金額','存入時間']];
+  var summaryRows = [['NO.','姓名','月份','薪資','全勤','加班費','其它','應領小計','勞保','健保','病假','事假','其它','應扣小計','總計','存入時間']];
+  var rowNo = 0;
   names.forEach(function(nm){
     for(var m=1;m<=12;m++){
       var rec = data[nm][String(m)];
-      if(rec) summaryRows.push([nm, m, rec.earn, rec.deduct, rec.net, rec.savedAt||'']);
+      if(!rec) continue;
+      rowNo++;
+      var eb = rec.items ? batchBucketEarn(rec.items.earn) : {base:0,attendance:0,ot:0,other:0};
+      var db = rec.items ? batchBucketDeduct(rec.items.deduct) : {labor:0,health:0,sick:0,personal:0,other:0};
+      summaryRows.push([rowNo, nm, m, eb.base, eb.attendance, eb.ot, eb.other, rec.earn, db.labor, db.health, db.sick, db.personal, db.other, rec.deduct, rec.net, rec.savedAt||'']);
     }
   });
   var detailRows = [['姓名','月份','類別','項目','計算說明','金額']];
