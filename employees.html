@@ -56,12 +56,12 @@ body.gate-lock{overflow:hidden}
 
   <div class="section" style="background:#EFF6FF;border:1px solid #BFDBFE">
     <div style="font-size:13px;color:#666;margin-bottom:10px">在這裡建立每位老師的固定資料（本薪、全勤獎金、投保級距、眷屬人數、登入帳號密碼、固定津貼），之後在薪資系統的「員工姓名」欄位輸入相同姓名（或用 LINE 回報載入），系統會自動帶入這些設定，不用每次重填。<br>✅ 資料直接存在 <b>Supabase 雲端資料庫</b>，換電腦、換瀏覽器都會看到最新資料，新增/修改/刪除都會即時同步，不需要手動備份。</div>
-    <div id="empdb-list" style="margin-bottom:10px"></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <button type="button" onclick="addEmpDBRow()" style="padding:8px 14px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">➕ 新增員工</button>
       <button type="button" onclick="exportEmpDB()" style="padding:8px 14px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">⬇️ 匯出目前清單（唯讀）</button>
     </div>
-    <textarea id="empdb-io" style="display:none;width:100%;height:120px;margin-top:8px;border:1px solid #D5D3CC;border-radius:8px;padding:8px;box-sizing:border-box;font-family:monospace;font-size:12px" placeholder="貼上備份的文字內容" readonly></textarea>
+    <textarea id="empdb-io" style="display:none;width:100%;height:120px;margin-bottom:10px;border:1px solid #D5D3CC;border-radius:8px;padding:8px;box-sizing:border-box;font-family:monospace;font-size:12px" placeholder="貼上備份的文字內容" readonly></textarea>
+    <div id="empdb-list" style="margin-bottom:10px"></div>
   </div>
 </div>
 
@@ -240,12 +240,16 @@ function renderEmpDBList(){
     if(!b)return -1;
     return a<b?-1:(a>b?1:0);
   };
+  const byResignDateDesc=(ia,ib)=>{
+    const a=employeeDB[ia].resignDate||'',b=employeeDB[ib].resignDate||'';
+    return a<b?1:(a>b?-1:0);
+  };
   const active=indices.filter(i=>!employeeDB[i].resignDate).sort(byHireDate);
-  const resigned=indices.filter(i=>employeeDB[i].resignDate).sort(byHireDate);
-  const renderRow=(i)=>{
+  const resigned=indices.filter(i=>employeeDB[i].resignDate).sort(byResignDateDesc);
+  const renderRow=(i,seq)=>{
     const e=employeeDB[i];
     let row='<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap;padding:8px;background:#fff;border:1px solid #E5E3DC;border-radius:8px'+(e.resignDate?';opacity:.7':'')+'">'
-    +'<span style="width:28px;text-align:center;color:#999;font-size:13px">'+(i+1)+'</span>'
+    +'<span style="width:28px;text-align:center;color:#999;font-size:13px">'+seq+'</span>'
     +'<input type="text" value="'+(e.name||'').replace(/"/g,'&quot;')+'" placeholder="姓名" style="width:80px;height:34px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateEmpDBField('+i+',\'name\',this.value)">'
     +'<input type="text" value="'+(e.account||'').replace(/"/g,'&quot;')+'" placeholder="登入帳號" style="width:150px;height:34px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateEmpDBField('+i+',\'account\',this.value)">'
     +'<input type="text" value="'+(e.password||'').replace(/"/g,'&quot;')+'" placeholder="密碼" style="width:90px;height:34px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateEmpDBField('+i+',\'password\',this.value)">'
@@ -257,10 +261,10 @@ function renderEmpDBList(){
     if(expandedEmpId===e.id)row+=renderEmpDetail(e,i);
     return row;
   };
-  let out=active.map(renderRow).join('');
+  let out=active.map((i,pos)=>renderRow(i,pos+1)).join('');
   if(resigned.length){
     out+='<div style="margin:14px 0 8px;padding-top:10px;border-top:2px dashed #D5D3CC;font-size:13px;font-weight:700;color:#999">🕓 已離職（'+resigned.length+'）</div>';
-    out+=resigned.map(renderRow).join('');
+    out+=resigned.map((i,pos)=>renderRow(i,active.length+pos+1)).join('');
   }
   box.innerHTML=out;
 }
@@ -277,7 +281,7 @@ function updateEmpDBField(i,field,val){
   const client=initSupabase();
   if(!client)return;
   const payload={};
-  payload[empFieldToColumn(field)]=val;
+  payload[empFieldToColumn(field)]=(field==='account'&&val==='')?null:val;
   client.from('employees').update(payload).eq('id',emp.id).then(function(res){
     if(res.error)console.error(res.error);
   });
@@ -285,7 +289,7 @@ function updateEmpDBField(i,field,val){
 function addEmpDBRow(){
   const client=initSupabase();
   if(!client){alert('Supabase 載入失敗，請檢查網路連線');return;}
-  client.from('employees').insert({account:'',password:'',name:'',base:0,bonus:0,ins_grade:0,dependents:0,job_title:'托育人員'}).select().then(function(res){
+  client.from('employees').insert({account:null,password:'',name:'',base:0,bonus:0,ins_grade:0,dependents:0,job_title:'托育人員'}).select().then(function(res){
     if(res.error){alert('新增失敗：'+res.error.message);return;}
     employeeDB.push(rowToEmp(res.data[0]));
     try{localStorage.setItem('scEmployeeDB',JSON.stringify(employeeDB));}catch(e){}
