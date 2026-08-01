@@ -1759,6 +1759,17 @@ function restoreSavedManualState(){
   renderAdjustments();
   calc();
 }
+function loadManualPerson(name,y,mo){
+  currentBatchIndex=null;
+  resetInsuranceSpecial();
+  resetAttendanceState();
+  document.getElementById('emp-name').value=name;
+  document.getElementById('cal-year').value=y;
+  document.getElementById('cal-month').value=mo;
+  applyEmployeeLookup(name);
+  buildCal();
+  restoreSavedManualState();
+}
 function loadBatchReport(i){
   const data=batchReports[i];
   if(!data)return;
@@ -2111,6 +2122,30 @@ function batchCalcAll(){
         labor:0, health:0, prev:null, dbMatched:false, saved:false, error: personErr.message });
     }
   });
+  var supaY = (document.getElementById('supa-year')||{}).value || '';
+  var supaMo = (document.getElementById('supa-month')||{}).value || '';
+  if(supaY && supaMo && yearlyRecords[supaY]){
+    var existingNames = {};
+    results.forEach(function(rs){ existingNames[rs.name]=true; });
+    Object.keys(yearlyRecords[supaY]).forEach(function(nm){
+      if(existingNames[nm]) return;
+      var rec = yearlyRecords[supaY][nm] && yearlyRecords[supaY][nm][supaMo];
+      if(!rec || !rec.items) return;
+      var eb2 = batchBucketEarn(rec.items.earn);
+      var db2 = batchBucketDeduct(rec.items.deduct);
+      var pv2 = null;
+      try{ pv2 = getPrevIns(supaY, nm, supaMo); }catch(e){}
+      var empRec2 = (typeof employeeDB!=='undefined'?employeeDB:[]).filter(function(e){ return e.name===nm; })[0];
+      results.push({
+        name: nm, y: supaY, mo: supaMo, origIndex: -1,
+        hireDate: (empRec2&&empRec2.hireDate)||'',
+        earn: rec.earn, deduct: rec.deduct, net: rec.net,
+        eb: eb2, db: db2, labor: db2.labor, health: db2.health, prev: pv2,
+        dbMatched: !!empRec2, saved: true, error: '',
+        resignLinked: false, hireLinked: false, staleResign: false, manualAdd: true
+      });
+    });
+  }
   results.sort(function(a,b){
     if(!a.hireDate && !b.hireDate) return 0;
     if(!a.hireDate) return 1;
@@ -2185,8 +2220,11 @@ function renderBatchResultsTable(){
       + '<td style="'+td+';color:'+(insWarn?'#B5533C':'#999')+'">'+(rs.prev?fmtN(rs.prev.health):'—')+'</td>'
       + '<td style="'+td+';white-space:nowrap" title="'+statusTitle.replace(/"/g,'&quot;')+'">'+statusIcon(statusKind)+'</td>'
       + '<td style="'+td+';white-space:nowrap">'
-        + '<button type="button" onclick="toggleBatchDone('+rs.origIndex+')" style="padding:5px 10px;border:1px solid '+(done?C_SAGE:'#D5D3CC')+';border-radius:14px;background:'+(done?C_SAGE:'#fff')+';color:'+(done?'#3F4A3F':'#666')+';font-size:12px;cursor:pointer;margin-right:4px">'+(done?'已核薪':'核薪完成')+'</button>'
-        + '<button type="button" onclick="loadBatchReport('+rs.origIndex+')" style="padding:5px 10px;border:none;border-radius:14px;background:'+C_TERRA+';color:#fff;font-size:12px;cursor:pointer">載入計算</button>'
+        + (rs.manualAdd
+          ? '<span style="padding:5px 10px;border:1px solid '+C_SAGE+';border-radius:14px;background:'+C_SAGE+';color:#3F4A3F;font-size:12px;margin-right:4px">已核薪（非批次回報）</span>'
+            + '<button type="button" onclick="loadManualPerson(\''+rs.name.replace(/'/g,"\\\\'")+'\',\''+rs.y+'\',\''+rs.mo+'\')" style="padding:5px 10px;border:none;border-radius:14px;background:'+C_TERRA+';color:#fff;font-size:12px;cursor:pointer">載入計算</button>'
+          : '<button type="button" onclick="toggleBatchDone('+rs.origIndex+')" style="padding:5px 10px;border:1px solid '+(done?C_SAGE:'#D5D3CC')+';border-radius:14px;background:'+(done?C_SAGE:'#fff')+';color:'+(done?'#3F4A3F':'#666')+';font-size:12px;cursor:pointer;margin-right:4px">'+(done?'已核薪':'核薪完成')+'</button>'
+            + '<button type="button" onclick="loadBatchReport('+rs.origIndex+')" style="padding:5px 10px;border:none;border-radius:14px;background:'+C_TERRA+';color:#fff;font-size:12px;cursor:pointer">載入計算</button>')
       + '</td>'
       + '</tr>';
   });
