@@ -112,13 +112,21 @@ let dependentsByEmp={};
 let allowancesByEmp={};
 let expandedEmpId=null;
 function rowToEmp(r){return {id:r.id,account:r.account||'',password:r.password||'',name:r.name||'',base:r.base||0,bonus:r.bonus||0,insGrade:r.ins_grade||0,dependents:r.dependents||0,hireDate:r.hire_date||'',resignDate:r.resign_date||'',jobTitle:r.job_title||'',healthInsGrade:r.health_ins_grade||0,laborInsExempt:r.labor_ins_exempt===true};}
-function toRocDateStr(iso){
-  if(!iso)return '';
-  const p=iso.split('-');
-  if(p.length!==3)return '';
-  const y=+p[0]-1911;
-  if(!y)return '';
-  return '民國'+y+'/'+p[1]+'/'+p[2];
+function rocDateFields(prefix,iso,onChangeExpr){
+  const p=iso?iso.split('-'):['','',''];
+  const y=p[0]?(+p[0]-1911):'',m=p[1]?+p[1]:'',d=p[2]?+p[2]:'';
+  const h='style="width:44px;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 4px;text-align:center"';
+  return '<input type="number" id="'+prefix+'-y" value="'+y+'" placeholder="民國" '+h+' onchange="'+onChangeExpr+'">年'
+    +'<input type="number" id="'+prefix+'-m" value="'+m+'" placeholder="月" min="1" max="12" '+h+' onchange="'+onChangeExpr+'">月'
+    +'<input type="number" id="'+prefix+'-d" value="'+d+'" placeholder="日" min="1" max="31" '+h+' onchange="'+onChangeExpr+'">日';
+}
+function readRocDate(prefix){
+  const y=+((document.getElementById(prefix+'-y')||{}).value||0);
+  const m=+((document.getElementById(prefix+'-m')||{}).value||0);
+  const d=+((document.getElementById(prefix+'-d')||{}).value||0);
+  if(!y||!m||!d)return '';
+  const ad=y+1911;
+  return ad+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
 }
 function depAge(birthDate){
   if(!birthDate)return null;
@@ -182,8 +190,8 @@ function renderEmpDetail(e,i){
   const exemptCount=deps.length-billableCount;
   let html='<div style="padding:10px;background:#F7F6F3;border-radius:8px;margin:-4px 0 8px;display:flex;flex-direction:column;gap:8px">';
   html+='<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">';
-  html+='<label style="font-size:12px;color:#666">到職日</label><input type="date" id="hire-date-'+i+'" value="'+(e.hireDate||'')+'" style="height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" onchange="updateEmpDBField('+i+',\'hireDate\',this.value)" oninput="document.getElementById(\'hire-roc-'+i+'\').textContent=toRocDateStr(this.value)"><span id="hire-roc-'+i+'" style="font-size:12px;color:#999">'+toRocDateStr(e.hireDate)+'</span>';
-  html+=e.resignDate?('<label style="font-size:12px;color:#C0392B">離職日</label><input type="date" id="resign-date-'+i+'" value="'+e.resignDate+'" style="height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" onchange="updateEmpDBField('+i+',\'resignDate\',this.value)" oninput="document.getElementById(\'resign-roc-'+i+'\').textContent=toRocDateStr(this.value)"><span id="resign-roc-'+i+'" style="font-size:12px;color:#999">'+toRocDateStr(e.resignDate)+'</span><button type="button" onclick="updateEmpDBField('+i+',\'resignDate\',\'\');renderEmpDBList()" style="color:#999;background:none;border:none;cursor:pointer;font-size:12px">✕清除</button>')
+  html+='<label style="font-size:12px;color:#666">到職日</label>'+rocDateFields('hire-date-'+i,e.hireDate,'updateEmpDBField('+i+',\'hireDate\',readRocDate(\'hire-date-'+i+'\'))');
+  html+=e.resignDate?('<label style="font-size:12px;color:#C0392B">離職日</label>'+rocDateFields('resign-date-'+i,e.resignDate,'updateEmpDBField('+i+',\'resignDate\',readRocDate(\'resign-date-'+i+'\'))')+'<button type="button" onclick="updateEmpDBField('+i+',\'resignDate\',\'\');renderEmpDBList()" style="color:#999;background:none;border:none;cursor:pointer;font-size:12px">✕清除</button>')
     :('<button type="button" onclick="updateEmpDBField('+i+',\'resignDate\',new Date().toISOString().slice(0,10));renderEmpDBList()" style="padding:5px 8px;border:1px dashed #C5C3BB;border-radius:6px;background:transparent;font-size:12px;cursor:pointer;color:#999">＋設定離職日</button>');
   html+='<label style="font-size:12px;color:#666">職稱</label><input type="text" value="'+(e.jobTitle||'').replace(/"/g,'&quot;')+'" style="width:100px;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateEmpDBField('+i+',\'jobTitle\',this.value)">';
   html+='<label style="font-size:12px;color:#666">勞保級距</label><select style="height:32px;border:1px solid #D5D3CC;border-radius:6px" onchange="updateEmpDBField('+i+',\'insGrade\',+this.value)">'+empDBInsGradeOptions(e.insGrade)+'</select>';
@@ -199,8 +207,7 @@ function renderEmpDetail(e,i){
     return '<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap">'
       +'<input type="text" value="'+(d.name||'').replace(/"/g,'&quot;')+'" placeholder="姓名" style="width:80px;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateDependentField('+d.id+',\'name\',this.value)">'
       +'<input type="text" value="'+(d.relation||'').replace(/"/g,'&quot;')+'" placeholder="關係" style="width:70px;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateDependentField('+d.id+',\'relation\',this.value)">'
-      +'<input type="date" id="dep-birth-'+d.id+'" value="'+(d.birth_date||'')+'" style="height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" onchange="updateDependentField('+d.id+',\'birth_date\',this.value,true)" oninput="document.getElementById(\'dep-birth-roc-'+d.id+'\').textContent=toRocDateStr(this.value)">'
-      +'<span id="dep-birth-roc-'+d.id+'" style="font-size:12px;color:#999">'+toRocDateStr(d.birth_date)+'</span>'
+      +rocDateFields('dep-birth-'+d.id,d.birth_date,'updateDependentField('+d.id+',\'birth_date\',readRocDate(\'dep-birth-'+d.id+'\'),true)')
       +'<span style="font-size:12px;color:#999">'+ageTag+'</span>'
       +tag
       +'<label style="font-size:12px;color:#666;display:flex;align-items:center;gap:3px"><input type="checkbox" '+(d.billable_override===true?'checked':'')+' onchange="updateDependentField('+d.id+',\'billable_override\',this.checked?true:null,true)">強制計費</label>'
