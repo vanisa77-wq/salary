@@ -843,7 +843,7 @@ async function tryAdminLogin(){
     <button id="copy-result-btn" onclick="copyResultText()" style="padding:14px 10px;background:#BF9241;color:#fff;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center">
       <span class="icon">📋</span> 複製結果
     </button>
-    <button id="save-yearly-btn" onclick="saveToYearly()" style="grid-column:span 2;padding:14px 10px;background:#C97B6F;color:#fff;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center">
+    <button id="save-yearly-btn" onclick="confirmAndSaveYearly()" style="grid-column:span 2;padding:14px 10px;background:#C97B6F;color:#fff;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center">
       <span class="icon">💾</span> 本月薪資已確認並存檔
     </button>
     <button type="button" onclick="toggleYearlyPanel()" style="grid-column:span 2;padding:14px 10px;background:#4F8B96;color:#fff;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center">
@@ -1916,6 +1916,20 @@ function numFrom(id){
   var t = (el.textContent||'').replace(/[,，元\s]/g,'');
   var n = parseFloat(t);
   return isNaN(n) ? 0 : n;
+}
+function confirmAndSaveYearly(){
+  var ok=saveToYearly();
+  if(!ok)return;
+  if(currentBatchIndex!==null && batchReports[currentBatchIndex]){
+    var data=batchReports[currentBatchIndex];
+    if(!data.done){
+      data.done=true;
+      var map=loadBatchDoneMap();
+      map[batchDoneKey(data)]=true;
+      saveBatchDoneMap(map);
+    }
+  }
+  if(lastBatchResults) renderBatchResultsTable(); else renderBatchList();
 }
 function quickSave(el){
   var ok=saveToYearly(true);
