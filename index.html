@@ -674,6 +674,7 @@ async function tryAdminLogin(){
     <div id="adjustments-list"></div>
     <datalist id="adj-premium-list"></datalist>
     <button type="button" onclick="addAdjustment()" style="padding:8px 14px;border:1px dashed #C5C3BB;border-radius:8px;background:transparent;cursor:pointer;font-size:13px">＋ 新增調整項</button>
+    <button type="button" onclick="quickSave(this)" style="padding:8px 14px;margin-left:8px;border:1px solid #C97B6F;border-radius:8px;background:#fff;color:#C97B6F;cursor:pointer;font-size:13px;font-weight:700">儲存</button>
   </div>
 </div>
 </div><!-- end col2 -->
@@ -757,6 +758,7 @@ async function tryAdminLogin(){
       <div class="sec-title"><span class="icon">✏️</span> 其它應領項目（自訂）</div>
       <div id="extra-earn-list"></div>
       <button class="add-btn" onclick="addItem('earn')">＋ 新增應領項目</button>
+      <button class="add-btn" onclick="quickSave(this)" style="margin-left:8px">儲存</button>
     </div>
 
   </div>
@@ -801,6 +803,7 @@ async function tryAdminLogin(){
   <div class="sec-title"><span class="icon">✏️</span> 其它應扣項目（自訂）</div>
   <div id="extra-deduct-list"></div>
   <button class="add-btn" onclick="addItem('deduct')">＋ 新增應扣項目</button>
+  <button class="add-btn" onclick="quickSave(this)" style="margin-left:8px">儲存</button>
 </div>
 </div><!-- end col2 -->
 </div><!-- /tab-2col -->
@@ -1914,6 +1917,16 @@ function numFrom(id){
   var t = (el.textContent||'').replace(/[,，元\s]/g,'');
   var n = parseFloat(t);
   return isNaN(n) ? 0 : n;
+}
+function quickSave(el){
+  var ok=saveToYearly(true);
+  if(!ok){ alert('請先填寫員工姓名，再存檔'); return; }
+  if(el){
+    var orig=el.textContent;
+    el.textContent='已儲存';
+    el.disabled=true;
+    setTimeout(function(){ el.textContent=orig; el.disabled=false; },2000);
+  }
 }
 function saveToYearly(silent){
   var name = (document.getElementById('emp-name')||{}).value || '';
