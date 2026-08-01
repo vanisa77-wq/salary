@@ -501,6 +501,7 @@ async function tryAdminLogin(){
       </div>
       <div id="supa-status" style="font-size:12px;color:#666;margin-top:6px"></div>
       <div id="batch-btn-slot" style="margin-top:8px"></div>
+      <div id="reconcile-btn-slot" style="margin-top:6px"></div>
     </div>
   </div>
 
@@ -1628,6 +1629,8 @@ function renderBatchList(){
   if(countSlot)countSlot.textContent='偵測到 '+batchReports.length+' 位老師的回報';
   const btnSlot=document.getElementById('batch-btn-slot');
   if(btnSlot)btnSlot.innerHTML='<button type="button" id="batch-calc-btn" onclick="batchCalcAll()" style="display:block;width:100%;box-sizing:border-box;text-align:center;padding:10px 20px;border:none;border-radius:8px;background:#E1AC4F;color:#4A3A17;font-size:15px;cursor:pointer;font-weight:700">一鍵預覽全部薪資明細（不會自動存檔）</button>';
+  const reconcileSlot=document.getElementById('reconcile-btn-slot');
+  if(reconcileSlot)reconcileSlot.innerHTML='<button type="button" id="reconcile-btn" onclick="reconcileLockedRecords()" style="display:block;width:100%;box-sizing:border-box;text-align:center;padding:9px 16px;border:1px solid #C97B6F;border-radius:8px;background:#fff;color:#C97B6F;font-size:13px;cursor:pointer;font-weight:700">🔧 一鍵重新核對已核薪金額（修正稍早進位錯誤造成的舊存檔）</button>';
   let html='<div id="batch-summary-top"></div>';
   html+='<div id="batch-detail-log" style="margin-top:10px;font-size:13px;line-height:1.8"></div>';
   resultBox.style.display='block';
@@ -1902,6 +1905,27 @@ function getPrevIns(y, name, mo){
     if(it.t.indexOf('健保') !== -1) health += amtNum(it.a);
   });
   return { labor: labor, health: health, mo: pm, y: py };
+}
+function reconcileLockedRecords(){
+  if(typeof batchReports === 'undefined' || !batchReports || !batchReports.length){ alert('目前沒有已辨識的批次名單'); return; }
+  var btn = document.getElementById('reconcile-btn');
+  if(btn){ btn.textContent = '⏳ 重新核對中…'; btn.disabled = true; }
+  var count = 0;
+  batchReports.forEach(function(r){
+    if(!r.done) return;
+    try{
+      resetInsuranceSpecial();
+      applyReportData(r);
+      saveToYearly(true);
+      count++;
+    }catch(e){}
+  });
+  if(btn){
+    btn.textContent = count>0 ? ('✅ 已重新核對並更新 '+count+' 位的存檔金額') : '沒有已核薪完成的老師';
+    btn.disabled = false;
+    setTimeout(function(){ btn.textContent = '🔧 一鍵重新核對已核薪金額（修正稍早進位錯誤造成的舊存檔）'; }, 4000);
+  }
+  batchCalcAll();
 }
 function batchCalcAll(){
   if(typeof batchReports === 'undefined' || !batchReports || !batchReports.length){ alert('目前沒有已辨識的批次名單'); return; }
