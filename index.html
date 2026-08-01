@@ -1613,7 +1613,7 @@ function renderBatchList(){
   const countSlot=document.getElementById('batch-count-slot');
   if(countSlot)countSlot.textContent='偵測到 '+batchReports.length+' 位老師的回報';
   const btnSlot=document.getElementById('batch-btn-slot');
-  if(btnSlot)btnSlot.innerHTML='<button type="button" id="batch-calc-btn" onclick="batchCalcAll()" style="width:100%;padding:10px 20px;border:none;border-radius:8px;background:#E1AC4F;color:#4A3A17;font-size:15px;cursor:pointer;font-weight:700">一鍵計算全部並存入年度紀錄</button>';
+  if(btnSlot)btnSlot.innerHTML='<button type="button" id="batch-calc-btn" onclick="batchCalcAll()" style="display:block;width:100%;box-sizing:border-box;text-align:center;padding:10px 20px;border:none;border-radius:8px;background:#E1AC4F;color:#4A3A17;font-size:15px;cursor:pointer;font-weight:700">一鍵計算全部並存入年度紀錄</button>';
   let html='<div id="batch-summary-top"></div>';
   html+='<div id="batch-detail-log" style="margin-top:10px;font-size:13px;line-height:1.8"></div>';
   resultBox.style.display='block';
@@ -1955,7 +1955,7 @@ function renderBatchResultsTable(){
   var doneCount = results.filter(function(rs){ return batchReports[rs.origIndex] && batchReports[rs.origIndex].done; }).length;
   var C_SAGE='#C4D3C3', C_MUSTARD='#E1AC4F', C_TERRA='#DE9F8B', C_BLUSH='#F2D9D2', C_BLUE='#93A7B4';
   var h = '<div style="display:inline-block;font-weight:700;margin:10px 0 6px;font-size:14px;color:#3F4A3F;background:'+C_SAGE+';padding:8px 14px;border-radius:20px">批次計算完成，共 '+results.length+' 位，已全部自動存入年度紀錄（依到職日舊到新排序）。已核薪 '+doneCount+' / '+results.length+'</div>';
-  h += '<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:13px;min-width:100%;text-align:center"><tr style="background:'+C_BLUE+';color:#fff">';
+  h += '<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:13px;min-width:100%;text-align:center"><tr style="background:'+C_TERRA+';color:#fff">';
   ['NO.','姓名','薪資','全勤','加班費','其它','應領小計','勞保','健保','病假','事假','其它','應扣小計','總計','上月勞保','上月健保','狀態','操作'].forEach(function(th){ h += '<th style="padding:8px;border:1px solid #E5E3DC;white-space:nowrap;text-align:center;font-weight:600">'+th+'</th>'; });
   h += '</tr>';
   results.forEach(function(rs,idx){
@@ -1984,7 +1984,7 @@ function renderBatchResultsTable(){
       + '<td style="'+td+';white-space:nowrap" title="'+statusTitle.replace(/"/g,'&quot;')+'">'+statusIcon(statusKind)+'</td>'
       + '<td style="'+td+';white-space:nowrap">'
         + '<button type="button" onclick="toggleBatchDone('+rs.origIndex+')" style="padding:5px 10px;border:1px solid '+(done?C_SAGE:'#D5D3CC')+';border-radius:14px;background:'+(done?C_SAGE:'#fff')+';color:'+(done?'#3F4A3F':'#666')+';font-size:12px;cursor:pointer;margin-right:4px">'+(done?'已核薪':'核薪完成')+'</button>'
-        + '<button type="button" onclick="loadBatchReport('+rs.origIndex+')" style="padding:5px 10px;border:none;border-radius:14px;background:'+C_BLUE+';color:#fff;font-size:12px;cursor:pointer">載入計算</button>'
+        + '<button type="button" onclick="loadBatchReport('+rs.origIndex+')" style="padding:5px 10px;border:none;border-radius:14px;background:'+C_TERRA+';color:#fff;font-size:12px;cursor:pointer">載入計算</button>'
       + '</td>'
       + '</tr>';
   });
