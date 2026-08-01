@@ -1926,7 +1926,7 @@ function batchCalcAll(){
           earn: savedRec.earn, deduct: savedRec.deduct, net: savedRec.net,
           eb: lockedEb, db: lockedDb,
           labor: lockedDb.labor, health: lockedDb.health, prev: lockedPv,
-          dbMatched: !!r.dbMatched, saved: true, error: ''
+          dbMatched: !!lockedEmpRec, saved: true, error: ''
         });
         return;
       }
