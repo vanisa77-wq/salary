@@ -263,7 +263,7 @@ function renderEmpDBList(){
   };
   let out=active.map((i,pos)=>renderRow(i,pos+1)).join('');
   if(resigned.length){
-    out+='<div style="margin:14px 0 8px;padding-top:10px;border-top:2px dashed #D5D3CC;font-size:13px;font-weight:700;color:#999">🕓 已離職（'+resigned.length+'）</div>';
+    out+='<div style="margin:14px 0 8px;padding-top:10px;border-top:2px dashed #D5D3CC;font-size:13px;font-weight:700;color:#999">已離職（'+resigned.length+'）</div>';
     out+=resigned.map((i,pos)=>renderRow(i,active.length+pos+1)).join('');
   }
   box.innerHTML=out;

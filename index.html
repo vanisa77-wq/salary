@@ -2078,8 +2078,8 @@ function renderBatchResultsTable(){
     var done = !!(batchReports[rs.origIndex] && batchReports[rs.origIndex].done);
     var td = 'padding:8px;border:1px solid #E5E3DC;text-align:center';
     var rowBg = rs.resignLinked ? '#F9E4DE' : (rs.hireLinked ? '#E5F0E1' : '#fff');
-    var rowBadge = rs.resignLinked ? '<br><span style="font-weight:700;font-size:11px;color:#B5533C;background:#F2D9D2;border-radius:8px;padding:1px 6px;white-space:nowrap">🔴本月離職已比例計算</span>'
-      : (rs.hireLinked ? '<br><span style="font-weight:700;font-size:11px;color:#3F6B3F;background:#D6E8CF;border-radius:8px;padding:1px 6px;white-space:nowrap">🟢本月到職已比例計算</span>' : '');
+    var rowBadge = rs.resignLinked ? '<br><span style="display:inline-flex;align-items:center;gap:4px;font-weight:700;font-size:11px;color:#B5533C;background:#F2D9D2;border-radius:8px;padding:1px 6px;white-space:nowrap"><span style="width:6px;height:6px;border-radius:50%;background:#B5533C;display:inline-block"></span>本月離職已比例計算</span>'
+      : (rs.hireLinked ? '<br><span style="display:inline-flex;align-items:center;gap:4px;font-weight:700;font-size:11px;color:#3F6B3F;background:#D6E8CF;border-radius:8px;padding:1px 6px;white-space:nowrap"><span style="width:6px;height:6px;border-radius:50%;background:#3F6B3F;display:inline-block"></span>本月到職已比例計算</span>' : '');
     h += '<tr style="background:'+rowBg+'">'
       + '<td style="'+td+';color:#999">'+(idx+1)+'</td>'
       + '<td style="'+td+';white-space:nowrap;font-weight:600">'+rs.name+rowBadge+'</td>'
