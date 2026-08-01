@@ -111,7 +111,7 @@ let employeeDB=[];
 let dependentsByEmp={};
 let allowancesByEmp={};
 let expandedEmpId=null;
-function rowToEmp(r){return {id:r.id,account:r.account||'',password:r.password||'',name:r.name||'',base:r.base||0,bonus:r.bonus||0,insGrade:r.ins_grade||0,dependents:r.dependents||0,hireDate:r.hire_date||'',jobTitle:r.job_title||'',healthInsGrade:r.health_ins_grade||0,laborInsExempt:r.labor_ins_exempt===true};}
+function rowToEmp(r){return {id:r.id,account:r.account||'',password:r.password||'',name:r.name||'',base:r.base||0,bonus:r.bonus||0,insGrade:r.ins_grade||0,dependents:r.dependents||0,hireDate:r.hire_date||'',resignDate:r.resign_date||'',jobTitle:r.job_title||'',healthInsGrade:r.health_ins_grade||0,laborInsExempt:r.labor_ins_exempt===true};}
 function depAge(birthDate){
   if(!birthDate)return null;
   const b=new Date(birthDate);
@@ -175,6 +175,8 @@ function renderEmpDetail(e,i){
   let html='<div style="padding:10px;background:#F7F6F3;border-radius:8px;margin:-4px 0 8px;display:flex;flex-direction:column;gap:8px">';
   html+='<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">';
   html+='<label style="font-size:12px;color:#666">到職日</label><input type="date" value="'+(e.hireDate||'')+'" style="height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" onchange="updateEmpDBField('+i+',\'hireDate\',this.value)">';
+  html+=e.resignDate?('<label style="font-size:12px;color:#C0392B">離職日</label><input type="date" value="'+e.resignDate+'" style="height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" onchange="updateEmpDBField('+i+',\'resignDate\',this.value)"><button type="button" onclick="updateEmpDBField('+i+',\'resignDate\',\'\')" style="color:#999;background:none;border:none;cursor:pointer;font-size:12px">✕清除</button>')
+    :('<button type="button" onclick="updateEmpDBField('+i+',\'resignDate\',new Date().toISOString().slice(0,10))" style="padding:5px 8px;border:1px dashed #C5C3BB;border-radius:6px;background:transparent;font-size:12px;cursor:pointer;color:#999">＋設定離職日</button>');
   html+='<label style="font-size:12px;color:#666">職稱</label><input type="text" value="'+(e.jobTitle||'').replace(/"/g,'&quot;')+'" style="width:100px;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateEmpDBField('+i+',\'jobTitle\',this.value)">';
   html+='<label style="font-size:12px;color:#666">勞保級距</label><select style="height:32px;border:1px solid #D5D3CC;border-radius:6px" onchange="updateEmpDBField('+i+',\'insGrade\',+this.value)">'+empDBInsGradeOptions(e.insGrade)+'</select>';
   html+='<label style="font-size:12px;color:#666">健保級距</label><select style="height:32px;border:1px solid #D5D3CC;border-radius:6px" onchange="updateEmpDBField('+i+',\'healthInsGrade\',+this.value)">'+empDBHealthGradeOptions(e.healthInsGrade)+'</select>';
@@ -230,7 +232,7 @@ function renderEmpDBList(){
   }).join('');
 }
 function empFieldToColumn(field){
-  const map={insGrade:'ins_grade',hireDate:'hire_date',jobTitle:'job_title',healthInsGrade:'health_ins_grade',laborInsExempt:'labor_ins_exempt'};
+  const map={insGrade:'ins_grade',hireDate:'hire_date',resignDate:'resign_date',jobTitle:'job_title',healthInsGrade:'health_ins_grade',laborInsExempt:'labor_ins_exempt'};
   return map[field]||field;
 }
 function updateEmpDBField(i,field,val){
