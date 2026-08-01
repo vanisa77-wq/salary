@@ -859,7 +859,7 @@ async function tryAdminLogin(){
         <select id="yearly-year-sel" onchange="renderYearlyStats()" style="height:36px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 10px"></select>
         <span style="font-size:14px">老師：</span>
         <select id="yearly-name-sel" onchange="renderYearlyStats()" style="height:36px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 10px"><option value="">全部老師</option></select>
-        <button type="button" onclick="exportYearlyCSV()" style="padding:8px 14px;border:none;border-radius:8px;background:#1B6E3A;color:#fff;cursor:pointer;font-size:13px">⬇️ 匯出 Excel（CSV）</button>
+        <button type="button" onclick="exportYearlyCSV()" style="padding:8px 14px;border:none;border-radius:8px;background:#1B6E3A;color:#fff;cursor:pointer;font-size:13px">⬇️ 匯出 Excel</button>
         <button type="button" id="export-yearly-form-btn" onclick="exportYearlyEmployeeForm()" style="padding:8px 14px;border:none;border-radius:8px;background:#B45309;color:#fff;cursor:pointer;font-size:13px">📋 匯出老師統計表（每人一分頁）</button>
         <button type="button" onclick="exportYearlyBackup()" style="padding:8px 14px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">⬇️ 匯出備份</button>
         <button type="button" onclick="showYearlyImport()" style="padding:8px 14px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">⬆️ 匯入備份</button>
@@ -876,7 +876,7 @@ async function tryAdminLogin(){
       <div style="font-size:12px;color:#92400E;margin-top:10px">⚠️ 紀錄儲存在這台電腦的瀏覽器中，清除瀏覽資料會遺失。建議每月存完按「匯出備份」把內容另存保管。</div>
       <div style="font-size:12px;color:#666;margin-top:8px;background:#F7F6F3;border-radius:8px;padding:8px 10px;line-height:1.8">
         📌 上面三個按鈕說明（怕忘記可以看這裡）：<br>
-        ・<b>匯出 Excel（CSV）</b>：把年度薪資紀錄整理成表格檔案，下載後可以直接用 Excel 打開閱讀、列印或給別人看。<br>
+        ・<b>匯出 Excel</b>：把年度薪資紀錄整理成表格檔案，下載後可以直接用 Excel 打開閱讀、列印或給別人看。<br>
         ・<b>匯出備份</b>：把資料原始內容顯示出來讓你複製，貼到記事本或雲端筆記保存，是給「匯入備份」用的技術性備份，不是給人閱讀的表格。<br>
         ・<b>匯入備份</b>：把之前用「匯出備份」存起來的內容貼回來，還原成原本的紀錄（例如換電腦、瀏覽器資料被清掉時使用）。
       </div>
@@ -2521,6 +2521,7 @@ function deleteYearlyRecord(){
   renderYearlyStats();
 }
 function exportYearlyCSV(){
+  if(typeof XLSX === 'undefined'){ alert('Excel 匯出套件載入失敗，請重新整理頁面再試一次'); return; }
   var sel = document.getElementById('yearly-year-sel');
   var y = sel ? sel.value : '';
   var data = yearlyRecords[y] || {};
@@ -2528,45 +2529,33 @@ function exportYearlyCSV(){
   var nameSel = document.getElementById('yearly-name-sel');
   if(nameSel && nameSel.value){ names = names.filter(function(n){ return n === nameSel.value; }); }
   if(names.length===0){ alert('此年度尚無紀錄可匯出'); return; }
-  var q = function(s){ return '"' + String(s==null?'':s).replace(/"/g,'""') + '"'; };
-  var lines = [];
-  lines.push('■ 總表（民國'+y+'年）');
-  lines.push('姓名,月份,應領小計,應扣小計,實領金額,存入時間');
+  var summaryRows = [['姓名','月份','應領小計','應扣小計','實領金額','存入時間']];
   names.forEach(function(nm){
     for(var m=1;m<=12;m++){
       var rec = data[nm][String(m)];
-      if(rec) lines.push(q(nm)+','+m+','+rec.earn+','+rec.deduct+','+rec.net+','+q(rec.savedAt||''));
+      if(rec) summaryRows.push([nm, m, rec.earn, rec.deduct, rec.net, rec.savedAt||'']);
     }
   });
-  lines.push('');
-  lines.push('■ 明細');
-  lines.push('姓名,月份,類別,項目,計算說明,金額');
+  var detailRows = [['姓名','月份','類別','項目','計算說明','金額']];
   names.forEach(function(nm){
     for(var m=1;m<=12;m++){
       var rec = data[nm][String(m)];
       if(!rec) continue;
       if(rec.items){
-        (rec.items.earn||[]).forEach(function(it){
-          lines.push(q(nm)+','+m+',應領,'+q(it.t)+','+q(it.s)+','+amtNum(it.a));
-        });
-        (rec.items.deduct||[]).forEach(function(it){
-          lines.push(q(nm)+','+m+',應扣,'+q(it.t)+','+q(it.s)+','+(-amtNum(it.a)));
-        });
+        (rec.items.earn||[]).forEach(function(it){ detailRows.push([nm, m, '應領', it.t, it.s||'', amtNum(it.a)]); });
+        (rec.items.deduct||[]).forEach(function(it){ detailRows.push([nm, m, '應扣', it.t, it.s||'', -amtNum(it.a)]); });
       } else {
-        lines.push(q(nm)+','+m+',（此筆為舊版紀錄無明細）,,,');
+        detailRows.push([nm, m, '（此筆為舊版紀錄無明細）', '', '', '']);
       }
-      lines.push(q(nm)+','+m+',實領,實領金額,,'+rec.net);
+      detailRows.push([nm, m, '實領', '實領金額', '', rec.net]);
     }
   });
-  var csv = '\ufeff' + lines.join('\r\n');
-  var blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = '年度薪資紀錄_民國'+y+'年.csv';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 5000);
+  var wb = XLSX.utils.book_new();
+  var ws1 = XLSX.utils.aoa_to_sheet(summaryRows);
+  var ws2 = XLSX.utils.aoa_to_sheet(detailRows);
+  XLSX.utils.book_append_sheet(wb, ws1, '總表');
+  XLSX.utils.book_append_sheet(wb, ws2, '明細');
+  XLSX.writeFile(wb, '年度薪資紀錄_民國'+y+'年.xlsx');
 }
 function exportYearlyEmployeeForm(){
   if(typeof XLSX === 'undefined'){ alert('Excel 匯出套件載入失敗，請重新整理頁面再試一次'); return; }
