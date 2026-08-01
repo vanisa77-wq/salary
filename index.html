@@ -1908,6 +1908,10 @@ function batchCalcAll(){
   try{
   var results = [];
   batchReports.forEach(function(r,origIndex){
+    if(r.done){
+      var existing = lastBatchResults && lastBatchResults.find(function(rs){ return rs.origIndex===origIndex; });
+      if(existing){ results.push(existing); return; }
+    }
     try{
       resetInsuranceSpecial();
       applyReportData(r);
@@ -2039,7 +2043,7 @@ function renderBatchResultsTable(){
     + '<td style="'+tdSum+'"></td>'
     + '</tr>';
   h += '</table></div>';
-  h += '<div style="font-size:12px;color:#8a7657;margin-top:6px;margin-bottom:10px">「上月勞保／健保」取自年度紀錄，供核對用；若與本月不同會以橘紅字顯示，請確認是否為級距調整或特殊狀況。要修改某位老師時，點「載入計算」調整後再按「存入年度紀錄」覆蓋即可。NO.依員工資料庫的到職日排序（舊到新），無到職日資料的排在最後。</div>';
+  h += '<div style="font-size:12px;color:#8a7657;margin-top:6px;margin-bottom:10px">「上月勞保／健保」取自年度紀錄，供核對用；若與本月不同會以橘紅字顯示，請確認是否為級距調整或特殊狀況。🔒 已標記「核薪完成」的老師，重按「一鍵計算全部」不會再被重算覆蓋，數字會鎖定不動；要修改時，先取消核薪完成，點「載入計算」調整後再按「核薪完成」或「存入年度紀錄」重新鎖定即可。NO.依員工資料庫的到職日排序（舊到新），無到職日資料的排在最後。</div>';
   topBox.innerHTML = h;
 }
 function safeExportPDF(){
