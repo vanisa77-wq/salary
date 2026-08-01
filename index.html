@@ -22,7 +22,7 @@ body{font-family:'PingFang TC','Helvetica Neue',sans-serif;background:#FAF6EE;co
   .col-main{min-width:0}
   .col-preview{min-width:0;position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto;padding-right:2px}
 }
-.tab-2col{display:block}
+.tab-2col{display:block;margin-top:24px}
 @media (min-width:900px){
   .tab-2col{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
 }
@@ -531,7 +531,7 @@ async function tryAdminLogin(){
 <div class="calc-tabpanel" id="tp-salary">
 <div class="tab-2col">
 <div>
-<div style="margin:24px 0 8px;padding:10px 16px;background:#F0D2C9;border:2px solid #BF9241;border-radius:10px;font-size:16px;font-weight:700;color:#1a1a1a;display:flex;align-items:center;gap:8px;">
+<div style="margin:0 0 8px;padding:10px 16px;background:#F0D2C9;border:2px solid #BF9241;border-radius:10px;font-size:16px;font-weight:700;color:#1a1a1a;display:flex;align-items:center;gap:8px;">
   <span>＋</span> 應領薪資項目
 </div>
 
@@ -599,7 +599,7 @@ async function tryAdminLogin(){
 </div>
 </div><!-- end col1 -->
 <div>
-<div style="margin:24px 0 8px;padding:10px 16px;background:#D68C7A;border:2px solid #BF9241;border-radius:10px;font-size:16px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;">
+<div style="margin:0 0 8px;padding:10px 16px;background:#D68C7A;border:2px solid #BF9241;border-radius:10px;font-size:16px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;">
   <span>－</span> 應扣金額項目
 </div>
 
@@ -674,7 +674,7 @@ async function tryAdminLogin(){
 <div>
 <!-- 可收折：加班與其它應領 -->
 <div class="collapsible-group">
-  <div style="margin:24px 0 8px;padding:10px 16px;background:#A9B29B;border:2px solid #BF9241;border-radius:10px;font-size:16px;font-weight:700;color:#1a1a1a;display:flex;align-items:center;gap:8px;">
+  <div style="margin:0 0 8px;padding:10px 16px;background:#A9B29B;border:2px solid #BF9241;border-radius:10px;font-size:16px;font-weight:700;color:#1a1a1a;display:flex;align-items:center;gap:8px;">
     <span class="icon">➕</span> 加班費 ／ 其它應領項目
   </div>
   <div class="collapsible-body" id="extra-earn-body">
@@ -753,7 +753,7 @@ async function tryAdminLogin(){
 </div><!-- end col1 -->
 <div>
 <!-- 請假 -->
-<div style="margin:24px 0 8px;padding:10px 16px;background:#9FB4C7;border:2px solid #BF9241;border-radius:10px;font-size:16px;font-weight:700;color:#1a1a1a;display:flex;align-items:center;gap:8px;">
+<div style="margin:0 0 8px;padding:10px 16px;background:#9FB4C7;border:2px solid #BF9241;border-radius:10px;font-size:16px;font-weight:700;color:#1a1a1a;display:flex;align-items:center;gap:8px;">
   <span class="icon">📅</span> 請假・其它扣款
 </div>
 <div class="section" style="background:#FAFAF8">
