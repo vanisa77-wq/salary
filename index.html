@@ -1999,7 +1999,7 @@ function amtNum(a){
 function batchBucketEarn(items){
   var b={base:0,attendance:0,ot:0,other:0};
   (items||[]).forEach(function(it){
-    if(it.t.indexOf('合計')!==-1)return;
+    if(it.t==='病假扣款合計')return;
     var v=amtNum(it.a);
     if(it.t.indexOf('全勤')!==-1)b.attendance+=v;
     else if(it.t.indexOf('在職底薪')!==-1)b.base+=v;
@@ -2011,7 +2011,7 @@ function batchBucketEarn(items){
 function batchBucketDeduct(items){
   var b={labor:0,health:0,sick:0,personal:0,other:0};
   (items||[]).forEach(function(it){
-    if(it.t.indexOf('合計')!==-1)return;
+    if(it.t==='病假扣款合計')return;
     var v=amtNum(it.a);
     if(it.t.indexOf('勞保自付')!==-1)b.labor+=v;
     else if(it.t.indexOf('健保自付')!==-1)b.health+=v;
@@ -2541,7 +2541,7 @@ function exportYearlyEmployeeForm(){
   function bucketEarn(items){
     var b = {base:0, shift:0, meeting:0, flexEarly:0, flexLate:0, refund:0, other:0};
     (items||[]).forEach(function(it){
-      if(it.t.indexOf('合計')!==-1)return;
+      if(it.t==='病假扣款合計')return;
       var v = amtNum(it.a);
       if(it.t.indexOf('在職底薪')!==-1 || it.t.indexOf('全勤')!==-1) b.base += v;
       else if(it.t.indexOf('值班')!==-1) b.shift += v;
@@ -2556,7 +2556,7 @@ function exportYearlyEmployeeForm(){
   function bucketDeduct(items){
     var b = {labor:0, health:0, sick:0, personal:0, adjust:0, other:0};
     (items||[]).forEach(function(it){
-      if(it.t.indexOf('合計')!==-1)return;
+      if(it.t==='病假扣款合計')return;
       var v = amtNum(it.a);
       if(it.t.indexOf('勞保自付')!==-1) b.labor += v;
       else if(it.t.indexOf('健保自付')!==-1) b.health += v;
