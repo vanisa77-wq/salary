@@ -2091,7 +2091,7 @@ function renderBatchResultsTable(){
     var td = 'padding:8px;border:1px solid #E5E3DC;text-align:center';
     var rowBg = rs.staleResign ? '#FBEFDC' : (rs.resignLinked ? '#F9E4DE' : (rs.hireLinked ? '#E5F0E1' : '#fff'));
     var rowBadge = rs.staleResign ? '&nbsp;<span onclick="loadBatchReport('+rs.origIndex+')" title="存檔未依離職日比例計算，點一下重新載入" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#C99A45;vertical-align:middle;cursor:pointer"></span>'
-      : (rs.resignLinked ? '&nbsp;<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#E5E3DC;vertical-align:middle"></span>'
+      : (rs.resignLinked ? '&nbsp;<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#B0AFAB;vertical-align:middle"></span>'
       : (rs.hireLinked ? '&nbsp;<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#F7E1DC;vertical-align:middle"></span>' : ''));
     h += '<tr style="background:'+rowBg+'">'
       + '<td style="'+td+';color:#999">'+(idx+1)+'</td>'
