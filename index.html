@@ -2560,16 +2560,10 @@ function exportYearlyCSV(){
   var ws2 = XLSX.utils.aoa_to_sheet(detailRows);
   XLSX.utils.book_append_sheet(wb, ws1, '總表');
   XLSX.utils.book_append_sheet(wb, ws2, '明細');
+  buildEmployeeSheets(wb, y, data, names, {'總表':true,'明細':true});
   XLSX.writeFile(wb, '年度薪資紀錄_民國'+y+'年.xlsx');
 }
-function exportYearlyEmployeeForm(){
-  if(typeof XLSX === 'undefined'){ alert('Excel 匯出套件載入失敗，請重新整理頁面再試一次'); return; }
-  var sel = document.getElementById('yearly-year-sel');
-  var y = sel ? sel.value : '';
-  var data = yearlyRecords[y] || {};
-  var names = Object.keys(data).sort();
-  if(names.length===0){ alert('此年度尚無紀錄可匯出'); return; }
-
+function buildEmployeeSheets(wb, y, data, names, usedSheetNames){
   function bucketEarn(items){
     var b = {base:0, shift:0, meeting:0, flexEarly:0, flexLate:0, refund:0, other:0};
     (items||[]).forEach(function(it){
@@ -2615,8 +2609,7 @@ function exportYearlyEmployeeForm(){
   }
 
   var monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-  var wb = XLSX.utils.book_new();
-  var usedSheetNames = {};
+  usedSheetNames = usedSheetNames || {};
 
   names.forEach(function(nm){
     var emp = (typeof employeeDB!=='undefined' ? employeeDB : []).filter(function(e){ return e.name===nm; })[0];
@@ -2678,7 +2671,16 @@ function exportYearlyEmployeeForm(){
     usedSheetNames[uniqueName] = true;
     XLSX.utils.book_append_sheet(wb, ws, uniqueName);
   });
-
+}
+function exportYearlyEmployeeForm(){
+  if(typeof XLSX === 'undefined'){ alert('Excel 匯出套件載入失敗，請重新整理頁面再試一次'); return; }
+  var sel = document.getElementById('yearly-year-sel');
+  var y = sel ? sel.value : '';
+  var data = yearlyRecords[y] || {};
+  var names = Object.keys(data).sort();
+  if(names.length===0){ alert('此年度尚無紀錄可匯出'); return; }
+  var wb = XLSX.utils.book_new();
+  buildEmployeeSheets(wb, y, data, names, {});
   XLSX.writeFile(wb, '小蘋果托嬰中心_民國'+y+'年度薪資統計表.xlsx');
 }
 function exportYearlyBackup(){
