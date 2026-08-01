@@ -2150,7 +2150,7 @@ function renderBatchResultsTable(){
     var insWarn = rs.prev && (rs.prev.labor !== rs.labor || rs.prev.health !== rs.health);
     var done = !!(batchReports[rs.origIndex] && batchReports[rs.origIndex].done);
     var td = 'padding:8px;border:1px solid #E5E3DC;text-align:center';
-    var rowBg = rs.staleResign ? '#FBEFDC' : (rs.resignLinked ? '#F9E4DE' : (rs.hireLinked ? '#E5F0E1' : '#fff'));
+    var rowBg = rs.staleResign ? '#FBEFDC' : (rs.resignLinked ? '#EDECE8' : (rs.hireLinked ? '#F7E1DC' : '#fff'));
     var rowBadge = rs.staleResign ? '&nbsp;<span onclick="loadBatchReport('+rs.origIndex+')" title="存檔未依離職日比例計算，點一下重新載入" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#C99A45;vertical-align:middle;cursor:pointer"></span>'
       : (rs.resignLinked ? '&nbsp;<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#B0AFAB;vertical-align:middle"></span>'
       : (rs.hireLinked ? '&nbsp;<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#F7E1DC;vertical-align:middle"></span>' : ''));
