@@ -1484,6 +1484,12 @@ function loadEmployeeDB(){
   });
 }
 function lookupEmployee(name){return employeeDB.find(e=>e.name===name);}
+function isResignThisMonthEmp(emp,y,mo){
+  if(!emp||!emp.resignDate)return false;
+  var ad=(+y)+1911;
+  var parts=emp.resignDate.split('-');
+  return +parts[0]===ad&&+parts[1]===(+mo);
+}
 function autoLinkResignDate(){
   var name=((document.getElementById('emp-name')||{}).value||'').trim();
   var emp=name?lookupEmployee(name):null;
@@ -1978,7 +1984,8 @@ function batchCalcAll(){
           earn: savedRec.earn, deduct: savedRec.deduct, net: savedRec.net,
           eb: lockedEb, db: lockedDb,
           labor: lockedDb.labor, health: lockedDb.health, prev: lockedPv,
-          dbMatched: !!lockedEmpRec, saved: true, error: ''
+          dbMatched: !!lockedEmpRec, saved: true, error: '',
+          resignLinked: isResignThisMonthEmp(lockedEmpRec, lockedY, lockedMo)
         });
         return;
       }
@@ -2001,7 +2008,8 @@ function batchCalcAll(){
         earn: numFrom('h-earn'), deduct: numFrom('h-deduct'), net: numFrom('r-net'),
         eb: eb, db: db,
         labor: laborNow, health: healthNow, prev: pv,
-        dbMatched: !!r.dbMatched, saved: false, error: ''
+        dbMatched: !!r.dbMatched, saved: false, error: '',
+        resignLinked: isResignThisMonthEmp(empRec, y, mo)
       });
     }catch(personErr){
       results.push({ name: (r&&r.name)||'（未命名）', y:'', mo:'', origIndex: origIndex, hireDate:'', earn:0, deduct:0, net:0,
@@ -2063,7 +2071,7 @@ function renderBatchResultsTable(){
     var td = 'padding:8px;border:1px solid #E5E3DC;text-align:center';
     h += '<tr style="background:#fff">'
       + '<td style="'+td+';color:#999">'+(idx+1)+'</td>'
-      + '<td style="'+td+';white-space:nowrap;font-weight:600">'+rs.name+'</td>'
+      + '<td style="'+td+';white-space:nowrap;font-weight:600">'+rs.name+(rs.resignLinked?'<br><span style="font-weight:700;font-size:11px;color:#B5533C;background:#F2D9D2;border-radius:8px;padding:1px 6px;white-space:nowrap">🔴本月離職已比例計算</span>':'')+'</td>'
       + '<td style="'+td+'">'+fmtN(rs.eb.base)+'</td>'
       + '<td style="'+td+'">'+fmtN(rs.eb.attendance)+'</td>'
       + '<td style="'+td+'">'+fmtN(rs.eb.ot)+'</td>'
