@@ -1130,6 +1130,8 @@ if(sb) sb.auth.getSession().then(function(res){ if(res.data.session) unlockGate(
 let employeeDB=[];
 let dependentsByEmp={};
 let allowancesByEmp={};
+let insuranceHistory={};
+try{ var _ihCache=localStorage.getItem('scInsuranceHistory'); if(_ihCache) insuranceHistory=JSON.parse(_ihCache); }catch(e){}
 function rowToEmp(r){return {id:r.id,account:r.account||'',password:r.password||'',name:r.name||'',base:r.base||0,bonus:r.bonus||0,insGrade:r.ins_grade||0,dependents:r.dependents||0,hireDate:r.hire_date||'',jobTitle:r.job_title||'',healthInsGrade:r.health_ins_grade||0,laborInsExempt:r.labor_ins_exempt===true};}
 function depAge(birthDate){
   if(!birthDate)return null;
@@ -1439,6 +1441,17 @@ function loadEmployeeDB(){
       if(!allowancesByEmp[a.employee_id])allowancesByEmp[a.employee_id]=[];
       allowancesByEmp[a.employee_id].push(a);
     });
+  });
+  client.from('insurance_history').select('*').then(function(res){
+    if(res.error){console.error(res.error);return;}
+    insuranceHistory={};
+    (res.data||[]).forEach(function(r){
+      var y=String(r.year_roc), m=String(r.month);
+      if(!insuranceHistory[y])insuranceHistory[y]={};
+      if(!insuranceHistory[y][m])insuranceHistory[y][m]={};
+      insuranceHistory[y][m][r.name]=r;
+    });
+    try{localStorage.setItem('scInsuranceHistory',JSON.stringify(insuranceHistory));}catch(e){}
   });
 }
 function lookupEmployee(name){return employeeDB.find(e=>e.name===name);}
@@ -1872,6 +1885,12 @@ function batchBucketDeduct(items){
 function getPrevIns(y, name, mo){
   var pm = +mo - 1, py = String(y);
   if(pm < 1){ pm = 12; py = String(+y - 1); }
+  var ih = insuranceHistory[py] && insuranceHistory[py][String(pm)] && insuranceHistory[py][String(pm)][name];
+  if(ih){
+    var laborIh = Number(ih.labor_premium_self)||0;
+    var healthIh = (Number(ih.health_premium_self)||0) + (Number(ih.dependents_premium)||0);
+    return { labor: laborIh, health: healthIh, mo: pm, y: py };
+  }
   var rec = yearlyRecords[py] && yearlyRecords[py][name] && yearlyRecords[py][name][String(pm)];
   if(!rec || !rec.items) return null;
   var labor = 0, health = 0;
