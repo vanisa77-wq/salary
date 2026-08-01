@@ -1984,6 +1984,16 @@ function batchCalcAll(){
         var lockedPv = null;
         try{ lockedPv = getPrevIns(lockedY, lockedName, lockedMo); }catch(e){}
         var lockedEmpRec = (typeof employeeDB!=='undefined'?employeeDB:[]).filter(function(e){ return e.name===lockedName; })[0];
+        var staleResign = false;
+        if(isResignThisMonthEmp(lockedEmpRec, lockedY, lockedMo)){
+          var expLeaveDay = +lockedEmpRec.resignDate.split('-')[2];
+          var expDaysInMonth = getDays(+lockedY, +lockedMo);
+          if(expLeaveDay !== expDaysInMonth){
+            var expSalaryDays = salaryDaysCalc(null, expLeaveDay, expDaysInMonth);
+            var expBase = rnd(lockedEmpRec.base/30*expSalaryDays);
+            if(Math.abs(lockedEb.base - expBase) > 2) staleResign = true;
+          }
+        }
         results.push({
           name: lockedName || '（未命名）', y: lockedY, mo: lockedMo, origIndex: origIndex,
           hireDate: (lockedEmpRec&&lockedEmpRec.hireDate)||'',
@@ -1991,7 +2001,9 @@ function batchCalcAll(){
           eb: lockedEb, db: lockedDb,
           labor: lockedDb.labor, health: lockedDb.health, prev: lockedPv,
           dbMatched: !!lockedEmpRec, saved: true, error: '',
-          resignLinked: false, hireLinked: false
+          resignLinked: isResignThisMonthEmp(lockedEmpRec, lockedY, lockedMo),
+          hireLinked: isHireThisMonthEmp(lockedEmpRec, lockedY, lockedMo),
+          staleResign: staleResign
         });
         return;
       }
@@ -2016,7 +2028,8 @@ function batchCalcAll(){
         labor: laborNow, health: healthNow, prev: pv,
         dbMatched: !!r.dbMatched, saved: false, error: '',
         resignLinked: isResignThisMonthEmp(empRec, y, mo),
-        hireLinked: isHireThisMonthEmp(empRec, y, mo)
+        hireLinked: isHireThisMonthEmp(empRec, y, mo),
+        staleResign: false
       });
     }catch(personErr){
       results.push({ name: (r&&r.name)||'（未命名）', y:'', mo:'', origIndex: origIndex, hireDate:'', earn:0, deduct:0, net:0,
@@ -2071,14 +2084,15 @@ function renderBatchResultsTable(){
   ['NO.','姓名','薪資','全勤','加班費','其它','應領小計','勞保','健保','病假','事假','其它','應扣小計','總計','上月勞保','上月健保','狀態','操作'].forEach(function(th){ h += '<th style="padding:8px;border:1px solid #E5E3DC;white-space:nowrap;text-align:center;font-weight:600">'+th+'</th>'; });
   h += '</tr>';
   results.forEach(function(rs,idx){
-    var statusKind = rs.error ? 'err' : (rs.dbMatched ? 'ok' : 'warn');
-    var statusTitle = rs.error ? rs.error : (rs.dbMatched ? (rs.saved?'已核薪鎖定（存入年度紀錄的正式資料）':'已從員工資料庫比對成功（僅預覽，尚未存入年度紀錄）') : '員工資料庫中無此人，請確認資料');
+    var statusKind = rs.error ? 'err' : (rs.staleResign ? 'warn' : (rs.dbMatched ? 'ok' : 'warn'));
+    var statusTitle = rs.error ? rs.error : (rs.staleResign ? '⚠️ 存檔金額未依離職日比例計算，請重新載入計算並存檔' : (rs.dbMatched ? (rs.saved?'已核薪鎖定（存入年度紀錄的正式資料）':'已從員工資料庫比對成功（僅預覽，尚未存入年度紀錄）') : '員工資料庫中無此人，請確認資料'));
     var insWarn = rs.prev && (rs.prev.labor !== rs.labor || rs.prev.health !== rs.health);
     var done = !!(batchReports[rs.origIndex] && batchReports[rs.origIndex].done);
     var td = 'padding:8px;border:1px solid #E5E3DC;text-align:center';
-    var rowBg = rs.resignLinked ? '#F9E4DE' : (rs.hireLinked ? '#E5F0E1' : '#fff');
-    var rowBadge = rs.resignLinked ? '<br><span style="display:inline-flex;align-items:center;gap:4px;font-weight:700;font-size:11px;color:#666;background:#E5E3DC;border-radius:8px;padding:1px 6px;white-space:nowrap"><span style="width:6px;height:6px;border-radius:50%;background:#B5533C;display:inline-block"></span>本月離職已比例計算</span>'
-      : (rs.hireLinked ? '<br><span style="display:inline-flex;align-items:center;gap:4px;font-weight:700;font-size:11px;color:#8a5c50;background:#F7E1DC;border-radius:8px;padding:1px 6px;white-space:nowrap"><span style="width:6px;height:6px;border-radius:50%;background:#3F6B3F;display:inline-block"></span>本月到職已比例計算</span>' : '');
+    var rowBg = rs.staleResign ? '#FBEFDC' : (rs.resignLinked ? '#F9E4DE' : (rs.hireLinked ? '#E5F0E1' : '#fff'));
+    var rowBadge = rs.staleResign ? '<br><span style="display:inline-flex;align-items:center;gap:4px;font-weight:700;font-size:11px;color:#8a6d1f;background:#F3E3B8;border-radius:8px;padding:1px 6px;white-space:nowrap"><span style="width:6px;height:6px;border-radius:50%;background:#C99A45;display:inline-block"></span>存檔未依離職日計算，請重新載入</span>'
+      : (rs.resignLinked ? '<br><span style="display:inline-block;width:32px;height:6px;border-radius:3px;background:#E5E3DC"></span>'
+      : (rs.hireLinked ? '<br><span style="display:inline-block;width:32px;height:6px;border-radius:3px;background:#F7E1DC"></span>' : ''));
     h += '<tr style="background:'+rowBg+'">'
       + '<td style="'+td+';color:#999">'+(idx+1)+'</td>'
       + '<td style="'+td+';white-space:nowrap;font-weight:600">'+rs.name+rowBadge+'</td>'
