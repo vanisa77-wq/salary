@@ -264,7 +264,8 @@ hr.sd{border:none;border-top:1.5px solid #e8ddd6;margin:12px 0}
 .slip-row.hl{font-size:17px;font-weight:700}
 .slip-row.hl label{color:#1a1a1a}
 .slip-row.hl .v{color:#7a6058}
-.slip-row.net{margin-top:6px;padding:10px 12px;background:#f0ebe5;border-radius:8px}
+.slip-row.net{margin-top:6px;padding:10px 12px;background:#f0ebe5;border-radius:8px;align-items:center}
+.slip-formula{font-size:12px;color:#9a8880;font-weight:400;margin-top:2px}
 .slip-section-title{
   font-size:14px;font-weight:700;padding:6px 10px;border-radius:6px;margin:12px 0 4px;
 }
@@ -459,7 +460,13 @@ hr.sd{border:none;border-top:1.5px solid #e8ddd6;margin:12px 0}
     <div id="slip-deducts"></div>
     <div class="slip-row hl"><label>應扣小計</label><span class="v" id="slip-deduct-total">—</span></div>
     <hr class="sd">
-    <div class="slip-row hl net"><label>實領轉帳金額</label><span class="v" id="slip-net">—</span></div>
+    <div class="slip-row hl net">
+      <div>
+        <label>實領轉帳金額</label>
+        <div class="slip-formula" id="slip-formula"></div>
+      </div>
+      <span class="v" id="slip-net">—</span>
+    </div>
     <div class="slip-note">本薪資單由小蘋果薪資系統產出，如有疑問請洽主任</div>
     <button class="btn-print-slip no-print" onclick="window.print()">列印薪資單</button>
     <button class="btn-print-slip no-print" id="save-summary-btn" onclick="saveSlipToSupabase()" style="margin-top:8px">💾 存入薪資彙總表</button>
@@ -723,6 +730,7 @@ function showSlip(){
   document.getElementById('slip-health').textContent=healthAmt===0?'免扣（0 元）':healthAmt.toLocaleString()+' 元';
   document.getElementById('slip-deduct-total').textContent=totalDeduct.toLocaleString()+' 元';
   document.getElementById('slip-net').textContent=net.toLocaleString()+' 元';
+  document.getElementById('slip-formula').textContent=`應領 ${gross.toLocaleString()} 元 － 應扣 ${totalDeduct.toLocaleString()} 元`;
   let extrasHTML='';addRows.forEach(r=>{extrasHTML+=`<div class="slip-row"><label>${r.n}</label><span class="v">＋${r.a.toLocaleString()} 元</span></div>`;});
   document.getElementById('slip-extras').innerHTML=extrasHTML;
   let deductHTML='';subRows.forEach(r=>{deductHTML+=`<div class="slip-row"><label>${r.n}</label><span class="v">－${r.a.toLocaleString()} 元</span></div>`;});
