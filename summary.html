@@ -70,9 +70,7 @@ body{
 /* ── 老師清單 ── */
 .list-wrap{overflow-x:auto}
 .detail-table{width:100%;border-collapse:collapse;font-size:14px;white-space:nowrap}
-.detail-table th,.detail-table td{padding:8px 10px;text-align:right;border-bottom:1px solid #e8ddd6}
-.detail-table th:nth-child(1),.detail-table td:nth-child(1),
-.detail-table th:nth-child(2),.detail-table td:nth-child(2){text-align:left}
+.detail-table th,.detail-table td{padding:8px 10px;text-align:center;border-bottom:1px solid #e8ddd6}
 .detail-table thead th{background:#e7ceb8;color:#5c4a42;font-weight:700}
 .detail-table tbody tr:nth-child(even){background:#f5efe9}
 .detail-table td.name{font-weight:600}
@@ -283,7 +281,7 @@ function renderMonth(){
     totals.net+=net;
     return `<tr>
       <td>${idx+1}</td>
-      <td class="name">${r.emp_name}<span class="pay-badge ${r.pay_type}">${r.pay_type}</span></td>
+      <td class="name">${r.emp_name}${r.pay_type==='時薪'?`<span class="pay-badge 時薪">時薪</span>`:''}</td>
       <td>${eb.base.toLocaleString()}</td>
       <td>${eb.attendance.toLocaleString()}</td>
       <td>${eb.ot.toLocaleString()}</td>
@@ -341,12 +339,49 @@ async function loadHistory(){
   const {data,error}=await q.order('year_roc').order('month');
   if(error){ box.innerHTML='<div class="empty-hint">載入失敗：'+error.message+'</div>'; return; }
   if(!data||!data.length){ box.innerHTML='<div class="empty-hint">查無紀錄</div>'; return; }
-  let gross=0,deduct=0,net=0;
+  let totals={base:0,attendance:0,ot:0,eOther:0,earn:0,labor:0,health:0,sick:0,personal:0,dOther:0,deduct:0,net:0};
   const rows=data.map(r=>{
-    gross+=Number(r.earn_total)||0;deduct+=Number(r.deduct_total)||0;net+=Number(r.net_total)||0;
-    return `<tr><td>民國${r.year_roc}年${r.month}月<span class="pay-badge ${r.pay_type}" style="margin-left:6px">${r.pay_type}</span></td><td>${Number(r.earn_total).toLocaleString()}</td><td>${Number(r.deduct_total).toLocaleString()}</td><td>${Number(r.net_total).toLocaleString()}</td></tr>`;
+    const eb=bucketEarn(r.earn_items);
+    const db=bucketDeduct(r.deduct_items);
+    const earn=Number(r.earn_total)||0, deduct=Number(r.deduct_total)||0, net=Number(r.net_total)||0;
+    totals.base+=eb.base;totals.attendance+=eb.attendance;totals.ot+=eb.ot;totals.eOther+=eb.other;totals.earn+=earn;
+    totals.labor+=db.labor;totals.health+=db.health;totals.sick+=db.sick;totals.personal+=db.personal;totals.dOther+=db.other;totals.deduct+=deduct;
+    totals.net+=net;
+    return `<tr>
+      <td>民國${r.year_roc}年${r.month}月${r.pay_type==='時薪'?`<span class="pay-badge 時薪">時薪</span>`:''}</td>
+      <td>${eb.base.toLocaleString()}</td>
+      <td>${eb.attendance.toLocaleString()}</td>
+      <td>${eb.ot.toLocaleString()}</td>
+      <td>${eb.other.toLocaleString()}</td>
+      <td class="sub-total">${earn.toLocaleString()}</td>
+      <td>${db.labor.toLocaleString()}</td>
+      <td>${db.health.toLocaleString()}</td>
+      <td>${db.sick.toLocaleString()}</td>
+      <td>${db.personal.toLocaleString()}</td>
+      <td>${db.other.toLocaleString()}</td>
+      <td class="deduct-total">${deduct.toLocaleString()}</td>
+      <td class="net">${net.toLocaleString()}</td>
+    </tr>`;
   }).join('');
-  box.innerHTML=`<table class="hist-table"><thead><tr><th>月份</th><th>應領</th><th>代扣</th><th>實領</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td>合計</td><td>${gross.toLocaleString()}</td><td>${deduct.toLocaleString()}</td><td>${net.toLocaleString()}</td></tr></tfoot></table>`;
+  box.innerHTML=`<table class="detail-table">
+    <thead><tr><th>月份</th><th>薪資</th><th>全勤</th><th>加班費</th><th>其它</th><th>應領小計</th><th>勞保</th><th>健保</th><th>病假</th><th>事假</th><th>其它</th><th>應扣小計</th><th>總計</th></tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr>
+      <td>合計</td>
+      <td>${totals.base.toLocaleString()}</td>
+      <td>${totals.attendance.toLocaleString()}</td>
+      <td>${totals.ot.toLocaleString()}</td>
+      <td>${totals.eOther.toLocaleString()}</td>
+      <td>${totals.earn.toLocaleString()}</td>
+      <td>${totals.labor.toLocaleString()}</td>
+      <td>${totals.health.toLocaleString()}</td>
+      <td>${totals.sick.toLocaleString()}</td>
+      <td>${totals.personal.toLocaleString()}</td>
+      <td>${totals.dOther.toLocaleString()}</td>
+      <td>${totals.deduct.toLocaleString()}</td>
+      <td>${totals.net.toLocaleString()}</td>
+    </tr></tfoot>
+  </table>`;
 }
 
 window.onload=()=>{
