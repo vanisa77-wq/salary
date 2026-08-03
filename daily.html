@@ -709,10 +709,19 @@ function calc(){
   document.getElementById('res-formula').textContent=`應領 ${gross.toLocaleString()} 元 － 應扣 ${totalDeduct.toLocaleString()} 元`;
 }
 function buildHoursBreakdown(){
-  if(inputMode!=='daily')return'';
+  if(inputMode!=='daily')return{list:'',summary:''};
   const rows=[...document.querySelectorAll('#day-list .day-row')].filter(r=>r.querySelector('.d-date').value);
-  if(!rows.length)return'';
-  return rows.map(r=>`${formatDate(r.querySelector('.d-date').value)} ${r.querySelector('.day-hours').value}h`).join('、');
+  if(!rows.length)return{list:'',summary:''};
+  const days=rows.map(r=>{
+    const start=r.querySelector('.d-start').value;
+    const end=r.querySelector('.d-end').value;
+    const h=r.querySelector('.day-hours').value;
+    return {date:formatDate(r.querySelector('.d-date').value),start,end,h:parseFloat(h)||0};
+  });
+  const list=days.map(d=>`${d.date} ${d.start}～${d.end}　${d.h} 小時`).join('\n');
+  const uniform=days.every(d=>d.h===days[0].h);
+  const summary=uniform?`共計 ${days.length} 天 × ${days[0].h} 小時`:`共計 ${days.length} 天`;
+  return{list,summary};
 }
 function showSlip(){
   const rate=parseFloat(document.getElementById('hourly-rate').value)||0;
@@ -737,7 +746,8 @@ function showSlip(){
   document.getElementById('slip-hours').textContent=hours+' 小時';
   document.getElementById('slip-wage').textContent=wage.toLocaleString()+' 元';
   const hoursBreakdown=buildHoursBreakdown();
-  document.getElementById('slip-wage-sub').innerHTML=`${hoursBreakdown?hoursBreakdown+'<br>':''}${hours} 小時 × ${rate.toLocaleString()} 元 = ${wage.toLocaleString()} 元`;
+  const summaryLine=hoursBreakdown.summary?`${hoursBreakdown.summary} × ${rate.toLocaleString()} 元 = ${wage.toLocaleString()} 元`:`${hours} 小時 × ${rate.toLocaleString()} 元 = ${wage.toLocaleString()} 元`;
+  document.getElementById('slip-wage-sub').innerHTML=`${hoursBreakdown.list?hoursBreakdown.list.replace(/\n/g,'<br>')+'<br>':''}${summaryLine}`;
   document.getElementById('slip-gross').textContent=gross.toLocaleString()+' 元';
   document.getElementById('slip-labor').textContent=laborAmt.toLocaleString()+' 元';
   document.getElementById('slip-labor-sub').textContent=laborDesc;
@@ -753,7 +763,7 @@ function showSlip(){
   const w=document.getElementById('slip-wrapper');w.style.display='block';w.scrollIntoView({behavior:'smooth'});
   lastSlipData={
     name, rocY, mm,
-    earnItems:[{t:'時薪工資',s:`${hoursBreakdown?hoursBreakdown+'，':''}合計 ${hours} 小時 × ${rate.toLocaleString()} 元`,a:wage.toLocaleString()+' 元'}].concat(addRows.map(r=>({t:r.n,a:r.a.toLocaleString()+' 元'}))),
+    earnItems:[{t:'時薪工資',s:`${hoursBreakdown.list?hoursBreakdown.list+'\n':''}${summaryLine}`,a:wage.toLocaleString()+' 元'}].concat(addRows.map(r=>({t:r.n,a:r.a.toLocaleString()+' 元'}))),
     deductItems:[{t:'勞保自付額',s:laborDesc,a:laborAmt.toLocaleString()+' 元'},{t:'健保自付額',s:healthDesc,a:healthAmt===0?'免扣（0 元）':healthAmt.toLocaleString()+' 元'}].concat(subRows.map(r=>({t:r.n,a:r.a.toLocaleString()+' 元'}))),
     gross, totalDeduct, net,
     detailText:`【時薪明細】${name}｜民國 ${rocY} 年 ${mm} 月\n時薪：${rate.toLocaleString()} 元/小時｜工時：${hours} 小時\n應領合計：${gross.toLocaleString()} 元\n勞保自付：${laborAmt.toLocaleString()} 元｜健保自付：${healthAmt.toLocaleString()} 元\n實領：${net.toLocaleString()} 元`
