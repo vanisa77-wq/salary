@@ -403,6 +403,7 @@ body.gate-unlocked{padding-top:26px}
 <div id="site-nav-bar" style="position:fixed;top:0;left:0;right:0;z-index:100000;background:#2c2c2c;padding:8px 10px;display:flex;gap:8px;overflow-x:auto;font-family:'Microsoft JhengHei','PingFang TC',sans-serif;font-size:13px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.2);">
   <a href="/" style="color:#fff;background:#C0392B;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">💰 月薪計算</a>
   <a href="/daily" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">📅 日薪計算</a>
+  <a href="/summary" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">📊 薪資彙總表</a>
   <a href="/report" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">📝 請假加班回報</a>
   <a href="/deposit" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">🍎 定位金收據</a>
   <a href="/consent" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">📷 肖像同意書</a>
@@ -1952,6 +1953,24 @@ function quickSave(el){
     setTimeout(function(){ el.textContent=orig; el.disabled=false; },2000);
   }
 }
+function syncSalaryRecordToSupabase(y, name, mo, earn, deduct, net, earnItems, deductItems, detailText){
+  if(!sb || !name) return;
+  sb.from('salary_records').upsert({
+    emp_name: name,
+    year_roc: parseInt(y) || 115,
+    month: parseInt(mo) || 1,
+    pay_type: '月薪',
+    earn_items: earnItems,
+    deduct_items: deductItems,
+    earn_total: earn,
+    deduct_total: deduct,
+    net_total: net,
+    detail_text: detailText,
+    saved_at: new Date().toISOString()
+  }, { onConflict: 'emp_name,year_roc,month' }).then(function(res){
+    if(res.error) console.error('salary_records 同步失敗', res.error);
+  });
+}
 function saveToYearly(silent){
   var name = (document.getElementById('emp-name')||{}).value || '';
   var y = (document.getElementById('cal-year')||{}).value || '';
@@ -1980,6 +1999,7 @@ function saveToYearly(silent){
     }
   };
   saveYearlyRecords();
+  syncSalaryRecordToSupabase(y, name, mo, earn, deduct, net, collectRows('earn-body'), collectRows('deduct-body'), buildResultText());
   refreshYearlySel();
   renderYearlyStats();
   if(lastBatchResults && currentBatchIndex!==null){

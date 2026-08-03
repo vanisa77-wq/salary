@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-TW"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小蘋果｜薪資彙總表</title>
+<meta name="description" content="小蘋果托嬰中心｜全體老師薪資彙總表">
+<meta property="og:title" content="小蘋果托嬰中心｜薪資彙總表">
+<meta property="og:description" content="小蘋果托嬰中心｜全體老師薪資彙總表">
+<meta property="og:type" content="website">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'微軟正黑體','Microsoft JhengHei',sans-serif;
+  background:#f0ebe5;
+  color:#1a1a1a;
+  min-height:100vh;
+}
+
+/* ── Header ── */
+.header{
+  background:#b5a49a;
+  padding:16px 20px;
+}
+.header-title{color:#fff;font-size:18px;font-weight:700;letter-spacing:.04em}
+.header-sub{color:rgba(255,255,255,.8);font-size:13px;margin-top:2px}
+
+/* ── Container ── */
+.container{max-width:960px;margin:0 auto;padding:16px}
+
+/* ── Cards ── */
+.card{
+  background:#faf7f4;
+  border-radius:12px;
+  padding:18px;
+  margin-bottom:14px;
+  box-shadow:0 2px 8px rgba(0,0,0,.07);
+  border-left:4px solid #c4a99a;
+}
+.card-title{
+  font-size:16px;font-weight:700;
+  color:#5c4a42;
+  margin-bottom:14px;padding-bottom:8px;
+  border-bottom:1.5px solid #e8ddd6;
+}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}
+.field{margin-bottom:0}
+.field label{display:block;font-size:13px;color:#6b5a52;margin-bottom:5px;font-weight:500}
+.field input,.field select{
+  width:100%;padding:10px 13px;
+  border:1.5px solid #d8cdc6;
+  border-radius:8px;
+  font-size:15px;font-family:inherit;
+  background:#fff;color:#1a1a1a;
+  outline:none;transition:border .2s;
+}
+.field input:focus,.field select:focus{
+  border-color:#b5a49a;
+  box-shadow:0 0 0 3px rgba(181,164,154,.15);
+}
+.btn-query{
+  padding:10px 20px;border:none;border-radius:8px;
+  background:#b5a49a;color:#fff;font-size:14px;font-weight:700;
+  cursor:pointer;font-family:inherit;white-space:nowrap;
+}
+.btn-query:hover{background:#a08e83}
+.hint{font-size:13px;color:#9a8880;margin-top:6px}
+
+/* ── 老師清單 ── */
+.list-wrap{overflow-x:auto}
+.t-header,.t-row{
+  display:grid;
+  grid-template-columns:120px 70px 100px 100px 100px 80px 28px;
+  gap:6px;align-items:center;
+  min-width:640px;
+}
+.t-header{margin-bottom:6px}
+.t-header span{font-size:13px;color:#9a8880}
+.t-list{display:flex;flex-direction:column;gap:6px}
+.t-row{padding:8px 0;border-bottom:1px solid #f0ebe5}
+.t-row span{font-size:14px}
+.t-row .amt{text-align:right;font-weight:600}
+.t-net{font-weight:700;color:#7a6058;text-align:right}
+.btn-toggle{
+  background:none;border:1.5px solid #d8cdc6;border-radius:6px;
+  color:#8a6a5e;font-size:12px;cursor:pointer;padding:4px 8px;font-family:inherit;
+}
+.btn-toggle:hover{border-color:#b5a49a}
+.pay-badge{
+  display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:700;
+}
+.pay-badge.月薪{background:#dce8f0;color:#3a6a8a}
+.pay-badge.時薪{background:#dceade;color:#3a6e50}
+.detail-row{
+  display:none;grid-column:1/-1;background:#f5f0ec;border-radius:8px;padding:10px 14px;margin-top:4px;font-size:13px;
+}
+.detail-row.open{display:block}
+.detail-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.detail-cols h4{font-size:13px;color:#6b5a52;margin-bottom:4px}
+.detail-cols .di{display:flex;justify-content:space-between;padding:2px 0;color:#333}
+.empty-hint{color:#9a8880;font-size:14px;padding:14px 0;text-align:center}
+
+/* ── 彙總 ── */
+.sum-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+.sum-card{background:#f0ebe5;border-radius:8px;padding:13px;text-align:center}
+.sum-card label{display:block;font-size:13px;color:#6b5a52;margin-bottom:6px}
+.sum-card .val{font-size:19px;font-weight:700;color:#7a6058}
+.sum-card.hl .val{color:#a05030;font-size:22px}
+
+/* ── 個人歷史 ── */
+.hist-table{width:100%;border-collapse:collapse;font-size:14px}
+.hist-table th,.hist-table td{padding:8px 10px;text-align:right;border-bottom:1px solid #e8ddd6}
+.hist-table th:first-child,.hist-table td:first-child{text-align:left}
+.hist-table th{color:#6b5a52;font-weight:600}
+.hist-table tfoot td{font-weight:700;color:#7a6058}
+
+.btn-add{
+  width:100%;padding:9px;margin-top:4px;
+  border:1.5px dashed #c4a99a;border-radius:8px;
+  background:#fdf8f5;color:#8a6a5e;
+  font-size:14px;font-family:inherit;cursor:pointer;
+  transition:all .2s;
+}
+.btn-add:hover{background:#f5ede8;border-color:#a08078}
+
+@media print{
+  #site-nav-bar,.no-print{display:none!important}
+}
+@media (max-width:640px){
+  .sum-grid{grid-template-columns:1fr 1fr}
+  .row3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div id="site-nav-bar" style="position:fixed;top:0;left:0;right:0;z-index:100000;background:#2c2c2c;padding:8px 10px;display:flex;gap:8px;overflow-x:auto;font-family:'Microsoft JhengHei','PingFang TC',sans-serif;font-size:13px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.2);">
+  <a href="/" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">💰 月薪計算</a>
+  <a href="/daily" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">📅 日薪計算</a>
+  <a href="/summary" style="color:#fff;background:#C0392B;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">📊 薪資彙總表</a>
+  <a href="/report" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">📝 請假加班回報</a>
+  <a href="/deposit" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">🍎 定位金收據</a>
+  <a href="/consent" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">📷 肖像同意書</a>
+  <a href="/deposit-track" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">🔒 定位金追蹤</a>
+  <a href="/consent-track" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">🔒 同意書回傳</a>
+</div>
+<div style="height:44px;"></div>
+
+<div class="header">
+  <div class="header-title">薪資彙總表</div>
+  <div class="header-sub">直接從資料庫讀取月薪計算器、時薪計算器已存檔的資料，可依月份看全體彙總，也可依人查歷年紀錄</div>
+</div>
+
+<div class="container">
+
+<div class="card">
+  <div class="card-title">📅 依月份查詢全體薪資</div>
+  <div class="row3">
+    <div class="field">
+      <label>年月</label>
+      <input type="month" id="ym">
+    </div>
+    <div></div>
+    <button class="btn-query" onclick="loadMonth()">🔄 從資料庫載入</button>
+  </div>
+  <div class="hint" id="month-status"></div>
+</div>
+
+<div class="card">
+  <div class="card-title">老師薪資明細</div>
+  <div class="list-wrap">
+    <div class="t-header">
+      <span>姓名</span><span>計薪方式</span><span style="text-align:right">應領金額</span><span style="text-align:right">代扣合計</span><span style="text-align:right">實領金額</span><span></span><span></span>
+    </div>
+    <div class="t-list" id="t-list"><div class="empty-hint">請先選擇年月並按「從資料庫載入」</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">全體彙總</div>
+  <div class="sum-grid">
+    <div class="sum-card">
+      <label>老師人數</label>
+      <span class="val" id="sum-count">0</span>
+    </div>
+    <div class="sum-card">
+      <label>應領總計</label>
+      <span class="val" id="sum-gross">0 元</span>
+    </div>
+    <div class="sum-card">
+      <label>代扣總計</label>
+      <span class="val" id="sum-deduct">0 元</span>
+    </div>
+    <div class="sum-card hl">
+      <label>實領總計</label>
+      <span class="val" id="sum-net">0 元</span>
+    </div>
+  </div>
+  <button class="btn-add no-print" style="margin-top:12px" onclick="window.print()">🖨 列印彙總表</button>
+</div>
+
+<div class="card">
+  <div class="card-title">🔍 依人／依年查詢歷史紀錄</div>
+  <div class="row3">
+    <div class="field">
+      <label>老師姓名</label>
+      <input type="text" id="hist-name" placeholder="請輸入老師姓名">
+    </div>
+    <div class="field">
+      <label>年度（民國）</label>
+      <input type="number" id="hist-year" min="100" max="200" placeholder="例：115">
+    </div>
+    <button class="btn-query" onclick="loadHistory()">🔍 查詢</button>
+  </div>
+  <div id="hist-result" style="margin-top:14px"></div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL='https://vicbgttehkqeqhyvtlet.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_N4DH8txPq9dc9naOPk_Qmg_qEbEcXVM';
+const sb=window.supabase?window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
+
+let monthRecords=[];
+
+function ymToRoc(){
+  const v=document.getElementById('ym').value;
+  if(!v)return null;
+  const[y,m]=v.split('-').map(Number);
+  return {rocY:y-1911, mo:m};
+}
+
+async function loadMonth(){
+  const status=document.getElementById('month-status');
+  const ym=ymToRoc();
+  if(!ym){ status.textContent='請先選擇年月'; return; }
+  if(!sb){ status.textContent='無法連線到資料庫'; return; }
+  status.textContent='載入中…';
+  const {data,error}=await sb.from('salary_records').select('*').eq('year_roc',ym.rocY).eq('month',ym.mo).order('emp_name');
+  if(error){ status.textContent='載入失敗：'+error.message; return; }
+  monthRecords=data||[];
+  status.textContent=`民國 ${ym.rocY} 年 ${ym.mo} 月，共 ${monthRecords.length} 筆已存檔紀錄`;
+  renderMonth();
+}
+
+function renderMonth(){
+  const list=document.getElementById('t-list');
+  if(!monthRecords.length){
+    list.innerHTML='<div class="empty-hint">這個月份還沒有任何存檔紀錄</div>';
+    calcSummary();
+    return;
+  }
+  list.innerHTML='';
+  monthRecords.forEach((r,idx)=>{
+    const row=document.createElement('div');
+    row.className='t-row';
+    row.innerHTML=`<span>${r.emp_name}</span><span><span class="pay-badge ${r.pay_type}">${r.pay_type}</span></span><span class="amt">${Number(r.earn_total).toLocaleString()} 元</span><span class="amt">${Number(r.deduct_total).toLocaleString()} 元</span><span class="t-net">${Number(r.net_total).toLocaleString()} 元</span><button class="btn-toggle no-print" onclick="toggleDetail(${idx})">明細 ▾</button><span></span><div class="detail-row" id="detail-${idx}">${buildDetailHTML(r)}</div>`;
+    list.appendChild(row);
+  });
+  calcSummary();
+}
+
+function buildDetailHTML(r){
+  const earnRows=(r.earn_items||[]).map(it=>`<div class="di"><span>${it.t}${it.s?'（'+it.s+'）':''}</span><span>${it.a}</span></div>`).join('')||'<div class="di">（無）</div>';
+  const deductRows=(r.deduct_items||[]).map(it=>`<div class="di"><span>${it.t}</span><span>${it.a}</span></div>`).join('')||'<div class="di">（無）</div>';
+  return `<div class="detail-cols"><div><h4>＋ 應領項目</h4>${earnRows}</div><div><h4>－ 應扣項目</h4>${deductRows}</div></div>`;
+}
+
+function toggleDetail(idx){
+  const el=document.getElementById('detail-'+idx);
+  el.classList.toggle('open');
+}
+
+function calcSummary(){
+  let gross=0,deduct=0,net=0;
+  monthRecords.forEach(r=>{gross+=Number(r.earn_total)||0;deduct+=Number(r.deduct_total)||0;net+=Number(r.net_total)||0;});
+  document.getElementById('sum-count').textContent=monthRecords.length;
+  document.getElementById('sum-gross').textContent=gross.toLocaleString()+' 元';
+  document.getElementById('sum-deduct').textContent=deduct.toLocaleString()+' 元';
+  document.getElementById('sum-net').textContent=net.toLocaleString()+' 元';
+}
+
+async function loadHistory(){
+  const box=document.getElementById('hist-result');
+  const name=document.getElementById('hist-name').value.trim();
+  const year=document.getElementById('hist-year').value;
+  if(!name){ box.innerHTML='<div class="empty-hint">請輸入老師姓名</div>'; return; }
+  if(!sb){ box.innerHTML='<div class="empty-hint">無法連線到資料庫</div>'; return; }
+  box.innerHTML='<div class="empty-hint">載入中…</div>';
+  let q=sb.from('salary_records').select('*').eq('emp_name',name);
+  if(year) q=q.eq('year_roc',parseInt(year));
+  const {data,error}=await q.order('year_roc').order('month');
+  if(error){ box.innerHTML='<div class="empty-hint">載入失敗：'+error.message+'</div>'; return; }
+  if(!data||!data.length){ box.innerHTML='<div class="empty-hint">查無紀錄</div>'; return; }
+  let gross=0,deduct=0,net=0;
+  const rows=data.map(r=>{
+    gross+=Number(r.earn_total)||0;deduct+=Number(r.deduct_total)||0;net+=Number(r.net_total)||0;
+    return `<tr><td>民國${r.year_roc}年${r.month}月<span class="pay-badge ${r.pay_type}" style="margin-left:6px">${r.pay_type}</span></td><td>${Number(r.earn_total).toLocaleString()}</td><td>${Number(r.deduct_total).toLocaleString()}</td><td>${Number(r.net_total).toLocaleString()}</td></tr>`;
+  }).join('');
+  box.innerHTML=`<table class="hist-table"><thead><tr><th>月份</th><th>應領</th><th>代扣</th><th>實領</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td>合計</td><td>${gross.toLocaleString()}</td><td>${deduct.toLocaleString()}</td><td>${net.toLocaleString()}</td></tr></tfoot></table>`;
+}
+
+window.onload=()=>{
+  const now=new Date();
+  document.getElementById('ym').value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  loadMonth();
+};
+</script>
+
+</body></html>

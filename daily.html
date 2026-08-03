@@ -93,6 +93,20 @@ body{
 }
 .mode-tab.active{background:#b5a49a;color:#fff;font-weight:700}
 
+/* ── 月曆快選 ── */
+.cal-wrap{margin-bottom:14px}
+.cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
+.cal-weekdays span{font-size:12px;color:#9a8880;text-align:center}
+.date-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-day{
+  aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+  border:1.5px solid #d8cdc6;border-radius:7px;background:#fff;
+  font-size:13px;color:#1a1a1a;cursor:pointer;user-select:none;
+}
+.cal-day:hover{border-color:#b5a49a}
+.cal-day.empty{visibility:hidden;pointer-events:none}
+.cal-day.selected{background:#b5877a;border-color:#b5877a;color:#fff;font-weight:700}
+
 /* ── 每日記錄 ── */
 .day-header{
   display:grid;
@@ -140,6 +154,13 @@ body{
 }
 .hours-total label{font-size:15px;color:#333;font-weight:600}
 .hours-total .val{font-size:22px;font-weight:700;color:#7a6058}
+.hours-total .val-edit{
+  font-size:22px;font-weight:700;color:#7a6058;
+  border:none;background:transparent;text-align:right;
+  width:80px;font-family:inherit;outline:none;padding:0;
+  border-bottom:1.5px dashed #c4a99a;
+}
+.hours-total .val-edit:focus{border-bottom-color:#7a6058}
 
 /* ── 保費區塊 ── */
 .ins-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
@@ -240,6 +261,7 @@ hr.sd{border:none;border-top:1.5px solid #e8ddd6;margin:12px 0}
 <div id="site-nav-bar" style="position:fixed;top:0;left:0;right:0;z-index:100000;background:#2c2c2c;padding:8px 10px;display:flex;gap:8px;overflow-x:auto;font-family:'Microsoft JhengHei','PingFang TC',sans-serif;font-size:13px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.2);">
   <a href="/" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">💰 月薪計算</a>
   <a href="/daily" style="color:#fff;background:#C0392B;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">📅 日薪計算</a>
+  <a href="/summary" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">📊 薪資彙總表</a>
   <a href="/report" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">📝 請假加班回報</a>
   <a href="/deposit" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">🍎 定位金收據</a>
   <a href="/consent" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">📷 肖像同意書</a>
@@ -302,6 +324,10 @@ hr.sd{border:none;border-top:1.5px solid #e8ddd6;margin:12px 0}
     <button class="mode-tab" onclick="setMode(&#39;total&#39;)">直接輸入總時數</button>
   </div>
   <div id="mode-daily">
+    <div class="cal-wrap">
+      <div class="cal-weekdays"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
+      <div class="date-grid" id="cal-grid"></div>
+    </div>
     <div class="day-header">
       <span>日期</span><span>上班時間</span><span>下班時間</span><span>時數</span><span></span>
     </div>
@@ -316,7 +342,7 @@ hr.sd{border:none;border-top:1.5px solid #e8ddd6;margin:12px 0}
   </div>
   <div class="hours-total">
     <label>合計工時</label>
-    <span class="val" id="total-display">10 小時</span>
+    <span><input class="val-edit" id="total-display" type="number" min="0" step="0.5" oninput="onTotalOverride()">&nbsp;小時</span>
   </div>
 </div>
 
@@ -384,29 +410,34 @@ hr.sd{border:none;border-top:1.5px solid #e8ddd6;margin:12px 0}
     <div class="slip-row hl"><label>實領轉帳金額</label><span class="v" id="slip-net">—</span></div>
     <div class="slip-note">本薪資單由小蘋果薪資系統產出，如有疑問請洽主任</div>
     <button class="btn-print-slip no-print" onclick="window.print()">列印薪資單</button>
+    <button class="btn-print-slip no-print" id="save-summary-btn" onclick="saveSlipToSupabase()" style="margin-top:8px">💾 存入薪資彙總表</button>
   </div>
 </div>
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+const SUPABASE_URL='https://vicbgttehkqeqhyvtlet.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_N4DH8txPq9dc9naOPk_Qmg_qEbEcXVM';
+const sb=window.supabase?window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
 const INS=[
   {wage:33300,labor:833,health:516},{wage:34800,labor:870,health:540},
   {wage:36300,labor:908,health:563},{wage:38200,labor:955,health:592},
   {wage:40100,labor:1002,health:622},{wage:42000,labor:1050,health:651},
   {wage:43900,labor:1098,health:681},{wage:45800,labor:1145,health:710},
 ];
-let empStatus='full',inputMode='daily',dayEntries=[],extraEntries=[];
+let empStatus='full',inputMode='daily',dayEntries=[],extraEntries=[],hoursOverride=null,rowHourOverride={};
 
 window.onload=()=>{
   const now=new Date();
   document.getElementById('ym').value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  document.getElementById('ym').addEventListener('change',calc);
+  document.getElementById('ym').addEventListener('change',()=>{renderCalendar();calc();});
   document.getElementById('hourly-rate').addEventListener('input',calc);
   document.getElementById('emp-name').addEventListener('input',calc);
   const sel=document.getElementById('ins-grade');
   INS.forEach(r=>{const o=document.createElement('option');o.value=r.wage;o.textContent=`${r.wage.toLocaleString()} 元（勞保 ${r.labor} / 健保 ${r.health}）`;sel.appendChild(o);});
-  addDay();calc();
+  addDay();renderCalendar();calc();
 };
 
 function setStatus(s){
@@ -418,32 +449,108 @@ function setStatus(s){
 }
 function setMode(m){
   inputMode=m;
+  hoursOverride=null;
   document.querySelectorAll('.mode-tab').forEach((t,i)=>t.classList.toggle('active',['daily','total'][i]===m));
   document.getElementById('mode-daily').classList.toggle('hidden',m!=='daily');
   document.getElementById('mode-total').classList.toggle('hidden',m!=='total');
+  document.getElementById('total-display').readOnly=(m==='total');
+  renderCalendar();
   calc();
 }
-function addDay(){dayEntries.push(Date.now());renderDays();}
-function removeDay(id){dayEntries=dayEntries.filter(x=>x!==id);renderDays();calc();}
-function renderDays(){
+function addDay(){hoursOverride=null;dayEntries.push(Date.now());renderDays();renderCalendar();}
+function removeDay(id){hoursOverride=null;delete rowHourOverride[id];dayEntries=dayEntries.filter(x=>x!==id);renderDays();renderCalendar();calc();}
+function onTotalOverride(){hoursOverride=parseFloat(document.getElementById('total-display').value)||0;calc();}
+function getSelectedDates(){
+  const s=new Set();
+  document.querySelectorAll('#day-list .d-date').forEach(el=>{if(el.value)s.add(el.value);});
+  return s;
+}
+function renderCalendar(){
+  const grid=document.getElementById('cal-grid');
+  if(!grid)return;
+  const ym=document.getElementById('ym').value;
+  const now=new Date();
+  const[y,m]=ym?ym.split('-').map(Number):[now.getFullYear(),now.getMonth()+1];
+  const daysInMonth=new Date(y,m,0).getDate();
+  const startWeekday=new Date(y,m-1,1).getDay();
+  const selected=getSelectedDates();
+  let html='';
+  for(let i=0;i<startWeekday;i++)html+='<div class="cal-day empty"></div>';
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    html+=`<div class="cal-day${selected.has(ds)?' selected':''}" onclick="toggleCalDay('${ds}')">${d}</div>`;
+  }
+  grid.innerHTML=html;
+}
+function toggleCalDay(ds){
+  const rows=[...document.querySelectorAll('#day-list .day-row')];
+  const existing=rows.find(r=>r.querySelector('.d-date').value===ds);
+  hoursOverride=null;
+  if(existing){
+    delete rowHourOverride[existing.dataset.id];
+    dayEntries=dayEntries.filter(x=>x!==Number(existing.dataset.id));
+    renderDays();renderCalendar();calc();
+    return;
+  }
+  let start='08:00',end='18:00';
+  if(rows.length){
+    const last=rows[rows.length-1];
+    start=last.querySelector('.d-start').value||start;
+    end=last.querySelector('.d-end').value||end;
+  }
+  const emptyRow=rows.find(r=>!r.querySelector('.d-date').value);
+  if(emptyRow){
+    const id=Number(emptyRow.dataset.id);
+    renderDays({[id]:{date:ds,start,end}});
+  }else{
+    const id=Date.now();
+    dayEntries.push(id);
+    renderDays({[id]:{date:ds,start,end}});
+  }
+  renderCalendar();
+  calc();
+}
+function renderDays(overrides={}){
   const list=document.getElementById('day-list');
   const vals={};
   list.querySelectorAll('.day-row').forEach(r=>{vals[r.dataset.id]={date:r.querySelector('.d-date').value,start:r.querySelector('.d-start').value,end:r.querySelector('.d-end').value};});
   list.innerHTML='';
   dayEntries.forEach(id=>{
-    const v=vals[id]||{date:'',start:'08:00',end:'18:00'};
-    const h=calcDayH(v.start,v.end);
+    const v=overrides[id]||vals[id]||{date:'',start:'08:00',end:'18:00'};
+    const h=rowHourOverride[id]!==undefined?rowHourOverride[id]:calcDayH(v.start,v.end);
     const row=document.createElement('div');row.className='day-row';row.dataset.id=id;
-    const weekLabel = v.date ? getWeekLabel(v.date) : '';
-    row.innerHTML=`<div class="d-date-wrap"><input class="d-date" type="date" value="${v.date}" onchange="onDayChange(this)" style="position:absolute;opacity:0;width:100%;height:100%;top:0;left:0;cursor:pointer;z-index:2"/><div class="d-date-display">${v.date ? formatDate(v.date) : '選擇日期'}</div></div><input class="d-start" type="time" value="${v.start}" onchange="onDayChange(this)"/><input class="d-end" type="time" value="${v.end}" onchange="onDayChange(this)"/><div class="day-hours">${h}h</div><button class="btn-del" onclick="removeDay(${id})">✕</button>`;
+    row.innerHTML=`<div class="d-date-wrap"><input class="d-date" type="date" value="${v.date}" onchange="onDayChange(this)" style="position:absolute;opacity:0;width:100%;height:100%;top:0;left:0;cursor:pointer;z-index:2"/><div class="d-date-display">${v.date ? formatDate(v.date) : '選擇日期'}</div></div><input class="d-start" type="time" value="${v.start}" onchange="onDayChange(this)"/><input class="d-end" type="time" value="${v.end}" onchange="onDayChange(this)"/><input class="day-hours" type="number" min="0" step="0.5" value="${h}" oninput="onRowHourChange(this)"/><button class="btn-del" onclick="removeDay(${id})">✕</button>`;
     list.appendChild(row);
   });
 }
 const WEEKS=['日','一','二','三','四','五','六'];
 function formatDate(val){if(!val)return'選擇日期';const d=new Date(val+'T00:00:00');return`${d.getMonth()+1}/${d.getDate()}（${WEEKS[d.getDay()]}）`;}
-function onDayChange(el){const r=el.closest('.day-row');const disp=r.querySelector('.d-date-display');if(disp)disp.textContent=formatDate(el.value);r.querySelector('.day-hours').textContent=calcDayH(r.querySelector('.d-start').value,r.querySelector('.d-end').value)+'h';calc();}
+function onDayChange(el){
+  const r=el.closest('.day-row');
+  const disp=r.querySelector('.d-date-display');
+  if(disp)disp.textContent=formatDate(el.value);
+  if(el.classList.contains('d-start')||el.classList.contains('d-end')){
+    delete rowHourOverride[r.dataset.id];
+    r.querySelector('.day-hours').value=calcDayH(r.querySelector('.d-start').value,r.querySelector('.d-end').value);
+  }
+  hoursOverride=null;
+  renderCalendar();calc();
+}
+function onRowHourChange(el){
+  const r=el.closest('.day-row');
+  rowHourOverride[r.dataset.id]=parseFloat(el.value)||0;
+  hoursOverride=null;
+  calc();
+}
 function calcDayH(s,e){if(!s||!e)return 0;const[sh,sm]=s.split(':').map(Number);const[eh,em]=e.split(':').map(Number);const m=(eh*60+em)-(sh*60+sm);return m>0?Math.round(m/60*10)/10:0;}
-function getDailyTotal(){let t=0;document.querySelectorAll('#day-list .day-row').forEach(r=>{t+=calcDayH(r.querySelector('.d-start').value,r.querySelector('.d-end').value);});return Math.round(t*10)/10;}
+function getDailyTotal(){
+  let t=0;
+  document.querySelectorAll('#day-list .day-row').forEach(r=>{
+    const id=r.dataset.id;
+    t+=rowHourOverride[id]!==undefined?rowHourOverride[id]:calcDayH(r.querySelector('.d-start').value,r.querySelector('.d-end').value);
+  });
+  return Math.round(t*10)/10;
+}
 function addExtra(){extraEntries.push(Date.now());renderExtras();}
 function removeExtra(id){extraEntries=extraEntries.filter(x=>x!==id);renderExtras();calc();}
 function renderExtras(){
@@ -462,8 +569,15 @@ function getIns(){const w=parseInt(document.getElementById('ins-grade').value);r
 function calc(){
   const rate=parseFloat(document.getElementById('hourly-rate').value)||0;
   const ym=document.getElementById('ym').value;
-  const hours=inputMode==='daily'?getDailyTotal():(parseFloat(document.getElementById('total-hours').value)||0);
-  document.getElementById('total-display').textContent=hours+' 小時';
+  const totalDisplayEl=document.getElementById('total-display');
+  let hours;
+  if(inputMode==='daily'){
+    hours=hoursOverride!==null?hoursOverride:getDailyTotal();
+    if(document.activeElement!==totalDisplayEl)totalDisplayEl.value=hours;
+  }else{
+    hours=parseFloat(document.getElementById('total-hours').value)||0;
+    totalDisplayEl.value=hours;
+  }
   const wage=Math.round(rate*hours);
   let extraAdd=0,extraSub=0;
   document.querySelectorAll('.extra-row').forEach(r=>{const t=r.querySelector('.e-type').value;const a=parseFloat(r.querySelector('.e-amt').value)||0;if(t==='add')extraAdd+=a;else extraSub+=a;});
@@ -490,7 +604,7 @@ function showSlip(){
   const rate=parseFloat(document.getElementById('hourly-rate').value)||0;
   const ym=document.getElementById('ym').value;
   const name=document.getElementById('emp-name').value||'（未填姓名）';
-  const hours=inputMode==='daily'?getDailyTotal():(parseFloat(document.getElementById('total-hours').value)||0);
+  const hours=inputMode==='daily'?(hoursOverride!==null?hoursOverride:getDailyTotal()):(parseFloat(document.getElementById('total-hours').value)||0);
   const wage=Math.round(rate*hours);
   const ins=getIns();let laborAmt=ins.labor,healthAmt=ins.health,statusTxt='整月在職';
   if(ym){const[y,m]=ym.split('-').map(Number);const lastDay=new Date(y,m,0).getDate();
@@ -516,6 +630,40 @@ function showSlip(){
   let deductHTML='';subRows.forEach(r=>{deductHTML+=`<div class="slip-row"><label>${r.n}</label><span class="v">－${r.a.toLocaleString()} 元</span></div>`;});
   document.getElementById('slip-deducts').innerHTML=deductHTML;
   const w=document.getElementById('slip-wrapper');w.style.display='block';w.scrollIntoView({behavior:'smooth'});
+  lastSlipData={
+    name, rocY, mm,
+    earnItems:[{t:'時薪工資',s:`${hours} 小時 × ${rate.toLocaleString()} 元`,a:wage.toLocaleString()+' 元'}].concat(addRows.map(r=>({t:r.n,a:r.a.toLocaleString()+' 元'}))),
+    deductItems:[{t:'勞保自付額',a:laborAmt.toLocaleString()+' 元'},{t:'健保自付額',a:healthAmt===0?'免扣（0 元）':healthAmt.toLocaleString()+' 元'}].concat(subRows.map(r=>({t:r.n,a:r.a.toLocaleString()+' 元'}))),
+    gross, totalDeduct, net,
+    detailText:`【時薪明細】${name}｜民國 ${rocY} 年 ${mm} 月\n時薪：${rate.toLocaleString()} 元/小時｜工時：${hours} 小時\n應領合計：${gross.toLocaleString()} 元\n勞保自付：${laborAmt.toLocaleString()} 元｜健保自付：${healthAmt.toLocaleString()} 元\n實領：${net.toLocaleString()} 元`
+  };
+}
+let lastSlipData=null;
+function saveSlipToSupabase(){
+  const btn=document.getElementById('save-summary-btn');
+  if(!sb){ alert('無法連線到資料庫'); return; }
+  if(!lastSlipData || lastSlipData.rocY==='—'){ alert('請先選擇計算年月並產出薪資單'); return; }
+  if(!document.getElementById('emp-name').value.trim()){ alert('請先填寫員工姓名'); return; }
+  const d=lastSlipData;
+  if(btn){btn.textContent='⏳ 存檔中…';btn.disabled=true;}
+  sb.from('salary_records').upsert({
+    emp_name:d.name,
+    year_roc:d.rocY,
+    month:d.mm,
+    pay_type:'時薪',
+    earn_items:d.earnItems,
+    deduct_items:d.deductItems,
+    earn_total:d.gross,
+    deduct_total:d.totalDeduct,
+    net_total:d.net,
+    detail_text:d.detailText,
+    saved_at:new Date().toISOString()
+  },{onConflict:'emp_name,year_roc,month'}).then(res=>{
+    if(btn){btn.disabled=false;}
+    if(res.error){ if(btn)btn.textContent='⚠️ 存檔失敗'; console.error('salary_records 同步失敗',res.error); }
+    else{ if(btn)btn.textContent='✅ 已存入薪資彙總表'; }
+    setTimeout(()=>{ if(btn)btn.textContent='💾 存入薪資彙總表'; },2500);
+  });
 }
 </script>
 
