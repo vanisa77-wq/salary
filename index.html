@@ -864,6 +864,7 @@ async function tryAdminLogin(){
         <button type="button" id="export-yearly-form-btn" onclick="exportYearlyEmployeeForm()" style="padding:8px 14px;border:none;border-radius:8px;background:#B45309;color:#fff;cursor:pointer;font-size:13px">📋 匯出老師統計表（每人一分頁）</button>
         <button type="button" onclick="exportYearlyBackup()" style="padding:8px 14px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">⬇️ 匯出備份</button>
         <button type="button" onclick="showYearlyImport()" style="padding:8px 14px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">⬆️ 匯入備份</button>
+        <button type="button" id="sync-all-to-supabase-btn" onclick="migrateLocalRecordsToSupabase()" style="padding:8px 14px;border:none;border-radius:8px;background:#3D6E93;color:#fff;cursor:pointer;font-size:13px">📡 同步本機舊資料到薪資彙總表</button>
       </div>
       <textarea id="yearly-io" style="display:none;width:100%;min-height:100px;border:1px solid #D5D3CC;border-radius:8px;padding:10px;font-size:12px;font-family:monospace;box-sizing:border-box;margin-bottom:6px"></textarea>
       <button id="yearly-import-btn" type="button" style="display:none;margin-bottom:10px;padding:8px 14px;border:none;border-radius:8px;background:#1B6E3A;color:#fff;cursor:pointer;font-size:13px" onclick="importYearlyBackup()">確認匯入</button>
@@ -1970,6 +1971,45 @@ function syncSalaryRecordToSupabase(y, name, mo, earn, deduct, net, earnItems, d
   }, { onConflict: 'emp_name,year_roc,month' }).then(function(res){
     if(res.error) console.error('salary_records 同步失敗', res.error);
   });
+}
+async function migrateLocalRecordsToSupabase(){
+  const btn = document.getElementById('sync-all-to-supabase-btn');
+  if(!sb){ alert('無法連線到資料庫'); return; }
+  const jobs = [];
+  Object.keys(yearlyRecords).forEach(function(y){
+    Object.keys(yearlyRecords[y]).forEach(function(name){
+      Object.keys(yearlyRecords[y][name]).forEach(function(mo){
+        jobs.push({ y: y, name: name, mo: mo, rec: yearlyRecords[y][name][mo] });
+      });
+    });
+  });
+  if(!jobs.length){ alert('本機沒有找到任何已存檔的年度紀錄'); return; }
+  if(!confirm('將把本機瀏覽器裡 ' + jobs.length + ' 筆已存檔的薪資紀錄同步到資料庫，確定要繼續嗎？')) return;
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ 同步中… 0/' + jobs.length; }
+  let done = 0, failed = 0;
+  for(const job of jobs){
+    const rec = job.rec;
+    const res = await sb.from('salary_records').upsert({
+      emp_name: job.name,
+      year_roc: parseInt(job.y) || 115,
+      month: parseInt(job.mo) || 1,
+      pay_type: '月薪',
+      earn_items: (rec.items && rec.items.earn) || [],
+      deduct_items: (rec.items && rec.items.deduct) || [],
+      earn_total: rec.earn || 0,
+      deduct_total: rec.deduct || 0,
+      net_total: rec.net || 0,
+      detail_text: rec.detail || '',
+      saved_at: new Date().toISOString()
+    }, { onConflict: 'emp_name,year_roc,month' });
+    if(res.error){ failed++; console.error('salary_records 同步失敗', job.y, job.name, job.mo, res.error); } else { done++; }
+    if(btn) btn.textContent = '⏳ 同步中… ' + (done + failed) + '/' + jobs.length;
+  }
+  if(btn){
+    btn.disabled = false;
+    btn.textContent = failed ? ('⚠️ 完成，' + done + ' 成功／' + failed + ' 失敗') : ('✅ 已同步 ' + done + ' 筆');
+    setTimeout(function(){ btn.textContent = '📡 同步本機舊資料到薪資彙總表'; }, 4000);
+  }
 }
 function saveToYearly(silent){
   var name = (document.getElementById('emp-name')||{}).value || '';
