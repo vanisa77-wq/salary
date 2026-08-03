@@ -107,6 +107,31 @@ body{
 .cal-day.empty{visibility:hidden;pointer-events:none}
 .cal-day.selected{background:#b5877a;border-color:#b5877a;color:#fff;font-weight:700}
 
+/* ── 固定班表快速套用 ── */
+.quickfill-wrap{
+  background:#f5efe9;border-radius:8px;padding:10px 12px;margin-bottom:14px;
+}
+.quickfill-title{font-size:12px;color:#8a6a5e;margin-bottom:8px;font-weight:500}
+.quickfill-days{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.wd-btn{
+  width:34px;height:34px;border:1.5px solid #d8cdc6;border-radius:7px;
+  background:#fff;color:#6b5a52;font-size:13px;font-family:inherit;cursor:pointer;
+  transition:all .2s;
+}
+.wd-btn.active{background:#b5a49a;border-color:#b5a49a;color:#fff;font-weight:700}
+.quickfill-time{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.quickfill-time input{
+  padding:7px 8px;border:1.5px solid #d8cdc6;border-radius:7px;
+  font-size:14px;font-family:inherit;background:#fff;color:#1a1a1a;outline:none;
+}
+.quickfill-time span{color:#9a8880;font-size:13px}
+.btn-quickfill{
+  margin-left:auto;padding:8px 16px;border:none;border-radius:7px;
+  background:#b5877a;color:#fff;font-size:13px;font-weight:700;
+  font-family:inherit;cursor:pointer;
+}
+.btn-quickfill:hover{background:#a3766a}
+
 /* ── 每日記錄 ── */
 .day-header{
   display:grid;
@@ -328,6 +353,24 @@ hr.sd{border:none;border-top:1.5px solid #e8ddd6;margin:12px 0}
       <div class="cal-weekdays"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
       <div class="date-grid" id="cal-grid"></div>
     </div>
+    <div class="quickfill-wrap">
+      <div class="quickfill-title">固定班表快速套用（星期幾＋上下班時間，一次套滿整個月）</div>
+      <div class="quickfill-days" id="quickfill-days">
+        <button type="button" class="wd-btn" data-wd="0" onclick="toggleQuickFillDay(0,this)">日</button>
+        <button type="button" class="wd-btn" data-wd="1" onclick="toggleQuickFillDay(1,this)">一</button>
+        <button type="button" class="wd-btn" data-wd="2" onclick="toggleQuickFillDay(2,this)">二</button>
+        <button type="button" class="wd-btn" data-wd="3" onclick="toggleQuickFillDay(3,this)">三</button>
+        <button type="button" class="wd-btn" data-wd="4" onclick="toggleQuickFillDay(4,this)">四</button>
+        <button type="button" class="wd-btn" data-wd="5" onclick="toggleQuickFillDay(5,this)">五</button>
+        <button type="button" class="wd-btn" data-wd="6" onclick="toggleQuickFillDay(6,this)">六</button>
+      </div>
+      <div class="quickfill-time">
+        <input type="time" id="qf-start" value="08:00">
+        <span>～</span>
+        <input type="time" id="qf-end" value="18:00">
+        <button type="button" class="btn-quickfill" onclick="applyQuickFill()">套用到本月</button>
+      </div>
+    </div>
     <div class="day-header">
       <span>日期</span><span>上班時間</span><span>下班時間</span><span>時數</span><span></span>
     </div>
@@ -427,7 +470,7 @@ const INS=[
   {wage:40100,labor:1002,health:622},{wage:42000,labor:1050,health:651},
   {wage:43900,labor:1098,health:681},{wage:45800,labor:1145,health:710},
 ];
-let empStatus='full',inputMode='daily',dayEntries=[],extraEntries=[],hoursOverride=null,rowHourOverride={};
+let empStatus='full',inputMode='daily',dayEntries=[],extraEntries=[],hoursOverride=null,rowHourOverride={},quickFillWeekdays=new Set();
 
 window.onload=()=>{
   const now=new Date();
@@ -464,6 +507,45 @@ function getSelectedDates(){
   const s=new Set();
   document.querySelectorAll('#day-list .d-date').forEach(el=>{if(el.value)s.add(el.value);});
   return s;
+}
+function toggleQuickFillDay(wd,el){
+  if(quickFillWeekdays.has(wd))quickFillWeekdays.delete(wd);else quickFillWeekdays.add(wd);
+  el.classList.toggle('active');
+}
+function applyQuickFill(){
+  if(!quickFillWeekdays.size){ alert('請先選擇固定上班的星期幾'); return; }
+  const ym=document.getElementById('ym').value;
+  if(!ym){ alert('請先選擇計算年月'); return; }
+  const start=document.getElementById('qf-start').value||'08:00';
+  const end=document.getElementById('qf-end').value||'18:00';
+  const[y,m]=ym.split('-').map(Number);
+  const daysInMonth=new Date(y,m,0).getDate();
+  const rows=[...document.querySelectorAll('#day-list .day-row')];
+  const existingByDate={};
+  rows.forEach(r=>{const d=r.querySelector('.d-date').value;if(d)existingByDate[d]=r;});
+  const emptyRows=rows.filter(r=>!r.querySelector('.d-date').value);
+  const overrides={};
+  for(let d=1;d<=daysInMonth;d++){
+    const wd=new Date(y,m-1,d).getDay();
+    if(!quickFillWeekdays.has(wd))continue;
+    const ds=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    if(existingByDate[ds]){
+      const id=Number(existingByDate[ds].dataset.id);
+      overrides[id]={date:ds,start,end};
+      delete rowHourOverride[id];
+    }else if(emptyRows.length){
+      const r=emptyRows.shift();
+      overrides[Number(r.dataset.id)]={date:ds,start,end};
+    }else{
+      const id=Date.now()+d;
+      dayEntries.push(id);
+      overrides[id]={date:ds,start,end};
+    }
+  }
+  hoursOverride=null;
+  renderDays(overrides);
+  renderCalendar();
+  calc();
 }
 function renderCalendar(){
   const grid=document.getElementById('cal-grid');
