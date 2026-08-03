@@ -78,9 +78,8 @@ body{
 .detail-table td.deduct-total{font-weight:700;background:#f5e2d8}
 .detail-table td.net{font-weight:700;color:#7a6058;background:#e8d3b6}
 .detail-table tfoot td{font-weight:700;background:#e7ceb8;color:#5c4a42}
-.name-wrap{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .pay-badge{
-  display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:700;line-height:1.6;
+  display:inline-block;vertical-align:middle;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:700;line-height:1.6;margin-left:6px;
 }
 .pay-badge.月薪{background:#dce8f0;color:#3a6a8a}
 .pay-badge.時薪{background:#dceade;color:#3a6e50}
@@ -303,10 +302,9 @@ function renderMonth(){
     totals.base+=eb.base;totals.attendance+=eb.attendance;totals.ot+=eb.ot;totals.eOther+=eb.other;totals.earn+=earn;
     totals.labor+=db.labor;totals.health+=db.health;totals.sick+=db.sick;totals.personal+=db.personal;totals.dOther+=db.other;totals.deduct+=deduct;
     totals.net+=net;
-    const nameCell=`<span class="name-wrap">${r.emp_name}${r.pay_type==='時薪'?`<span class="pay-badge 時薪">時薪</span>`:''}</span>`;
     return `<tr class="emp-row" onclick="toggleDetailRow(${idx})">
       <td>${idx+1}</td>
-      <td class="name">${nameCell}</td>
+      <td class="name">${r.emp_name}${r.pay_type==='時薪'?`<span class="pay-badge 時薪">時薪</span>`:''}</td>
       <td>${eb.base.toLocaleString()}</td>
       <td>${eb.attendance.toLocaleString()}</td>
       <td>${eb.ot.toLocaleString()}</td>

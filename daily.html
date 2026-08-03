@@ -266,6 +266,7 @@ hr.sd{border:none;border-top:1.5px solid #e8ddd6;margin:12px 0}
 .slip-row.hl .v{color:#7a6058}
 .slip-row.net{margin-top:6px;padding:10px 12px;background:#f0ebe5;border-radius:8px;align-items:center}
 .slip-formula{font-size:12px;color:#9a8880;font-weight:400;margin-top:2px}
+.slip-sub{font-size:12px;color:#9a8880;margin:-3px 0 6px;padding-left:2px}
 .slip-section-title{
   font-size:14px;font-weight:700;padding:6px 10px;border-radius:6px;margin:12px 0 4px;
 }
@@ -452,11 +453,14 @@ hr.sd{border:none;border-top:1.5px solid #e8ddd6;margin:12px 0}
     <div class="slip-row"><label>當月工時</label><span class="v" id="slip-hours">—</span></div>
     <div class="slip-section-title earn">＋ 應領項目</div>
     <div class="slip-row"><label>時薪工資</label><span class="v" id="slip-wage">—</span></div>
+    <div class="slip-sub" id="slip-wage-sub"></div>
     <div id="slip-extras"></div>
     <div class="slip-row hl"><label>應領小計</label><span class="v" id="slip-gross">—</span></div>
     <div class="slip-section-title deduct">－ 應扣項目</div>
     <div class="slip-row"><label>勞保自付額</label><span class="v" id="slip-labor">—</span></div>
+    <div class="slip-sub" id="slip-labor-sub"></div>
     <div class="slip-row"><label>健保自付額</label><span class="v" id="slip-health">—</span></div>
+    <div class="slip-sub" id="slip-health-sub"></div>
     <div id="slip-deducts"></div>
     <div class="slip-row hl"><label>應扣小計</label><span class="v" id="slip-deduct-total">—</span></div>
     <hr class="sd">
@@ -711,9 +715,10 @@ function showSlip(){
   const hours=inputMode==='daily'?(hoursOverride!==null?hoursOverride:getDailyTotal()):(parseFloat(document.getElementById('total-hours').value)||0);
   const wage=Math.round(rate*hours);
   const ins=getIns();let laborAmt=ins.labor,healthAmt=ins.health,statusTxt='整月在職';
+  let laborDesc=`投保級距 ${ins.wage.toLocaleString()} 元`,healthDesc=`投保級距 ${ins.wage.toLocaleString()} 元`;
   if(ym){const[y,m]=ym.split('-').map(Number);const lastDay=new Date(y,m,0).getDate();
-    if(empStatus==='new'){statusTxt='當月到職';const jd=document.getElementById('join-date').value;if(jd){const d=new Date(jd).getDate();laborAmt=Math.round(ins.labor*(30-d+1)/30);}}
-    else if(empStatus==='leave'){const qd=document.getElementById('quit-date').value;if(qd){const d=new Date(qd).getDate();const last=(d===lastDay);statusTxt=`當月離職（${d}日）`;if(!last){healthAmt=0;laborAmt=Math.round(ins.labor*d/30);}}}
+    if(empStatus==='new'){statusTxt='當月到職';const jd=document.getElementById('join-date').value;if(jd){const d=new Date(jd).getDate();laborAmt=Math.round(ins.labor*(30-d+1)/30);laborDesc+=`，到職按 ${30-d+1}/30 比例折算`;}}
+    else if(empStatus==='leave'){const qd=document.getElementById('quit-date').value;if(qd){const d=new Date(qd).getDate();const last=(d===lastDay);statusTxt=`當月離職（${d}日）`;if(!last){healthAmt=0;laborAmt=Math.round(ins.labor*d/30);laborDesc+=`，離職按 ${d}/30 比例折算`;healthDesc=`本月 ${d} 日退保，健保免扣`;}}}
   }
   let extraAdd=0,extraSub=0;const addRows=[],subRows=[];
   document.querySelectorAll('.extra-row').forEach(r=>{const t=r.querySelector('.e-type').value;const n=r.querySelector('.e-name').value||'其他';const a=parseFloat(r.querySelector('.e-amt').value)||0;if(t==='add'){extraAdd+=a;addRows.push({n,a});}else{extraSub+=a;subRows.push({n,a});}});
@@ -725,9 +730,12 @@ function showSlip(){
   document.getElementById('slip-status').textContent=statusTxt;
   document.getElementById('slip-hours').textContent=hours+' 小時';
   document.getElementById('slip-wage').textContent=wage.toLocaleString()+' 元';
+  document.getElementById('slip-wage-sub').textContent=`${hours} 小時 × ${rate.toLocaleString()} 元 = ${wage.toLocaleString()} 元`;
   document.getElementById('slip-gross').textContent=gross.toLocaleString()+' 元';
   document.getElementById('slip-labor').textContent=laborAmt.toLocaleString()+' 元';
+  document.getElementById('slip-labor-sub').textContent=laborDesc;
   document.getElementById('slip-health').textContent=healthAmt===0?'免扣（0 元）':healthAmt.toLocaleString()+' 元';
+  document.getElementById('slip-health-sub').textContent=healthDesc;
   document.getElementById('slip-deduct-total').textContent=totalDeduct.toLocaleString()+' 元';
   document.getElementById('slip-net').textContent=net.toLocaleString()+' 元';
   document.getElementById('slip-formula').textContent=`應領 ${gross.toLocaleString()} 元 － 應扣 ${totalDeduct.toLocaleString()} 元`;
@@ -739,7 +747,7 @@ function showSlip(){
   lastSlipData={
     name, rocY, mm,
     earnItems:[{t:'時薪工資',s:`${hours} 小時 × ${rate.toLocaleString()} 元`,a:wage.toLocaleString()+' 元'}].concat(addRows.map(r=>({t:r.n,a:r.a.toLocaleString()+' 元'}))),
-    deductItems:[{t:'勞保自付額',a:laborAmt.toLocaleString()+' 元'},{t:'健保自付額',a:healthAmt===0?'免扣（0 元）':healthAmt.toLocaleString()+' 元'}].concat(subRows.map(r=>({t:r.n,a:r.a.toLocaleString()+' 元'}))),
+    deductItems:[{t:'勞保自付額',s:laborDesc,a:laborAmt.toLocaleString()+' 元'},{t:'健保自付額',s:healthDesc,a:healthAmt===0?'免扣（0 元）':healthAmt.toLocaleString()+' 元'}].concat(subRows.map(r=>({t:r.n,a:r.a.toLocaleString()+' 元'}))),
     gross, totalDeduct, net,
     detailText:`【時薪明細】${name}｜民國 ${rocY} 年 ${mm} 月\n時薪：${rate.toLocaleString()} 元/小時｜工時：${hours} 小時\n應領合計：${gross.toLocaleString()} 元\n勞保自付：${laborAmt.toLocaleString()} 元｜健保自付：${healthAmt.toLocaleString()} 元\n實領：${net.toLocaleString()} 元`
   };
