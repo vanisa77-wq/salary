@@ -93,6 +93,7 @@ body{
 .detail-cols h4{font-size:13px;color:#6b5a52;margin-bottom:6px}
 .detail-cols .di{display:flex;justify-content:space-between;padding:3px 0;font-size:13px;color:#333;border-bottom:1px dashed #e8ddd6}
 .detail-cols .di .di-sub{display:block;font-size:11px;color:#a5514b;font-weight:400;white-space:pre-line}
+.hours-grid{display:grid;grid-template-columns:auto auto auto;column-gap:12px;row-gap:2px;font-size:11px;color:#9a8880;margin-top:2px;font-weight:400}
 
 /* ── 彙總 ── */
 .sum-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
@@ -250,8 +251,12 @@ function bucketDeduct(items){
   return b;
 }
 
+function hoursGridHTML(days){
+  if(!days||!days.length)return'';
+  return `<div class="hours-grid">${days.map(d=>`<div>${d.date}</div><div>${d.start}～${d.end}</div><div>${d.h} 小時</div>`).join('')}</div>`;
+}
 function buildDetailHTML(r){
-  const earnRows=(r.earn_items||[]).map(it=>`<div class="di"><span>${it.t}${it.s?`<span class="di-sub">${it.s}</span>`:''}</span><span>${it.a}</span></div>`).join('')||'<div class="di"><span>（無）</span><span></span></div>';
+  const earnRows=(r.earn_items||[]).map(it=>`<div class="di"><span>${it.t}${it.days?hoursGridHTML(it.days):''}${it.s?`<span class="di-sub">${it.s}</span>`:''}</span><span>${it.a}</span></div>`).join('')||'<div class="di"><span>（無）</span><span></span></div>';
   const deductRows=(r.deduct_items||[]).map(it=>`<div class="di"><span>${it.t}${it.s?`<span class="di-sub">${it.s}</span>`:''}</span><span>${it.a}</span></div>`).join('')||'<div class="di"><span>（無）</span><span></span></div>';
   return `<div class="detail-cols"><div><h4>＋ 應領項目</h4>${earnRows}</div><div><h4>－ 應扣項目</h4>${deductRows}</div></div>`;
 }
