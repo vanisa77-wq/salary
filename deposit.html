@@ -643,13 +643,15 @@ async function confirmSign(){
     '簽名日期：民國' + (d.getFullYear()-1911) + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日';
 
   // 把簽名存回資料庫，讓老師端可以自動看到已回傳的收據，不用等家長回傳圖片
+  // 家長端沒有登入，anon 角色無法直接更新這張表（RLS 限制），改走 service_role 的 edge function
   if(urlId){
-    sb.from('deposit_receipts').update({
-      signature: sigDataUrl,
-      signed_at: d.toISOString()
-    }).eq('id', urlId).then(({error})=>{
-      if(error) console.error('簽名存檔失敗：', error.message);
-    });
+    fetch(`${SUPABASE_URL}/functions/v1/deposit-sign`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({ id: urlId, signature: sigDataUrl, signed_at: d.toISOString() })
+    }).then(res => res.json()).then(res => {
+      if(res.error) console.error('簽名存檔失敗：', res.error);
+    }).catch(e => console.error('簽名存檔失敗：', e.message));
   }
 
   html2canvas(wrap.querySelector('#receipt'), {scale:2, backgroundColor:'#ffffff'}).then(canvas=>{
