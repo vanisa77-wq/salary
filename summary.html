@@ -78,12 +78,22 @@ body{
 .detail-table td.deduct-total{font-weight:700;background:#f5e2d8}
 .detail-table td.net{font-weight:700;color:#7a6058;background:#e8d3b6}
 .detail-table tfoot td{font-weight:700;background:#e7ceb8;color:#5c4a42}
+.name-wrap{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .pay-badge{
-  display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:700;margin-left:6px;
+  display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:700;line-height:1.6;
 }
 .pay-badge.月薪{background:#dce8f0;color:#3a6a8a}
 .pay-badge.時薪{background:#dceade;color:#3a6e50}
 .empty-hint{color:#9a8880;font-size:14px;padding:14px 0;text-align:center}
+.emp-row{cursor:pointer}
+.emp-row:hover{background:#f0e2d4!important}
+.detail-row{display:none}
+.detail-row.open{display:table-row}
+.detail-row td{background:#f7f2ec;text-align:left;white-space:normal;padding:12px 16px}
+.detail-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.detail-cols h4{font-size:13px;color:#6b5a52;margin-bottom:6px}
+.detail-cols .di{display:flex;justify-content:space-between;padding:3px 0;font-size:13px;color:#333;border-bottom:1px dashed #e8ddd6}
+.detail-cols .di .di-sub{display:block;font-size:11px;color:#a5514b;font-weight:400}
 
 /* ── 彙總 ── */
 .sum-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
@@ -241,6 +251,20 @@ function bucketDeduct(items){
   return b;
 }
 
+function buildDetailHTML(r){
+  const earnRows=(r.earn_items||[]).map(it=>`<div class="di"><span>${it.t}${it.s?`<span class="di-sub">${it.s}</span>`:''}</span><span>${it.a}</span></div>`).join('')||'<div class="di"><span>（無）</span><span></span></div>';
+  const deductRows=(r.deduct_items||[]).map(it=>`<div class="di"><span>${it.t}${it.s?`<span class="di-sub">${it.s}</span>`:''}</span><span>${it.a}</span></div>`).join('')||'<div class="di"><span>（無）</span><span></span></div>';
+  return `<div class="detail-cols"><div><h4>＋ 應領項目</h4>${earnRows}</div><div><h4>－ 應扣項目</h4>${deductRows}</div></div>`;
+}
+function toggleDetailRow(idx){
+  const el=document.getElementById('month-detail-'+idx);
+  if(el)el.classList.toggle('open');
+}
+function toggleHistDetailRow(idx){
+  const el=document.getElementById('hist-detail-'+idx);
+  if(el)el.classList.toggle('open');
+}
+
 async function loadMonth(){
   const status=document.getElementById('month-status');
   const ym=ymToRoc();
@@ -279,9 +303,10 @@ function renderMonth(){
     totals.base+=eb.base;totals.attendance+=eb.attendance;totals.ot+=eb.ot;totals.eOther+=eb.other;totals.earn+=earn;
     totals.labor+=db.labor;totals.health+=db.health;totals.sick+=db.sick;totals.personal+=db.personal;totals.dOther+=db.other;totals.deduct+=deduct;
     totals.net+=net;
-    return `<tr>
+    const nameCell=`<span class="name-wrap">${r.emp_name}${r.pay_type==='時薪'?`<span class="pay-badge 時薪">時薪</span>`:''}</span>`;
+    return `<tr class="emp-row" onclick="toggleDetailRow(${idx})">
       <td>${idx+1}</td>
-      <td class="name">${r.emp_name}${r.pay_type==='時薪'?`<span class="pay-badge 時薪">時薪</span>`:''}</td>
+      <td class="name">${nameCell}</td>
       <td>${eb.base.toLocaleString()}</td>
       <td>${eb.attendance.toLocaleString()}</td>
       <td>${eb.ot.toLocaleString()}</td>
@@ -294,7 +319,8 @@ function renderMonth(){
       <td>${db.other.toLocaleString()}</td>
       <td class="deduct-total">${deduct.toLocaleString()}</td>
       <td class="net">${net.toLocaleString()}</td>
-    </tr>`;
+    </tr>
+    <tr class="detail-row" id="month-detail-${idx}"><td colspan="14">${buildDetailHTML(r)}</td></tr>`;
   }).join('');
   wrap.innerHTML=`<table class="detail-table">
     <thead><tr><th>NO.</th><th>姓名</th><th>薪資</th><th>全勤</th><th>加班費</th><th>其它</th><th>應領小計</th><th>勞保</th><th>健保</th><th>病假</th><th>事假</th><th>其它</th><th>應扣小計</th><th>總計</th></tr></thead>
@@ -340,14 +366,14 @@ async function loadHistory(){
   if(error){ box.innerHTML='<div class="empty-hint">載入失敗：'+error.message+'</div>'; return; }
   if(!data||!data.length){ box.innerHTML='<div class="empty-hint">查無紀錄</div>'; return; }
   let totals={base:0,attendance:0,ot:0,eOther:0,earn:0,labor:0,health:0,sick:0,personal:0,dOther:0,deduct:0,net:0};
-  const rows=data.map(r=>{
+  const rows=data.map((r,idx)=>{
     const eb=bucketEarn(r.earn_items);
     const db=bucketDeduct(r.deduct_items);
     const earn=Number(r.earn_total)||0, deduct=Number(r.deduct_total)||0, net=Number(r.net_total)||0;
     totals.base+=eb.base;totals.attendance+=eb.attendance;totals.ot+=eb.ot;totals.eOther+=eb.other;totals.earn+=earn;
     totals.labor+=db.labor;totals.health+=db.health;totals.sick+=db.sick;totals.personal+=db.personal;totals.dOther+=db.other;totals.deduct+=deduct;
     totals.net+=net;
-    return `<tr>
+    return `<tr class="emp-row" onclick="toggleHistDetailRow(${idx})">
       <td>民國${r.year_roc}年${r.month}月${r.pay_type==='時薪'?`<span class="pay-badge 時薪">時薪</span>`:''}</td>
       <td>${eb.base.toLocaleString()}</td>
       <td>${eb.attendance.toLocaleString()}</td>
@@ -361,7 +387,8 @@ async function loadHistory(){
       <td>${db.other.toLocaleString()}</td>
       <td class="deduct-total">${deduct.toLocaleString()}</td>
       <td class="net">${net.toLocaleString()}</td>
-    </tr>`;
+    </tr>
+    <tr class="detail-row" id="hist-detail-${idx}"><td colspan="13">${buildDetailHTML(r)}</td></tr>`;
   }).join('');
   box.innerHTML=`<table class="detail-table">
     <thead><tr><th>月份</th><th>薪資</th><th>全勤</th><th>加班費</th><th>其它</th><th>應領小計</th><th>勞保</th><th>健保</th><th>病假</th><th>事假</th><th>其它</th><th>應扣小計</th><th>總計</th></tr></thead>
