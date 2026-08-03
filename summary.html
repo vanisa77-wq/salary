@@ -69,36 +69,22 @@ body{
 
 /* ── 老師清單 ── */
 .list-wrap{overflow-x:auto}
-.t-header,.t-row{
-  display:grid;
-  grid-template-columns:120px 70px 100px 100px 100px 80px 28px;
-  gap:6px;align-items:center;
-  min-width:640px;
-}
-.t-header{margin-bottom:6px}
-.t-header span{font-size:13px;color:#9a8880}
-.t-list{display:flex;flex-direction:column;gap:6px}
-.t-row{padding:8px 0;border-bottom:1px solid #f0ebe5}
-.t-row span{font-size:14px}
-.t-row .amt{text-align:right;font-weight:600}
-.t-net{font-weight:700;color:#7a6058;text-align:right}
-.btn-toggle{
-  background:none;border:1.5px solid #d8cdc6;border-radius:6px;
-  color:#8a6a5e;font-size:12px;cursor:pointer;padding:4px 8px;font-family:inherit;
-}
-.btn-toggle:hover{border-color:#b5a49a}
+.detail-table{width:100%;border-collapse:collapse;font-size:14px;white-space:nowrap}
+.detail-table th,.detail-table td{padding:8px 10px;text-align:right;border-bottom:1px solid #e8ddd6}
+.detail-table th:nth-child(1),.detail-table td:nth-child(1),
+.detail-table th:nth-child(2),.detail-table td:nth-child(2){text-align:left}
+.detail-table thead th{background:#e7ceb8;color:#5c4a42;font-weight:700}
+.detail-table tbody tr:nth-child(even){background:#f5efe9}
+.detail-table td.name{font-weight:600}
+.detail-table td.sub-total{font-weight:700;background:#f0e2d4}
+.detail-table td.deduct-total{font-weight:700;background:#f5e2d8}
+.detail-table td.net{font-weight:700;color:#7a6058;background:#e8d3b6}
+.detail-table tfoot td{font-weight:700;background:#e7ceb8;color:#5c4a42}
 .pay-badge{
-  display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:700;
+  display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:700;margin-left:6px;
 }
 .pay-badge.月薪{background:#dce8f0;color:#3a6a8a}
 .pay-badge.時薪{background:#dceade;color:#3a6e50}
-.detail-row{
-  display:none;grid-column:1/-1;background:#f5f0ec;border-radius:8px;padding:10px 14px;margin-top:4px;font-size:13px;
-}
-.detail-row.open{display:block}
-.detail-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.detail-cols h4{font-size:13px;color:#6b5a52;margin-bottom:4px}
-.detail-cols .di{display:flex;justify-content:space-between;padding:2px 0;color:#333}
 .empty-hint{color:#9a8880;font-size:14px;padding:14px 0;text-align:center}
 
 /* ── 彙總 ── */
@@ -169,12 +155,7 @@ body{
 
 <div class="card">
   <div class="card-title">老師薪資明細</div>
-  <div class="list-wrap">
-    <div class="t-header">
-      <span>姓名</span><span>計薪方式</span><span style="text-align:right">應領金額</span><span style="text-align:right">代扣合計</span><span style="text-align:right">實領金額</span><span></span><span></span>
-    </div>
-    <div class="t-list" id="t-list"><div class="empty-hint">請先選擇年月並按「從資料庫載入」</div></div>
-  </div>
+  <div class="list-wrap" id="t-list"><div class="empty-hint">請先選擇年月並按「從資料庫載入」</div></div>
 </div>
 
 <div class="card">
@@ -233,45 +214,110 @@ function ymToRoc(){
   return {rocY:y-1911, mo:m};
 }
 
+function amtNum(a){
+  const n=parseFloat(String(a||'').replace(/[^\d.]/g,''));
+  return isNaN(n)?0:n;
+}
+function bucketEarn(items){
+  const b={base:0,attendance:0,ot:0,other:0};
+  (items||[]).forEach(it=>{
+    const v=amtNum(it.a);
+    if(it.t.indexOf('全勤')!==-1)b.attendance+=v;
+    else if(it.t.indexOf('在職底薪')!==-1||it.t.indexOf('本薪')!==-1||it.t.indexOf('時薪工資')!==-1)b.base+=v;
+    else if(it.t.indexOf('值班')!==-1||it.t.indexOf('親師會談')!==-1||it.t.indexOf('7:30')!==-1||it.t.indexOf('18:30')!==-1)b.ot+=v;
+    else b.other+=v;
+  });
+  return b;
+}
+function bucketDeduct(items){
+  const b={labor:0,health:0,sick:0,personal:0,other:0};
+  (items||[]).forEach(it=>{
+    if(it.t==='病假扣款合計')return;
+    const v=amtNum(it.a);
+    if(it.t.indexOf('勞保自付')!==-1)b.labor+=v;
+    else if(it.t.indexOf('健保自付')!==-1)b.health+=v;
+    else if(it.t.indexOf('病假扣款')!==-1)b.sick+=v;
+    else if(it.t.indexOf('事假扣款')!==-1)b.personal+=v;
+    else b.other+=v;
+  });
+  return b;
+}
+
 async function loadMonth(){
   const status=document.getElementById('month-status');
   const ym=ymToRoc();
   if(!ym){ status.textContent='請先選擇年月'; return; }
   if(!sb){ status.textContent='無法連線到資料庫'; return; }
   status.textContent='載入中…';
-  const {data,error}=await sb.from('salary_records').select('*').eq('year_roc',ym.rocY).eq('month',ym.mo).order('emp_name');
+  const [{data,error},{data:empData}]=await Promise.all([
+    sb.from('salary_records').select('*').eq('year_roc',ym.rocY).eq('month',ym.mo),
+    sb.from('employees').select('name,hire_date')
+  ]);
   if(error){ status.textContent='載入失敗：'+error.message; return; }
-  monthRecords=data||[];
-  status.textContent=`民國 ${ym.rocY} 年 ${ym.mo} 月，共 ${monthRecords.length} 筆已存檔紀錄`;
+  const hireDateOf={};
+  (empData||[]).forEach(e=>{ hireDateOf[e.name]=e.hire_date||''; });
+  monthRecords=(data||[]).sort((a,b)=>{
+    const da=hireDateOf[a.emp_name]||'9999-99-99';
+    const db=hireDateOf[b.emp_name]||'9999-99-99';
+    if(da!==db)return da<db?-1:1;
+    return a.emp_name<b.emp_name?-1:1;
+  });
+  status.textContent=`民國 ${ym.rocY} 年 ${ym.mo} 月，共 ${monthRecords.length} 筆已存檔紀錄（依到職日排序）`;
   renderMonth();
 }
 
 function renderMonth(){
-  const list=document.getElementById('t-list');
+  const wrap=document.getElementById('t-list');
   if(!monthRecords.length){
-    list.innerHTML='<div class="empty-hint">這個月份還沒有任何存檔紀錄</div>';
+    wrap.innerHTML='<div class="empty-hint">這個月份還沒有任何存檔紀錄</div>';
     calcSummary();
     return;
   }
-  list.innerHTML='';
-  monthRecords.forEach((r,idx)=>{
-    const row=document.createElement('div');
-    row.className='t-row';
-    row.innerHTML=`<span>${r.emp_name}</span><span><span class="pay-badge ${r.pay_type}">${r.pay_type}</span></span><span class="amt">${Number(r.earn_total).toLocaleString()} 元</span><span class="amt">${Number(r.deduct_total).toLocaleString()} 元</span><span class="t-net">${Number(r.net_total).toLocaleString()} 元</span><button class="btn-toggle no-print" onclick="toggleDetail(${idx})">明細 ▾</button><span></span><div class="detail-row" id="detail-${idx}">${buildDetailHTML(r)}</div>`;
-    list.appendChild(row);
-  });
+  let totals={base:0,attendance:0,ot:0,eOther:0,earn:0,labor:0,health:0,sick:0,personal:0,dOther:0,deduct:0,net:0};
+  const rows=monthRecords.map((r,idx)=>{
+    const eb=bucketEarn(r.earn_items);
+    const db=bucketDeduct(r.deduct_items);
+    const earn=Number(r.earn_total)||0, deduct=Number(r.deduct_total)||0, net=Number(r.net_total)||0;
+    totals.base+=eb.base;totals.attendance+=eb.attendance;totals.ot+=eb.ot;totals.eOther+=eb.other;totals.earn+=earn;
+    totals.labor+=db.labor;totals.health+=db.health;totals.sick+=db.sick;totals.personal+=db.personal;totals.dOther+=db.other;totals.deduct+=deduct;
+    totals.net+=net;
+    return `<tr>
+      <td>${idx+1}</td>
+      <td class="name">${r.emp_name}<span class="pay-badge ${r.pay_type}">${r.pay_type}</span></td>
+      <td>${eb.base.toLocaleString()}</td>
+      <td>${eb.attendance.toLocaleString()}</td>
+      <td>${eb.ot.toLocaleString()}</td>
+      <td>${eb.other.toLocaleString()}</td>
+      <td class="sub-total">${earn.toLocaleString()}</td>
+      <td>${db.labor.toLocaleString()}</td>
+      <td>${db.health.toLocaleString()}</td>
+      <td>${db.sick.toLocaleString()}</td>
+      <td>${db.personal.toLocaleString()}</td>
+      <td>${db.other.toLocaleString()}</td>
+      <td class="deduct-total">${deduct.toLocaleString()}</td>
+      <td class="net">${net.toLocaleString()}</td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML=`<table class="detail-table">
+    <thead><tr><th>NO.</th><th>姓名</th><th>薪資</th><th>全勤</th><th>加班費</th><th>其它</th><th>應領小計</th><th>勞保</th><th>健保</th><th>病假</th><th>事假</th><th>其它</th><th>應扣小計</th><th>總計</th></tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr>
+      <td colspan="2">總計</td>
+      <td>${totals.base.toLocaleString()}</td>
+      <td>${totals.attendance.toLocaleString()}</td>
+      <td>${totals.ot.toLocaleString()}</td>
+      <td>${totals.eOther.toLocaleString()}</td>
+      <td>${totals.earn.toLocaleString()}</td>
+      <td>${totals.labor.toLocaleString()}</td>
+      <td>${totals.health.toLocaleString()}</td>
+      <td>${totals.sick.toLocaleString()}</td>
+      <td>${totals.personal.toLocaleString()}</td>
+      <td>${totals.dOther.toLocaleString()}</td>
+      <td>${totals.deduct.toLocaleString()}</td>
+      <td>${totals.net.toLocaleString()}</td>
+    </tr></tfoot>
+  </table>`;
   calcSummary();
-}
-
-function buildDetailHTML(r){
-  const earnRows=(r.earn_items||[]).map(it=>`<div class="di"><span>${it.t}${it.s?'（'+it.s+'）':''}</span><span>${it.a}</span></div>`).join('')||'<div class="di">（無）</div>';
-  const deductRows=(r.deduct_items||[]).map(it=>`<div class="di"><span>${it.t}</span><span>${it.a}</span></div>`).join('')||'<div class="di">（無）</div>';
-  return `<div class="detail-cols"><div><h4>＋ 應領項目</h4>${earnRows}</div><div><h4>－ 應扣項目</h4>${deductRows}</div></div>`;
-}
-
-function toggleDetail(idx){
-  const el=document.getElementById('detail-'+idx);
-  el.classList.toggle('open');
 }
 
 function calcSummary(){
