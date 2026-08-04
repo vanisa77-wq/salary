@@ -77,6 +77,7 @@ body{
 .detail-table td.sub-total{font-weight:700;background:#f0e2d4}
 .detail-table td.deduct-total{font-weight:700;background:#f5e2d8}
 .detail-table td.net{font-weight:700;color:#7a6058;background:#e8d3b6}
+.detail-table td.employer-total{font-weight:700;color:#3a6a8a;background:#e0e8ee}
 .detail-table tfoot td{font-weight:700;background:#e7ceb8;color:#5c4a42}
 .pay-badge{
   display:inline;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:700;margin-left:6px;
@@ -96,7 +97,7 @@ body{
 .hours-grid{display:inline-grid;justify-content:start;grid-template-columns:max-content max-content max-content;column-gap:12px;row-gap:2px;font-size:11px;color:#9a8880;margin-top:2px;font-weight:400}
 
 /* ── 彙總 ── */
-.sum-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+.sum-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .sum-card{background:#f0ebe5;border-radius:8px;padding:13px;text-align:center}
 .sum-card label{display:block;font-size:13px;color:#6b5a52;margin-bottom:6px}
 .sum-card .val{font-size:19px;font-weight:700;color:#7a6058}
@@ -185,7 +186,16 @@ body{
       <label>實領總計</label>
       <span class="val" id="sum-net">0 元</span>
     </div>
+    <div class="sum-card">
+      <label>雇主負擔（勞健退）</label>
+      <span class="val" id="sum-employer">0 元</span>
+    </div>
+    <div class="sum-card hl">
+      <label>人事總成本（應領＋雇主負擔）</label>
+      <span class="val" id="sum-total-cost">0 元</span>
+    </div>
   </div>
+  <div class="hint">雇主勞保／健保為投保級距 34,800～43,900 依貴中心實際勞健保單核對過的金額；33,300、45,800 兩級距為參考網路公告表校正推算，如有落差請以勞保局/健保署正式通知為準。</div>
   <button class="btn-add no-print" style="margin-top:12px" onclick="window.print()">🖨 列印彙總表</button>
 </div>
 
@@ -299,14 +309,17 @@ function renderMonth(){
     calcSummary();
     return;
   }
-  let totals={base:0,attendance:0,ot:0,eOther:0,earn:0,labor:0,health:0,sick:0,personal:0,dOther:0,deduct:0,net:0};
+  let totals={base:0,attendance:0,ot:0,eOther:0,earn:0,labor:0,health:0,sick:0,personal:0,dOther:0,deduct:0,net:0,eLabor:0,eHealth:0,ePension:0,eTotal:0};
   const rows=monthRecords.map((r,idx)=>{
     const eb=bucketEarn(r.earn_items);
     const db=bucketDeduct(r.deduct_items);
     const earn=Number(r.earn_total)||0, deduct=Number(r.deduct_total)||0, net=Number(r.net_total)||0;
+    const eLabor=Number(r.employer_labor)||0, eHealth=Number(r.employer_health)||0, ePension=Number(r.employer_pension)||0;
+    const eTotal=eLabor+eHealth+ePension;
     totals.base+=eb.base;totals.attendance+=eb.attendance;totals.ot+=eb.ot;totals.eOther+=eb.other;totals.earn+=earn;
     totals.labor+=db.labor;totals.health+=db.health;totals.sick+=db.sick;totals.personal+=db.personal;totals.dOther+=db.other;totals.deduct+=deduct;
     totals.net+=net;
+    totals.eLabor+=eLabor;totals.eHealth+=eHealth;totals.ePension+=ePension;totals.eTotal+=eTotal;
     return `<tr class="emp-row" onclick="toggleDetailRow(${idx})">
       <td>${idx+1}</td>
       <td class="name">${r.emp_name}${r.pay_type==='時薪'?`<span class="pay-badge 時薪">時薪</span>`:''}</td>
@@ -322,11 +335,15 @@ function renderMonth(){
       <td>${db.other.toLocaleString()}</td>
       <td class="deduct-total">${deduct.toLocaleString()}</td>
       <td class="net">${net.toLocaleString()}</td>
+      <td>${eLabor?eLabor.toLocaleString():'－'}</td>
+      <td>${eHealth?eHealth.toLocaleString():'－'}</td>
+      <td>${ePension?ePension.toLocaleString():'－'}</td>
+      <td class="employer-total">${eTotal?eTotal.toLocaleString():'－'}</td>
     </tr>
-    <tr class="detail-row" id="month-detail-${idx}"><td colspan="14">${buildDetailHTML(r)}</td></tr>`;
+    <tr class="detail-row" id="month-detail-${idx}"><td colspan="18">${buildDetailHTML(r)}</td></tr>`;
   }).join('');
   wrap.innerHTML=`<table class="detail-table">
-    <thead><tr><th>NO.</th><th>姓名</th><th>薪資</th><th>全勤</th><th>加班費</th><th>其它</th><th>應領小計</th><th>勞保</th><th>健保</th><th>病假</th><th>事假</th><th>其它</th><th>應扣小計</th><th>總計</th></tr></thead>
+    <thead><tr><th>NO.</th><th>姓名</th><th>薪資</th><th>全勤</th><th>加班費</th><th>其它</th><th>應領小計</th><th>勞保</th><th>健保</th><th>病假</th><th>事假</th><th>其它</th><th>應扣小計</th><th>總計</th><th>雇主勞保</th><th>雇主健保</th><th>雇主勞退</th><th>雇主負擔合計</th></tr></thead>
     <tbody>${rows}</tbody>
     <tfoot><tr>
       <td colspan="2">總計</td>
@@ -342,18 +359,27 @@ function renderMonth(){
       <td>${totals.dOther.toLocaleString()}</td>
       <td>${totals.deduct.toLocaleString()}</td>
       <td>${totals.net.toLocaleString()}</td>
+      <td>${totals.eLabor.toLocaleString()}</td>
+      <td>${totals.eHealth.toLocaleString()}</td>
+      <td>${totals.ePension.toLocaleString()}</td>
+      <td>${totals.eTotal.toLocaleString()}</td>
     </tr></tfoot>
   </table>`;
   calcSummary();
 }
 
 function calcSummary(){
-  let gross=0,deduct=0,net=0;
-  monthRecords.forEach(r=>{gross+=Number(r.earn_total)||0;deduct+=Number(r.deduct_total)||0;net+=Number(r.net_total)||0;});
+  let gross=0,deduct=0,net=0,employerCost=0;
+  monthRecords.forEach(r=>{
+    gross+=Number(r.earn_total)||0;deduct+=Number(r.deduct_total)||0;net+=Number(r.net_total)||0;
+    employerCost+=(Number(r.employer_labor)||0)+(Number(r.employer_health)||0)+(Number(r.employer_pension)||0);
+  });
   document.getElementById('sum-count').textContent=monthRecords.length;
   document.getElementById('sum-gross').textContent=gross.toLocaleString()+' 元';
   document.getElementById('sum-deduct').textContent=deduct.toLocaleString()+' 元';
   document.getElementById('sum-net').textContent=net.toLocaleString()+' 元';
+  document.getElementById('sum-employer').textContent=employerCost.toLocaleString()+' 元';
+  document.getElementById('sum-total-cost').textContent=(gross+employerCost).toLocaleString()+' 元';
 }
 
 async function loadHistory(){
@@ -368,14 +394,17 @@ async function loadHistory(){
   const {data,error}=await q.order('year_roc').order('month');
   if(error){ box.innerHTML='<div class="empty-hint">載入失敗：'+error.message+'</div>'; return; }
   if(!data||!data.length){ box.innerHTML='<div class="empty-hint">查無紀錄</div>'; return; }
-  let totals={base:0,attendance:0,ot:0,eOther:0,earn:0,labor:0,health:0,sick:0,personal:0,dOther:0,deduct:0,net:0};
+  let totals={base:0,attendance:0,ot:0,eOther:0,earn:0,labor:0,health:0,sick:0,personal:0,dOther:0,deduct:0,net:0,eLabor:0,eHealth:0,ePension:0,eTotal:0};
   const rows=data.map((r,idx)=>{
     const eb=bucketEarn(r.earn_items);
     const db=bucketDeduct(r.deduct_items);
     const earn=Number(r.earn_total)||0, deduct=Number(r.deduct_total)||0, net=Number(r.net_total)||0;
+    const eLabor=Number(r.employer_labor)||0, eHealth=Number(r.employer_health)||0, ePension=Number(r.employer_pension)||0;
+    const eTotal=eLabor+eHealth+ePension;
     totals.base+=eb.base;totals.attendance+=eb.attendance;totals.ot+=eb.ot;totals.eOther+=eb.other;totals.earn+=earn;
     totals.labor+=db.labor;totals.health+=db.health;totals.sick+=db.sick;totals.personal+=db.personal;totals.dOther+=db.other;totals.deduct+=deduct;
     totals.net+=net;
+    totals.eLabor+=eLabor;totals.eHealth+=eHealth;totals.ePension+=ePension;totals.eTotal+=eTotal;
     return `<tr class="emp-row" onclick="toggleHistDetailRow(${idx})">
       <td>民國${r.year_roc}年${r.month}月${r.pay_type==='時薪'?`<span class="pay-badge 時薪">時薪</span>`:''}</td>
       <td>${eb.base.toLocaleString()}</td>
@@ -390,11 +419,15 @@ async function loadHistory(){
       <td>${db.other.toLocaleString()}</td>
       <td class="deduct-total">${deduct.toLocaleString()}</td>
       <td class="net">${net.toLocaleString()}</td>
+      <td>${eLabor?eLabor.toLocaleString():'－'}</td>
+      <td>${eHealth?eHealth.toLocaleString():'－'}</td>
+      <td>${ePension?ePension.toLocaleString():'－'}</td>
+      <td class="employer-total">${eTotal?eTotal.toLocaleString():'－'}</td>
     </tr>
-    <tr class="detail-row" id="hist-detail-${idx}"><td colspan="13">${buildDetailHTML(r)}</td></tr>`;
+    <tr class="detail-row" id="hist-detail-${idx}"><td colspan="17">${buildDetailHTML(r)}</td></tr>`;
   }).join('');
   box.innerHTML=`<table class="detail-table">
-    <thead><tr><th>月份</th><th>薪資</th><th>全勤</th><th>加班費</th><th>其它</th><th>應領小計</th><th>勞保</th><th>健保</th><th>病假</th><th>事假</th><th>其它</th><th>應扣小計</th><th>總計</th></tr></thead>
+    <thead><tr><th>月份</th><th>薪資</th><th>全勤</th><th>加班費</th><th>其它</th><th>應領小計</th><th>勞保</th><th>健保</th><th>病假</th><th>事假</th><th>其它</th><th>應扣小計</th><th>總計</th><th>雇主勞保</th><th>雇主健保</th><th>雇主勞退</th><th>雇主負擔合計</th></tr></thead>
     <tbody>${rows}</tbody>
     <tfoot><tr>
       <td>合計</td>
@@ -410,6 +443,10 @@ async function loadHistory(){
       <td>${totals.dOther.toLocaleString()}</td>
       <td>${totals.deduct.toLocaleString()}</td>
       <td>${totals.net.toLocaleString()}</td>
+      <td>${totals.eLabor.toLocaleString()}</td>
+      <td>${totals.eHealth.toLocaleString()}</td>
+      <td>${totals.ePension.toLocaleString()}</td>
+      <td>${totals.eTotal.toLocaleString()}</td>
     </tr></tfoot>
   </table>`;
 }

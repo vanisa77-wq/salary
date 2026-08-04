@@ -1954,8 +1954,24 @@ function quickSave(el){
     setTimeout(function(){ el.textContent=orig; el.disabled=false; },2000);
   }
 }
+const LABOR_SELF_FULL = {33300:833,34800:870,36300:908,38200:955,40100:1002,42000:1050,43900:1098,45800:1145};
+const LABOR_EMPLOYER_FULL = {33300:2954,34800:3087,36300:3220,38200:3388,40100:3557,42000:3725,43900:3894,45800:4063};
+const HEALTH_EMPLOYER_FULL = {33300:1611,34800:1684,36300:1757,38200:1849,40100:1940,42000:2032,43900:2124,45800:2216};
+function computeEmployerCosts(){
+  const grade = parseInt((document.getElementById('ins-grade')||{}).value) || 0;
+  const laborSelfActual = numFrom('labor-amt');
+  const laborSelfFull = LABOR_SELF_FULL[grade];
+  const laborRatio = laborSelfFull ? (laborSelfActual / laborSelfFull) : 0;
+  const employerLabor = (grade in LABOR_EMPLOYER_FULL) ? Math.round(LABOR_EMPLOYER_FULL[grade] * laborRatio) : null;
+  const healthSelfActual = numFrom('health-amt');
+  const units = parseInt((document.getElementById('health-units')||{}).textContent) || 0;
+  const employerHealth = (healthSelfActual > 0 && grade in HEALTH_EMPLOYER_FULL) ? Math.round(HEALTH_EMPLOYER_FULL[grade] * Math.max(units,1)) : (healthSelfActual === 0 ? 0 : null);
+  const employerPension = grade ? Math.round(grade * 0.06 * (laborSelfFull ? (laborSelfActual / laborSelfFull) : 1)) : null;
+  return { employerLabor, employerHealth, employerPension };
+}
 function syncSalaryRecordToSupabase(y, name, mo, earn, deduct, net, earnItems, deductItems, detailText){
   if(!sb || !name) return;
+  const ec = computeEmployerCosts();
   sb.from('salary_records').upsert({
     emp_name: name,
     year_roc: parseInt(y) || 115,
@@ -1967,6 +1983,9 @@ function syncSalaryRecordToSupabase(y, name, mo, earn, deduct, net, earnItems, d
     deduct_total: deduct,
     net_total: net,
     detail_text: detailText,
+    employer_labor: ec.employerLabor,
+    employer_health: ec.employerHealth,
+    employer_pension: ec.employerPension,
     saved_at: new Date().toISOString()
   }, { onConflict: 'emp_name,year_roc,month' }).then(function(res){
     if(res.error) console.error('salary_records 同步失敗', res.error);
