@@ -1957,11 +1957,17 @@ function quickSave(el){
 const LABOR_SELF_FULL = {33300:833,34800:870,36300:908,38200:955,40100:1002,42000:1050,43900:1098,45800:1145};
 const LABOR_EMPLOYER_FULL = {33300:2954,34800:3087,36300:3220,38200:3388,40100:3557,42000:3725,43900:3894,45800:4063};
 const HEALTH_EMPLOYER_FULL = {33300:1611,34800:1684,36300:1757,38200:1849,40100:1940,42000:2032,43900:2124,45800:2216};
+const OWNER_LABOR_EMPLOYER = {45800:3742};
 function computeEmployerCosts(){
+  const name = ((document.getElementById('emp-name')||{}).value||'').trim();
   const grade = parseInt((document.getElementById('ins-grade')||{}).value) || 0;
   const laborSelfActual = numFrom('labor-amt');
   const laborSelfFull = LABOR_SELF_FULL[grade];
   const laborRatio = laborSelfFull ? (laborSelfActual / laborSelfFull) : 0;
+  if(name === '陳旎詩'){
+    const employerLabor = (grade in OWNER_LABOR_EMPLOYER) ? OWNER_LABOR_EMPLOYER[grade] : ((grade in LABOR_EMPLOYER_FULL) ? Math.round(LABOR_EMPLOYER_FULL[grade] * laborRatio) : null);
+    return { employerLabor, employerHealth: 0, employerPension: grade ? Math.round(grade * 0.06) : null };
+  }
   const employerLabor = (grade in LABOR_EMPLOYER_FULL) ? Math.round(LABOR_EMPLOYER_FULL[grade] * laborRatio) : null;
   const healthSelfActual = numFrom('health-amt');
   const units = parseInt((document.getElementById('health-units')||{}).textContent) || 0;
