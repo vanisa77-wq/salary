@@ -90,7 +90,10 @@ body{
 .detail-row{display:none}
 .detail-row.open{display:table-row}
 .detail-row td{background:#f7f2ec;text-align:left;white-space:normal;padding:12px 16px}
-.detail-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.detail-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:760px}
+.detail-cols .di{gap:16px}
+.detail-cols .di>span:first-child{flex:1;min-width:0}
+.detail-cols .di>span:last-child{white-space:nowrap}
 .detail-cols h4{font-size:13px;color:#6b5a52;margin-bottom:6px}
 .detail-cols .di{display:flex;justify-content:space-between;padding:3px 0;font-size:13px;color:#333;border-bottom:1px dashed #e8ddd6}
 .detail-cols .di .di-sub{display:block;font-size:11px;color:#a5514b;font-weight:400;white-space:pre-line}
