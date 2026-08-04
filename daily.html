@@ -328,8 +328,9 @@ hr.sd{border:none;border-top:1.5px solid #e8ddd6;margin:12px 0}
 .detail-row{display:none}
 .detail-row.open{display:table-row}
 .detail-row td{background:#f7f2ec;text-align:left;white-space:normal;padding:12px 16px}
-.detail-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:760px}
-.detail-cols>div:last-child{border-left:2px solid #8fb3cc;padding-left:16px}
+.detail-cols{display:flex;align-items:flex-start}
+.detail-cols>div:first-child{flex:none}
+.detail-cols>div:last-child{border-left:2px solid #8fb3cc;padding-left:16px;flex:1;min-width:0}
 .detail-cols .di{gap:16px}
 .detail-cols .di>span:first-child{flex:1;min-width:0}
 .detail-cols .di>span:last-child{white-space:nowrap}
@@ -827,9 +828,28 @@ function buildDetailHTML(r){
   const deductRows=(r.deduct_items||[]).map(it=>`<div class="di"><span>${it.t}${it.s?`<span class="di-sub">${it.s}</span>`:''}</span><span>${it.a}</span></div>`).join('')||'<div class="di"><span>（無）</span><span></span></div>';
   return `<div class="detail-cols"><div><h4>＋ 應領項目</h4>${earnRows}</div><div><h4>－ 應扣項目</h4>${deductRows}</div></div>`;
 }
+function alignDetailCols(rowEl, earnColIndex, deductColIndex){
+  const table=rowEl.closest('table');
+  const headerRow=table&&table.querySelector('thead tr');
+  const td=rowEl.querySelector('td');
+  const dc=rowEl.querySelector('.detail-cols');
+  if(!headerRow||!td||!dc)return;
+  const earnTh=headerRow.children[earnColIndex-1], deductTh=headerRow.children[deductColIndex-1];
+  if(!earnTh||!deductTh)return;
+  const tdX=td.getBoundingClientRect().left;
+  const earnX=earnTh.getBoundingClientRect().left-tdX;
+  const deductX=deductTh.getBoundingClientRect().left-tdX;
+  const gap=20;
+  const earnDiv=dc.children[0], deductDiv=dc.children[1];
+  earnDiv.style.marginLeft=Math.max(0,earnX)+'px';
+  earnDiv.style.width=Math.max(80,deductX-earnX-gap)+'px';
+  deductDiv.style.marginLeft=gap+'px';
+}
 function toggleHistDetailRow(idx){
   const el=document.getElementById('hist-detail-'+idx);
-  if(el)el.classList.toggle('open');
+  if(!el)return;
+  el.classList.toggle('open');
+  if(el.classList.contains('open'))alignDetailCols(el,1,8);
 }
 async function loadDailyHistory(){
   const box=document.getElementById('hist-result');
