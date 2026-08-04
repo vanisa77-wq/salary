@@ -288,14 +288,18 @@ function buildDetailHTML(r){
   const deductRows=(r.deduct_items||[]).map(it=>`<div class="di"><span>${it.t}${it.s?`<span class="di-sub">${it.s}</span>`:''}</span><span>${it.a}</span></div>`).join('')||'<div class="di"><span>（無）</span><span></span></div>';
   return `<div class="detail-cols"><div><h4>＋ 應領項目</h4>${earnRows}</div><div><h4>－ 應扣項目</h4>${deductRows}</div></div>`;
 }
-function alignDetailCols(rowEl, earnColIndex, deductColIndex){
+function findColIndex(headerRow,label){
+  return Array.prototype.findIndex.call(headerRow.children,th=>th.textContent.trim()===label);
+}
+function alignDetailCols(rowEl){
   const table=rowEl.closest('table');
   const headerRow=table&&table.querySelector('thead tr');
   const td=rowEl.querySelector('td');
   const dc=rowEl.querySelector('.detail-cols');
   if(!headerRow||!td||!dc)return;
-  const earnTh=headerRow.children[earnColIndex-1], deductTh=headerRow.children[deductColIndex-1];
-  if(!earnTh||!deductTh)return;
+  const earnIdx=findColIndex(headerRow,'應領小計'), deductIdx=findColIndex(headerRow,'應扣小計');
+  if(earnIdx<0||deductIdx<0)return;
+  const earnTh=headerRow.children[earnIdx], deductTh=headerRow.children[deductIdx];
   const earnDiv=dc.children[0], deductDiv=dc.children[1];
   const tdX=td.getBoundingClientRect().left;
   const earnRight=earnTh.getBoundingClientRect().right-tdX;
@@ -304,17 +308,24 @@ function alignDetailCols(rowEl, earnColIndex, deductColIndex){
   const deductLeft=deductDiv.getBoundingClientRect().left-tdX;
   deductDiv.style.width=Math.max(80,deductRight-deductLeft)+'px';
 }
+function realignOpenDetailRows(table){
+  if(!table)return;
+  table.querySelectorAll('.detail-row.open').forEach(alignDetailCols);
+}
+window.addEventListener('resize',()=>{
+  document.querySelectorAll('.detail-table').forEach(realignOpenDetailRows);
+});
 function toggleDetailRow(idx){
   const el=document.getElementById('month-detail-'+idx);
   if(!el)return;
   el.classList.toggle('open');
-  if(el.classList.contains('open'))alignDetailCols(el,7,13);
+  realignOpenDetailRows(el.closest('table'));
 }
 function toggleHistDetailRow(idx){
   const el=document.getElementById('hist-detail-'+idx);
   if(!el)return;
   el.classList.toggle('open');
-  if(el.classList.contains('open'))alignDetailCols(el,6,12);
+  realignOpenDetailRows(el.closest('table'));
 }
 
 async function loadMonth(){
