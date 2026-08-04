@@ -200,6 +200,19 @@ body{
 </div>
 
 <div class="card">
+  <div class="card-title">📋 雇主勞健退年度總表（全體老師加總，依正式繳款單）</div>
+  <div class="row3">
+    <div class="field">
+      <label>年度（民國）</label>
+      <input type="number" id="emp-year" min="100" max="200" value="115">
+    </div>
+    <div></div>
+    <button class="btn-query" onclick="loadEmployerYearly()">🔄 載入</button>
+  </div>
+  <div id="emp-yearly-wrap" style="margin-top:14px"></div>
+</div>
+
+<div class="card">
   <div class="card-title">🔍 依人／依年查詢歷史紀錄</div>
   <div class="row3">
     <div class="field">
@@ -451,10 +464,40 @@ async function loadHistory(){
   </table>`;
 }
 
+async function loadEmployerYearly(){
+  const wrap=document.getElementById('emp-yearly-wrap');
+  const year=parseInt(document.getElementById('emp-year').value)||115;
+  if(!sb){ wrap.innerHTML='<div class="empty-hint">無法連線到資料庫</div>'; return; }
+  wrap.innerHTML='<div class="empty-hint">載入中…</div>';
+  const {data,error}=await sb.from('employer_monthly_totals').select('*').eq('year_roc',year).order('month');
+  if(error){ wrap.innerHTML='<div class="empty-hint">載入失敗：'+error.message+'</div>'; return; }
+  const byMonth={};
+  (data||[]).forEach(r=>{ byMonth[r.month]=r; });
+  let totalLabor=0,totalHealth=0,totalPension=0,totalAll=0;
+  const rows=[];
+  for(let m=1;m<=12;m++){
+    const r=byMonth[m];
+    if(r){
+      const l=Number(r.labor_total)||0,h=Number(r.health_total)||0,p=Number(r.pension_total)||0,t=l+h+p;
+      totalLabor+=l;totalHealth+=h;totalPension+=p;totalAll+=t;
+      rows.push(`<tr><td>${m} 月</td><td>${l.toLocaleString()}</td><td>${h.toLocaleString()}</td><td>${p.toLocaleString()}</td><td class="employer-total">${t.toLocaleString()}</td></tr>`);
+    }else{
+      rows.push(`<tr><td>${m} 月</td><td>－</td><td>－</td><td>－</td><td class="employer-total">－</td></tr>`);
+    }
+  }
+  wrap.innerHTML=`<table class="detail-table">
+    <thead><tr><th>月份</th><th>雇主勞保</th><th>雇主健保</th><th>雇主勞退</th><th>合計</th></tr></thead>
+    <tbody>${rows.join('')}</tbody>
+    <tfoot><tr><td>全年合計</td><td>${totalLabor.toLocaleString()}</td><td>${totalHealth.toLocaleString()}</td><td>${totalPension.toLocaleString()}</td><td>${totalAll.toLocaleString()}</td></tr></tfoot>
+  </table>
+  <div class="hint" style="margin-top:8px">資料來源：勞保局/健保署/勞退局正式繳款明細，逐月人工核對登錄。空白月份表示尚未登錄，補齊資料後會自動顯示。</div>`;
+}
+
 window.onload=()=>{
   const now=new Date();
   document.getElementById('ym').value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   loadMonth();
+  loadEmployerYearly();
 };
 </script>
 
