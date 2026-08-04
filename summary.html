@@ -126,6 +126,8 @@ body{
 
 @media print{
   #site-nav-bar,.no-print{display:none!important}
+  body.print-transfer-only .card:not(#transfer-card){display:none!important}
+  body.print-transfer-only #transfer-card .hint{display:none}
 }
 @media (max-width:640px){
   .sum-grid{grid-template-columns:1fr 1fr}
@@ -170,6 +172,13 @@ body{
 <div class="card">
   <div class="card-title">老師薪資明細</div>
   <div class="list-wrap" id="t-list"><div class="empty-hint">請先選擇年月並按「從資料庫載入」</div></div>
+</div>
+
+<div class="card" id="transfer-card">
+  <div class="card-title">💰 匯款對照表</div>
+  <div class="hint">依目前查詢到的月份資料產生，列出序號、姓名、實領總計，方便對照銀行匯款。</div>
+  <button class="btn-add no-print" style="margin-top:10px" onclick="showTransferTable()">產生匯款對照表</button>
+  <div id="transfer-wrap" style="margin-top:14px"></div>
 </div>
 
 <div class="card">
@@ -419,6 +428,33 @@ function renderMonth(){
   </table>`;
   calcSummary();
 }
+
+function showTransferTable(){
+  const wrap=document.getElementById('transfer-wrap');
+  if(!monthRecords.length){
+    wrap.innerHTML='<div class="empty-hint">請先在上方查詢並載入月份資料</div>';
+    return;
+  }
+  let total=0;
+  const rows=monthRecords.map((r,idx)=>{
+    const net=Number(r.net_total)||0;
+    total+=net;
+    return `<tr><td>${idx+1}</td><td class="name">${r.emp_name}</td><td>${net.toLocaleString()}</td></tr>`;
+  }).join('');
+  wrap.innerHTML=`<table class="detail-table" style="max-width:480px">
+    <thead><tr><th>NO.</th><th>姓名</th><th>實領總計</th></tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr><td colspan="2">合計</td><td>${total.toLocaleString()}</td></tr></tfoot>
+  </table>
+  <button class="btn-add no-print" style="margin-top:12px" onclick="printTransferTable()">🖨 列印匯款對照表</button>`;
+}
+function printTransferTable(){
+  document.body.classList.add('print-transfer-only');
+  window.print();
+}
+window.addEventListener('afterprint',()=>{
+  document.body.classList.remove('print-transfer-only');
+});
 
 function calcSummary(){
   let gross=0,deduct=0,net=0,employerCost=0;
