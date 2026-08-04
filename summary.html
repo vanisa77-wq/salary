@@ -92,10 +92,10 @@ body{
 .detail-row td{background:#f7f2ec;text-align:left;white-space:normal;padding:12px 16px}
 .detail-cols{display:flex;align-items:flex-start}
 .detail-cols>div{flex:none;box-sizing:border-box}
-.detail-cols>div:last-child{border-left:2px solid #8fb3cc;padding-left:16px}
+.detail-cols .deduct-col{border-left:2px solid #8fb3cc;padding-left:16px}
 .detail-cols .di{gap:16px}
 .detail-cols .di>span:first-child{flex:1;min-width:0}
-.detail-cols .di>span:last-child{white-space:nowrap}
+.detail-cols .di>span:last-child{white-space:nowrap;text-align:center}
 .detail-cols h4{font-size:13px;color:#6b5a52;margin-bottom:6px}
 .detail-cols .di{display:flex;justify-content:space-between;padding:3px 0;font-size:13px;color:#333;border-bottom:1px dashed #e8ddd6}
 .detail-cols .di .di-sub{display:block;font-size:11px;color:#a5514b;font-weight:400;white-space:pre-line}
@@ -286,7 +286,7 @@ function hoursGridHTML(days){
 function buildDetailHTML(r){
   const earnRows=(r.earn_items||[]).map(it=>`<div class="di"><span>${it.t}${it.days?hoursGridHTML(it.days):''}${it.s?`<span class="di-sub">${it.s}</span>`:''}</span><span>${it.a}</span></div>`).join('')||'<div class="di"><span>（無）</span><span></span></div>';
   const deductRows=(r.deduct_items||[]).map(it=>`<div class="di"><span>${it.t}${it.s?`<span class="di-sub">${it.s}</span>`:''}</span><span>${it.a}</span></div>`).join('')||'<div class="di"><span>（無）</span><span></span></div>';
-  return `<div class="detail-cols"><div><h4>＋ 應領項目</h4>${earnRows}</div><div><h4>－ 應扣項目</h4>${deductRows}</div></div>`;
+  return `<div class="detail-cols"><div class="earn-col"><h4>＋ 應領項目</h4>${earnRows}</div><div class="deduct-col"><h4>－ 應扣項目</h4>${deductRows}</div></div>`;
 }
 function findColIndex(headerRow,label){
   return Array.prototype.findIndex.call(headerRow.children,th=>th.textContent.trim()===label);
@@ -299,12 +299,17 @@ function alignDetailCols(rowEl){
   const earnIdx=findColIndex(headerRow,'應領小計'), deductIdx=findColIndex(headerRow,'應扣小計');
   if(earnIdx<0||deductIdx<0)return;
   const earnTh=headerRow.children[earnIdx], deductTh=headerRow.children[deductIdx];
-  const earnDiv=dc.children[0], deductDiv=dc.children[1];
-  earnDiv.style.width='auto';
-  const earnLeft=earnDiv.getBoundingClientRect().left;
-  earnDiv.style.width=Math.max(80,earnTh.getBoundingClientRect().right-earnLeft)+'px';
-  const deductLeft=deductDiv.getBoundingClientRect().left;
-  deductDiv.style.width=Math.max(80,deductTh.getBoundingClientRect().right-deductLeft)+'px';
+  const earnDiv=dc.querySelector('.earn-col'), deductDiv=dc.querySelector('.deduct-col');
+  if(!earnDiv||!deductDiv)return;
+  alignAmountCol(earnDiv,earnTh);
+  alignAmountCol(deductDiv,deductTh);
+}
+function alignAmountCol(div,th){
+  div.style.width='auto';
+  const left=div.getBoundingClientRect().left;
+  const rect=th.getBoundingClientRect();
+  div.style.width=Math.max(80,rect.right-left)+'px';
+  div.querySelectorAll('.di>span:last-child').forEach(s=>{ s.style.width=rect.width+'px'; });
 }
 function realignOpenDetailRows(table){
   if(!table)return;
