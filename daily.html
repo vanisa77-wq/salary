@@ -300,6 +300,39 @@ hr.sd{border:none;border-top:1.5px solid #e8ddd6;margin:12px 0}
   hr.sd{margin:6px 0}
   .slip-note{font-size:9px;margin-top:8px}
 }
+
+/* ── 歷史查詢 ── */
+.hist-query-row{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}
+.btn-query{
+  padding:10px 20px;border:none;border-radius:8px;
+  background:#b5a49a;color:#fff;font-size:14px;font-weight:700;
+  cursor:pointer;font-family:inherit;white-space:nowrap;
+}
+.btn-query:hover{background:#a08e83}
+.empty-hint{color:#9a8880;font-size:14px;padding:14px 0;text-align:center}
+.list-wrap{overflow-x:auto}
+.detail-table{width:100%;border-collapse:collapse;font-size:14px;white-space:nowrap;border:1px solid #e0d4c8}
+.detail-table th,.detail-table td{padding:8px 10px;text-align:center;border:1px solid #e0d4c8;vertical-align:middle}
+.detail-table thead th{background:#e7ceb8;color:#5c4a42;font-weight:700}
+.detail-table tbody tr:nth-child(even){background:#f5efe9}
+.detail-table td.sub-total{font-weight:700;background:#f0e2d4}
+.detail-table td.deduct-total{font-weight:700;background:#f5e2d8}
+.detail-table td.net{font-weight:700;color:#7a6058;background:#e8d3b6}
+.detail-table td.employer-total{font-weight:700;color:#3a6a8a;background:#e0e8ee}
+.detail-table tfoot td{font-weight:700;background:#e7ceb8;color:#5c4a42}
+.pay-badge{display:inline;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:700;margin-left:6px}
+.pay-badge.月薪{background:#dce8f0;color:#3a6a8a}
+.pay-badge.時薪{background:#dceade;color:#3a6e50}
+.emp-row{cursor:pointer}
+.emp-row:hover{background:#f0e2d4!important}
+.detail-row{display:none}
+.detail-row.open{display:table-row}
+.detail-row td{background:#f7f2ec;text-align:left;white-space:normal;padding:12px 16px}
+.detail-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.detail-cols h4{font-size:13px;color:#6b5a52;margin-bottom:6px}
+.detail-cols .di{display:flex;justify-content:space-between;padding:3px 0;font-size:13px;color:#333;border-bottom:1px dashed #e8ddd6}
+.detail-cols .di .di-sub{display:block;font-size:11px;color:#a5514b;font-weight:400;white-space:pre-line}
+@media (max-width:640px){.hist-query-row{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -488,6 +521,22 @@ hr.sd{border:none;border-top:1.5px solid #e8ddd6;margin:12px 0}
     <button class="btn-print-slip no-print" onclick="window.print()">列印薪資單</button>
     <button class="btn-print-slip no-print" id="save-summary-btn" onclick="saveSlipToSupabase()" style="margin-top:8px">💾 存入薪資彙總表</button>
   </div>
+</div>
+
+<div class="card no-print">
+  <div class="card-title">🔍 查詢歷史薪資紀錄</div>
+  <div class="hist-query-row">
+    <div class="field">
+      <label>老師姓名</label>
+      <input type="text" id="hist-name" placeholder="請輸入老師姓名">
+    </div>
+    <div class="field">
+      <label>年度（民國）</label>
+      <input type="number" id="hist-year" min="100" max="200" placeholder="例：115">
+    </div>
+    <button class="btn-query" onclick="loadDailyHistory()">🔍 查詢</button>
+  </div>
+  <div id="hist-result" style="margin-top:14px"></div>
 </div>
 
 </div>
@@ -740,6 +789,111 @@ function buildHoursBreakdown(){
 function hoursGridHTML(days){
   if(!days.length)return'';
   return `<div class="hours-grid">${days.map(d=>`<div>${d.date}</div><div>${d.start}～${d.end}</div><div>${d.h} 小時</div>`).join('')}</div>`;
+}
+function amtNum(a){
+  const n=parseFloat(String(a||'').replace(/[^\d.]/g,''));
+  return isNaN(n)?0:n;
+}
+function bucketEarn(items){
+  const b={base:0,attendance:0,ot:0,other:0};
+  (items||[]).forEach(it=>{
+    const v=amtNum(it.a);
+    if(it.t.indexOf('全勤')!==-1)b.attendance+=v;
+    else if(it.t.indexOf('在職底薪')!==-1||it.t.indexOf('本薪')!==-1||it.t.indexOf('時薪工資')!==-1)b.base+=v;
+    else if(it.t.indexOf('值班')!==-1||it.t.indexOf('親師會談')!==-1||it.t.indexOf('7:30')!==-1||it.t.indexOf('18:30')!==-1)b.ot+=v;
+    else b.other+=v;
+  });
+  return b;
+}
+function bucketDeduct(items){
+  const b={labor:0,health:0,sick:0,personal:0,other:0};
+  (items||[]).forEach(it=>{
+    if(it.t==='病假扣款合計')return;
+    const v=amtNum(it.a);
+    if(it.t.indexOf('勞保自付')!==-1)b.labor+=v;
+    else if(it.t.indexOf('健保自付')!==-1)b.health+=v;
+    else if(it.t.indexOf('病假扣款')!==-1)b.sick+=v;
+    else if(it.t.indexOf('事假扣款')!==-1)b.personal+=v;
+    else b.other+=v;
+  });
+  return b;
+}
+function buildDetailHTML(r){
+  const earnRows=(r.earn_items||[]).map(it=>`<div class="di"><span>${it.t}${it.days?hoursGridHTML(it.days):''}${it.s?`<span class="di-sub">${it.s}</span>`:''}</span><span>${it.a}</span></div>`).join('')||'<div class="di"><span>（無）</span><span></span></div>';
+  const deductRows=(r.deduct_items||[]).map(it=>`<div class="di"><span>${it.t}${it.s?`<span class="di-sub">${it.s}</span>`:''}</span><span>${it.a}</span></div>`).join('')||'<div class="di"><span>（無）</span><span></span></div>';
+  return `<div class="detail-cols"><div><h4>＋ 應領項目</h4>${earnRows}</div><div><h4>－ 應扣項目</h4>${deductRows}</div></div>`;
+}
+function toggleHistDetailRow(idx){
+  const el=document.getElementById('hist-detail-'+idx);
+  if(el)el.classList.toggle('open');
+}
+async function loadDailyHistory(){
+  const box=document.getElementById('hist-result');
+  const name=document.getElementById('hist-name').value.trim();
+  const year=document.getElementById('hist-year').value;
+  if(!name){ box.innerHTML='<div class="empty-hint">請輸入老師姓名</div>'; return; }
+  if(!sb){ box.innerHTML='<div class="empty-hint">無法連線到資料庫</div>'; return; }
+  box.innerHTML='<div class="empty-hint">載入中…</div>';
+  let q=sb.from('salary_records').select('*').eq('emp_name',name);
+  if(year) q=q.eq('year_roc',parseInt(year));
+  const {data,error}=await q.order('year_roc').order('month');
+  if(error){ box.innerHTML='<div class="empty-hint">載入失敗：'+error.message+'</div>'; return; }
+  if(!data||!data.length){ box.innerHTML='<div class="empty-hint">查無紀錄</div>'; return; }
+  let totals={base:0,attendance:0,ot:0,eOther:0,earn:0,labor:0,health:0,sick:0,personal:0,dOther:0,deduct:0,net:0,eLabor:0,eHealth:0,ePension:0,eTotal:0};
+  const rows=data.map((r,idx)=>{
+    const eb=bucketEarn(r.earn_items);
+    const db=bucketDeduct(r.deduct_items);
+    const earn=Number(r.earn_total)||0, deduct=Number(r.deduct_total)||0, net=Number(r.net_total)||0;
+    const eLabor=Number(r.employer_labor)||0, eHealth=Number(r.employer_health)||0, ePension=Number(r.employer_pension)||0;
+    const eTotal=eLabor+eHealth+ePension;
+    totals.base+=eb.base;totals.attendance+=eb.attendance;totals.ot+=eb.ot;totals.eOther+=eb.other;totals.earn+=earn;
+    totals.labor+=db.labor;totals.health+=db.health;totals.sick+=db.sick;totals.personal+=db.personal;totals.dOther+=db.other;totals.deduct+=deduct;
+    totals.net+=net;
+    totals.eLabor+=eLabor;totals.eHealth+=eHealth;totals.ePension+=ePension;totals.eTotal+=eTotal;
+    return `<tr class="emp-row" onclick="toggleHistDetailRow(${idx})">
+      <td>民國${r.year_roc}年${r.month}月${r.pay_type==='時薪'?`<span class="pay-badge 時薪">時薪</span>`:''}</td>
+      <td>${eb.base.toLocaleString()}</td>
+      <td>${eb.attendance.toLocaleString()}</td>
+      <td>${eb.ot.toLocaleString()}</td>
+      <td>${eb.other.toLocaleString()}</td>
+      <td class="sub-total">${earn.toLocaleString()}</td>
+      <td>${db.labor.toLocaleString()}</td>
+      <td>${db.health.toLocaleString()}</td>
+      <td>${db.sick.toLocaleString()}</td>
+      <td>${db.personal.toLocaleString()}</td>
+      <td>${db.other.toLocaleString()}</td>
+      <td class="deduct-total">${deduct.toLocaleString()}</td>
+      <td class="net">${net.toLocaleString()}</td>
+      <td>${eLabor?eLabor.toLocaleString():'－'}</td>
+      <td>${eHealth?eHealth.toLocaleString():'－'}</td>
+      <td>${ePension?ePension.toLocaleString():'－'}</td>
+      <td class="employer-total">${eTotal?eTotal.toLocaleString():'－'}</td>
+    </tr>
+    <tr class="detail-row" id="hist-detail-${idx}"><td colspan="17">${buildDetailHTML(r)}</td></tr>`;
+  }).join('');
+  box.innerHTML=`<div class="list-wrap"><table class="detail-table">
+    <thead><tr><th>月份</th><th>薪資</th><th>全勤</th><th>加班費</th><th>其它</th><th>應領小計</th><th>勞保</th><th>健保</th><th>病假</th><th>事假</th><th>其它</th><th>應扣小計</th><th>總計</th><th>雇主勞保</th><th>雇主健保</th><th>雇主勞退</th><th>雇主負擔合計</th></tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr>
+      <td>合計</td>
+      <td>${totals.base.toLocaleString()}</td>
+      <td>${totals.attendance.toLocaleString()}</td>
+      <td>${totals.ot.toLocaleString()}</td>
+      <td>${totals.eOther.toLocaleString()}</td>
+      <td>${totals.earn.toLocaleString()}</td>
+      <td>${totals.labor.toLocaleString()}</td>
+      <td>${totals.health.toLocaleString()}</td>
+      <td>${totals.sick.toLocaleString()}</td>
+      <td>${totals.personal.toLocaleString()}</td>
+      <td>${totals.dOther.toLocaleString()}</td>
+      <td>${totals.deduct.toLocaleString()}</td>
+      <td>${totals.net.toLocaleString()}</td>
+      <td>${totals.eLabor.toLocaleString()}</td>
+      <td>${totals.eHealth.toLocaleString()}</td>
+      <td>${totals.ePension.toLocaleString()}</td>
+      <td>${totals.eTotal.toLocaleString()}</td>
+    </tr></tfoot>
+  </table></div>`;
 }
 function showSlip(){
   const rate=parseFloat(document.getElementById('hourly-rate').value)||0;
