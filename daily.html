@@ -329,8 +329,8 @@ hr.sd{border:none;border-top:1.5px solid #e8ddd6;margin:12px 0}
 .detail-row.open{display:table-row}
 .detail-row td{background:#f7f2ec;text-align:left;white-space:normal;padding:12px 16px}
 .detail-cols{display:flex;align-items:flex-start}
-.detail-cols>div:first-child{flex:none}
-.detail-cols>div:last-child{border-left:2px solid #8fb3cc;padding-left:16px;flex:1;min-width:0}
+.detail-cols>div{flex:none;box-sizing:border-box}
+.detail-cols>div:last-child{border-left:2px solid #8fb3cc;padding-left:16px}
 .detail-cols .di{gap:16px}
 .detail-cols .di>span:first-child{flex:1;min-width:0}
 .detail-cols .di>span:last-child{white-space:nowrap}
@@ -836,20 +836,19 @@ function alignDetailCols(rowEl, earnColIndex, deductColIndex){
   if(!headerRow||!td||!dc)return;
   const earnTh=headerRow.children[earnColIndex-1], deductTh=headerRow.children[deductColIndex-1];
   if(!earnTh||!deductTh)return;
-  const tdX=td.getBoundingClientRect().left;
-  const earnX=earnTh.getBoundingClientRect().left-tdX;
-  const deductX=deductTh.getBoundingClientRect().left-tdX;
-  const gap=20;
   const earnDiv=dc.children[0], deductDiv=dc.children[1];
-  earnDiv.style.marginLeft=Math.max(0,earnX)+'px';
-  earnDiv.style.width=Math.max(80,deductX-earnX-gap)+'px';
-  deductDiv.style.marginLeft=gap+'px';
+  const tdX=td.getBoundingClientRect().left;
+  const earnRight=earnTh.getBoundingClientRect().right-tdX;
+  earnDiv.style.width=Math.max(80,earnRight)+'px';
+  const deductRight=deductTh.getBoundingClientRect().right-tdX;
+  const deductLeft=deductDiv.getBoundingClientRect().left-tdX;
+  deductDiv.style.width=Math.max(80,deductRight-deductLeft)+'px';
 }
 function toggleHistDetailRow(idx){
   const el=document.getElementById('hist-detail-'+idx);
   if(!el)return;
   el.classList.toggle('open');
-  if(el.classList.contains('open'))alignDetailCols(el,1,8);
+  if(el.classList.contains('open'))alignDetailCols(el,6,12);
 }
 async function loadDailyHistory(){
   const box=document.getElementById('hist-result');
