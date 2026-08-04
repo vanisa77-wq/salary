@@ -834,19 +834,17 @@ function findColIndex(headerRow,label){
 function alignDetailCols(rowEl){
   const table=rowEl.closest('table');
   const headerRow=table&&table.querySelector('thead tr');
-  const td=rowEl.querySelector('td');
   const dc=rowEl.querySelector('.detail-cols');
-  if(!headerRow||!td||!dc)return;
+  if(!headerRow||!dc)return;
   const earnIdx=findColIndex(headerRow,'應領小計'), deductIdx=findColIndex(headerRow,'應扣小計');
   if(earnIdx<0||deductIdx<0)return;
   const earnTh=headerRow.children[earnIdx], deductTh=headerRow.children[deductIdx];
   const earnDiv=dc.children[0], deductDiv=dc.children[1];
-  const tdX=td.getBoundingClientRect().left;
-  const earnRight=earnTh.getBoundingClientRect().right-tdX;
-  earnDiv.style.width=Math.max(80,earnRight)+'px';
-  const deductRight=deductTh.getBoundingClientRect().right-tdX;
-  const deductLeft=deductDiv.getBoundingClientRect().left-tdX;
-  deductDiv.style.width=Math.max(80,deductRight-deductLeft)+'px';
+  earnDiv.style.width='auto';
+  const earnLeft=earnDiv.getBoundingClientRect().left;
+  earnDiv.style.width=Math.max(80,earnTh.getBoundingClientRect().right-earnLeft)+'px';
+  const deductLeft=deductDiv.getBoundingClientRect().left;
+  deductDiv.style.width=Math.max(80,deductTh.getBoundingClientRect().right-deductLeft)+'px';
 }
 function realignOpenDetailRows(table){
   if(!table)return;
