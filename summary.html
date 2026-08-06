@@ -155,6 +155,19 @@ body{
 .sigline{margin-top:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 img.sigimg{height:70px}
 
+body.gate-lock{overflow:hidden}
+#login-gate{position:fixed;inset:0;z-index:99999;background:#1a1a1a;display:flex;align-items:center;justify-content:center;padding:20px}
+#login-gate .lg-card{background:#fff;border-radius:16px;padding:32px 28px;max-width:360px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+#login-gate .lg-title{font-size:17px;font-weight:700;color:#1a1a1a;margin-bottom:4px;text-align:center}
+#login-gate .lg-sub{font-size:13px;color:#888;text-align:center;margin-bottom:20px}
+#login-gate label{font-size:14px;color:#333;font-weight:500;display:block;margin-bottom:5px}
+#login-gate .lg-field{margin-bottom:14px}
+#login-gate input{width:100%;height:44px;border:1px solid #D5D3CC;border-radius:8px;background:#FAFAF8;color:#1a1a1a;font-size:16px;font-family:inherit;padding:0 12px;outline:none}
+#login-gate input:focus{border-color:#a05030;box-shadow:0 0 0 3px rgba(160,80,48,.12)}
+#login-gate button{width:100%;height:46px;border:none;border-radius:8px;background:#a05030;color:#fff;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:6px}
+#login-gate button:hover{background:#8a4327}
+#login-gate .lg-err{color:#a05030;font-size:13px;text-align:center;margin-top:10px;min-height:18px}
+
 @media print{
   #site-nav-bar,.no-print{display:none!important}
   body.print-transfer-only .card:not(#transfer-card){display:none!important}
@@ -166,7 +179,24 @@ img.sigimg{height:70px}
 }
 </style>
 </head>
-<body>
+<body class="gate-lock">
+
+<div id="login-gate">
+  <div class="lg-card">
+    <div class="lg-title">🔒 小蘋果托嬰中心｜薪資彙總表</div>
+    <div class="lg-sub">管理員登入</div>
+    <div class="lg-field">
+      <label>Email</label>
+      <input type="email" id="lg-email" autocomplete="username" placeholder="請輸入登入 Email">
+    </div>
+    <div class="lg-field">
+      <label>密碼</label>
+      <input type="password" id="lg-pass" autocomplete="current-password" placeholder="請輸入密碼">
+    </div>
+    <button onclick="tryAdminLogin()">登入</button>
+    <div class="lg-err" id="lg-err"></div>
+  </div>
+</div>
 
 <div id="site-nav-bar" style="position:fixed;top:0;left:0;right:0;z-index:100000;background:#2c2c2c;padding:8px 10px;display:flex;gap:8px;overflow-x:auto;font-family:'Microsoft JhengHei','PingFang TC',sans-serif;font-size:13px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.2);">
   <a href="/" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">💰 月薪計算</a>
@@ -315,6 +345,32 @@ const SUPABASE_URL='https://vicbgttehkqeqhyvtlet.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable_N4DH8txPq9dc9naOPk_Qmg_qEbEcXVM';
 const sb=window.supabase?window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
 
+function unlockGate(){
+  document.getElementById('login-gate').style.display='none';
+  document.body.classList.remove('gate-lock');
+  const now=new Date();
+  document.getElementById('ym').value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  loadMonth();
+  loadEmployerYearly();
+}
+async function tryAdminLogin(){
+  const email=(document.getElementById('lg-email').value||'').trim();
+  const pass=(document.getElementById('lg-pass').value||'').trim();
+  const err=document.getElementById('lg-err');
+  const { error }=await sb.auth.signInWithPassword({ email, password: pass });
+  if(error){
+    err.textContent='帳號或密碼錯誤';
+    document.getElementById('lg-pass').value='';
+    return;
+  }
+  err.textContent='';
+  unlockGate();
+}
+['lg-email','lg-pass'].forEach(id=>{
+  document.getElementById(id).addEventListener('keydown', e=>{ if(e.key==='Enter') tryAdminLogin(); });
+});
+sb.auth.getSession().then(({data})=>{ if(data.session) unlockGate(); });
+
 let monthRecords=[];
 
 function ymToRoc(){
@@ -383,11 +439,29 @@ function signCellHTML(r,idx){
 function escapeForAttr(s){
   return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
 }
-function openLineShare(token,empName){
+const TEACHER_PLATFORM_URL='https://pispcttvyadsdcfhrjon.supabase.co';
+const TEACHER_PLATFORM_KEY='sb_publishable_OXe6MJ1SGMwTtTjEEfN9Hw_p0XcJplk';
+async function openLineShare(token,empName){
   const link=location.origin+'/payslip?token='+token;
   copyTextToClipboard(link);
   const text=(empName?empName+' ':'')+'的薪資單，請點連結查看並簽名確認：\n'+link;
-  window.open('https://line.me/R/msg/text/?'+encodeURIComponent(text),'_blank');
+  // 先同步開一個空白頁佔位，避免之後才呼叫 window.open 被瀏覽器擋彈窗
+  const w=window.open('','_blank');
+  try{
+    const res=await fetch(`${TEACHER_PLATFORM_URL}/functions/v1/notify-teacher-line`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${TEACHER_PLATFORM_KEY}`},
+      body:JSON.stringify({ name: empName, text })
+    });
+    const result=await res.json().catch(()=>({}));
+    if(res.ok && result.ok){
+      if(w) w.close();
+      alert('已直接透過 LINE 私訊推播給「'+empName+'」，不需要再手動傳送。');
+      return;
+    }
+  }catch(e){ /* 推播失敗就往下走，改用 LINE 分享視窗 */ }
+  const lineUrl='https://line.me/R/msg/text/?'+encodeURIComponent(text);
+  if(w) w.location.href=lineUrl; else window.open(lineUrl,'_blank');
 }
 async function generateSignLink(id,btnEl){
   if(!sb){ alert('無法連線到資料庫'); return; }
@@ -750,12 +824,6 @@ async function loadEmployerYearly(){
   <div class="hint" style="margin-top:8px">資料來源：勞保局/健保署/勞退局正式繳款明細，逐月人工核對登錄。空白月份表示尚未登錄，補齊資料後會自動顯示。</div>`;
 }
 
-window.onload=()=>{
-  const now=new Date();
-  document.getElementById('ym').value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  loadMonth();
-  loadEmployerYearly();
-};
 </script>
 
 </body></html>
