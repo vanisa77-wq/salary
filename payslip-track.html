@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>薪資單簽收追蹤</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:"Microsoft JhengHei","微軟正黑體","PingFang TC",sans-serif;
+    background:#EDE6E3; color:#1a1a1a; font-size:15px; line-height:1.7;
+  }
+  .wrap { max-width:900px; margin:0 auto; padding:12px 12px 40px; }
+  .card { background:#FAF7F5; border-radius:10px; padding:16px 14px; margin-bottom:12px; box-shadow:0 1px 4px rgba(140,120,115,.15); }
+  h1 { font-size:18px; text-align:center; letter-spacing:2px; margin-bottom:4px; }
+  .sub { text-align:center; font-size:13px; color:#333; margin-bottom:8px; }
+  .stats { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:4px; }
+  .stat { flex:1; min-width:90px; background:#fff; border:1px solid #C9B8B4; border-radius:8px; text-align:center; padding:8px 4px; }
+  .stat .num { font-size:18px; font-weight:bold; }
+  .stat .lbl { font-size:13px; color:#333; }
+  .stat.signed .num { color:#3E5B3E; }
+  .stat.pending .num { color:#A5514B; }
+  table { width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden; font-size:14px; }
+  th, td { border:1px solid #E3D8D5; padding:8px 6px; text-align:center; vertical-align:middle; }
+  th { background:#F0E4E1; font-size:13px; }
+  td.name { text-align:left; padding-left:10px; font-weight:bold; }
+  .badge { display:inline-block; padding:3px 8px; border-radius:6px; font-size:12px; }
+  .badge.signed { background:#ECF2EC; color:#3E5B3E; }
+  .badge.pending { background:#F8ECEB; color:#A5514B; }
+  .btn { border:none; border-radius:8px; font-size:14px; font-family:inherit; padding:6px 10px; cursor:pointer; }
+  .btn-view { background:#6E97BE; color:#fff; }
+  .del { color:#A5514B; font-size:13px; cursor:pointer; text-decoration:underline; }
+  .empty { text-align:center; color:#8a7f7c; font-size:14px; padding:20px 0; }
+  body.gate-lock{overflow:hidden}
+  #login-gate{position:fixed;inset:0;z-index:99999;background:#1a1a1a;display:flex;align-items:center;justify-content:center;padding:20px}
+  #login-gate .lg-card{background:#fff;border-radius:16px;padding:32px 28px;max-width:360px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+  #login-gate .lg-title{font-size:17px;font-weight:700;color:#1a1a1a;margin-bottom:4px;text-align:center}
+  #login-gate .lg-sub{font-size:13px;color:#888;text-align:center;margin-bottom:20px}
+  #login-gate label{font-size:14px;color:#333;font-weight:500;display:block;margin-bottom:5px}
+  #login-gate .lg-field{margin-bottom:14px}
+  #login-gate input{width:100%;height:44px;border:1px solid #D5D3CC;border-radius:8px;background:#FAFAF8;color:#1a1a1a;font-size:16px;font-family:inherit;padding:0 12px;outline:none}
+  #login-gate input:focus{border-color:#6E97BE;box-shadow:0 0 0 3px rgba(110,151,190,.15)}
+  #login-gate button{width:100%;height:46px;border:none;border-radius:8px;background:#6E97BE;color:#fff;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:6px}
+  #login-gate button:hover{background:#5A82A8}
+  #login-gate .lg-err{color:#C0392B;font-size:13px;text-align:center;margin-top:10px;min-height:18px}
+  #previewModal { display:none; position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,.6); overflow-y:auto; padding:20px 12px; }
+  #previewModal .modalInner { max-width:520px; margin:0 auto; background:#fff; border-radius:10px; padding:14px; }
+  #previewModal .modalClose { display:block; width:100%; border:none; border-radius:8px; background:#DDD0CC; color:#333; font-size:14px; padding:10px; margin-top:10px; cursor:pointer; font-family:inherit; }
+  #previewModal .modalDownload { display:block; width:100%; border:none; border-radius:8px; background:#6E97BE; color:#fff; font-size:15px; font-weight:bold; padding:12px; margin-top:8px; cursor:pointer; font-family:inherit; }
+
+  /* 薪資單樣式（跟 payslip.html 共用同一套外觀） */
+  #slip { background:#fff; padding:18px 16px; border-radius:8px; }
+  #slip h3 { font-size:20px; text-align:center; letter-spacing:6px; margin-bottom:4px; }
+  .slip-sub { text-align:center; font-size:14px; color:#555; margin-bottom:14px; }
+  .slip-section { font-weight:700; font-size:14px; padding:6px 8px; border-radius:6px; margin:12px 0 6px; }
+  .slip-earn-title { background:#D4EDDA; color:#1B6E3A; }
+  .slip-deduct-title { background:#F9D7D7; color:#B91C1C; }
+  .slip-row { display:flex; justify-content:space-between; gap:8px; padding:5px 8px; border-bottom:1px solid #F0EAE3; font-size:14.5px; }
+  .slip-row .lbl { color:#333; }
+  .slip-row .sub { display:block; font-size:12px; color:#B91C1C; }
+  .slip-row .amt-earn { color:#1B6E3A; font-weight:600; white-space:nowrap; }
+  .slip-row .amt-deduct { color:#B91C1C; font-weight:600; white-space:nowrap; }
+  .slip-total { display:flex; justify-content:space-between; padding:6px 8px; font-weight:700; font-size:14.5px; }
+  .slip-net { background:#EEF3F7; border-radius:8px; padding:14px 16px; margin-top:12px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px; }
+  .slip-net .net-label { font-size:15px; font-weight:700; }
+  .slip-net .net-amt { font-size:24px; font-weight:700; color:#1a1a1a; }
+  .slip-footer { text-align:center; font-size:12px; color:#888; margin-top:14px; }
+  .sigline { margin-top:14px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  img.sigimg { height:70px; }
+
+  @media (max-width:600px){ th:nth-child(5), td:nth-child(5){ display:none; } }
+</style>
+</head>
+<body class="gate-lock">
+
+<div id="site-nav-bar" style="position:fixed;top:0;left:0;right:0;z-index:100000;background:#2c2c2c;padding:8px 10px;display:flex;gap:8px;overflow-x:auto;font-family:'Microsoft JhengHei','PingFang TC',sans-serif;font-size:13px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.2);">
+  <a href="/" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">💰 月薪計算</a>
+  <a href="/daily" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">📅 時薪計算</a>
+  <a href="/summary" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">📊 薪資彙總表</a>
+  <a href="/report" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">📝 請假加班回報</a>
+  <a href="/deposit" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">🍎 定位金收據</a>
+  <a href="/consent" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">📷 肖像同意書</a>
+  <a href="/deposit-track" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">🔒 定位金追蹤</a>
+  <a href="/consent-track" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">🔒 同意書回傳</a>
+  <a href="/payslip-track" style="color:#fff;background:#C0392B;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">🖋 薪資單簽收追蹤</a>
+</div>
+<div style="height:44px;"></div>
+
+<div id="login-gate">
+  <div class="lg-card">
+    <div class="lg-title">🔒 小蘋果托嬰中心｜薪資單簽收追蹤</div>
+    <div class="lg-sub">管理員登入</div>
+    <div class="lg-field">
+      <label>Email</label>
+      <input type="email" id="lg-email" autocomplete="username" placeholder="請輸入登入 Email">
+    </div>
+    <div class="lg-field">
+      <label>密碼</label>
+      <input type="password" id="lg-pass" autocomplete="current-password" placeholder="請輸入密碼">
+    </div>
+    <button onclick="tryAdminLogin()">登入</button>
+    <div class="lg-err" id="lg-err"></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <h1>薪資單簽收追蹤</h1>
+    <div class="sub">台中市私立小蘋果托嬰中心</div>
+    <div class="stats">
+      <div class="stat"><div class="num" id="sTotal">0</div><div class="lbl">已產生連結</div></div>
+      <div class="stat signed"><div class="num" id="sSigned">0</div><div class="lbl">已簽名回傳</div></div>
+      <div class="stat pending"><div class="num" id="sPending">0</div><div class="lbl">尚未簽名</div></div>
+    </div>
+    <button class="btn btn-view" style="margin-top:8px;" onclick="loadData()">重新整理</button>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead><tr>
+        <th style="width:6%">No.</th>
+        <th style="width:16%">老師姓名</th>
+        <th style="width:12%">薪資月份</th>
+        <th style="width:12%">實領金額</th>
+        <th style="width:16%">連結產生時間</th>
+        <th style="width:16%">狀態</th>
+        <th style="width:14%">操作</th>
+        <th style="width:8%">刪除</th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="empty" id="emptyMsg" style="display:none;">目前沒有任何已產生的薪資單簽名連結。</div>
+  </div>
+</div>
+
+<div id="previewModal">
+  <div class="modalInner">
+    <div id="previewWrap"></div>
+    <button class="modalDownload" onclick="downloadPreview()">下載薪資單圖片</button>
+    <button class="modalClose" onclick="closePreview()">關閉</button>
+  </div>
+</div>
+
+<template id="slipTemplate">
+  <div id="slip">
+    <h3>薪　資　單</h3>
+    <div class="slip-sub"></div>
+    <div class="slip-section slip-earn-title">＋ 應領項目</div>
+    <div class="earnRows"></div>
+    <div class="slip-total"><span>應領小計</span><span class="earnTotal"></span></div>
+    <div class="slip-section slip-deduct-title">－ 應扣項目</div>
+    <div class="deductRows"></div>
+    <div class="slip-total"><span>應扣小計</span><span class="deductTotal"></span></div>
+    <div class="slip-net">
+      <span class="net-label">實領金額</span>
+      <span class="net-amt netTotal"></span>
+    </div>
+    <div class="sigline">
+      <b>老師簽名：</b>
+      <span class="sigPlaceholder" style="color:#999;">（尚未簽名）</span>
+      <img class="sigimg sigImg" alt="" style="display:none;">
+      <span class="signDate" style="margin-left:auto; font-size:12px; color:#555;"></span>
+    </div>
+    <div class="slip-footer">小蘋果托嬰中心　Smithapple Infant Care Center</div>
+  </div>
+</template>
+
+<script>
+const SUPABASE_URL = 'https://vicbgttehkqeqhyvtlet.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_N4DH8txPq9dc9naOPk_Qmg_qEbEcXVM';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function unlockGate(){
+  document.getElementById('login-gate').style.display='none';
+  document.body.classList.remove('gate-lock');
+  loadData();
+}
+async function tryAdminLogin(){
+  const email=(document.getElementById('lg-email').value||'').trim();
+  const pass=(document.getElementById('lg-pass').value||'').trim();
+  const err=document.getElementById('lg-err');
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if(error){
+    err.textContent='帳號或密碼錯誤';
+    document.getElementById('lg-pass').value='';
+    return;
+  }
+  err.textContent='';
+  unlockGate();
+}
+['lg-email','lg-pass'].forEach(id=>{
+  document.getElementById(id).addEventListener('keydown', e=>{ if(e.key==='Enter') tryAdminLogin(); });
+});
+sb.auth.getSession().then(({data})=>{ if(data.session) unlockGate(); });
+
+function fmtMoney(n){
+  const num = Number(n) || 0;
+  return num.toLocaleString('zh-TW') + ' 元';
+}
+
+function renderSlipInto(container, data){
+  container.innerHTML = '';
+  const tpl = document.getElementById('slipTemplate').content.cloneNode(true);
+  const q = (cls) => tpl.querySelector('.' + cls);
+
+  tpl.querySelector('.slip-sub').textContent =
+    (data.emp_name || '') + '　薪資月份：民國 ' + (data.year_roc || '') + ' 年 ' + (data.month || '') + ' 月';
+
+  const earnRows = q('earnRows');
+  (data.earn_items || []).forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'slip-row';
+    row.innerHTML = '<span class="lbl">' + (item.t || '') + (item.s ? '<span class="sub">' + item.s + '</span>' : '') + '</span><span class="amt-earn">' + (item.a || '') + '</span>';
+    earnRows.appendChild(row);
+  });
+  if(!(data.earn_items||[]).length){
+    earnRows.innerHTML = '<div class="slip-row"><span class="lbl" style="color:#999">（無）</span></div>';
+  }
+  q('earnTotal').textContent = fmtMoney(data.earn_total);
+
+  const deductRows = q('deductRows');
+  (data.deduct_items || []).forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'slip-row';
+    row.innerHTML = '<span class="lbl">' + (item.t || '') + (item.s ? '<span class="sub">' + item.s + '</span>' : '') + '</span><span class="amt-deduct">' + (item.a || '') + '</span>';
+    deductRows.appendChild(row);
+  });
+  if(!(data.deduct_items||[]).length){
+    deductRows.innerHTML = '<div class="slip-row"><span class="lbl" style="color:#999">（無）</span></div>';
+  }
+  q('deductTotal').textContent = fmtMoney(data.deduct_total);
+
+  q('netTotal').textContent = fmtMoney(data.net_total);
+
+  container.appendChild(tpl);
+  return container.querySelector('#slip');
+}
+
+let rows = [];
+
+async function loadData(){
+  const { data, error } = await sb.from('salary_records').select('*').not('sign_token', 'is', null).order('link_created_at', {ascending:false});
+  if(error){ alert('讀取失敗：' + error.message); return; }
+  rows = data || [];
+  render();
+}
+
+function render(){
+  const tb = document.getElementById('tbody');
+  tb.innerHTML = '';
+  document.getElementById('sTotal').textContent = rows.length;
+  document.getElementById('sSigned').textContent = rows.filter(r=>r.signed_at).length;
+  document.getElementById('sPending').textContent = rows.filter(r=>!r.signed_at).length;
+  document.getElementById('emptyMsg').style.display = rows.length ? 'none' : 'block';
+
+  rows.forEach((r,i)=>{
+    const signed = !!r.signed_at;
+    const tr = document.createElement('tr');
+    const createdStr = r.link_created_at ? new Date(r.link_created_at).toLocaleString('zh-TW', {hour12:false}) : '';
+    const signedStr = r.signed_at ? new Date(r.signed_at).toLocaleString('zh-TW', {hour12:false}) : '';
+    tr.innerHTML =
+      '<td>' + (i+1) + '</td>' +
+      '<td class="name">' + (r.emp_name||'') + '</td>' +
+      '<td>民國' + (r.year_roc||'') + '年' + (r.month||'') + '月</td>' +
+      '<td>' + fmtMoney(r.net_total) + '</td>' +
+      '<td style="font-size:12px;">' + createdStr + '</td>' +
+      '<td>' + (signed
+        ? '<span class="badge signed">已簽名</span><br><span style="font-size:11px;color:#888;">' + signedStr + '</span>'
+        : '<span class="badge pending">尚未簽名</span>') + '</td>' +
+      '<td>' + (signed
+        ? '<button class="btn btn-view" onclick="viewSlip(' + r.id + ')">查看薪資單</button>'
+        : '<span style="font-size:12px;color:#999">等待老師簽名</span>') + '</td>' +
+      '<td><span class="del" onclick="deleteLink(' + r.id + ')">刪除連結</span></td>';
+    tb.appendChild(tr);
+  });
+}
+
+async function deleteLink(id){
+  const r = rows.find(x=>x.id===id);
+  const label = r ? (r.emp_name + ' 民國' + r.year_roc + '年' + r.month + '月') : id;
+  if(!confirm('確定要刪除「' + label + '」這筆簽名連結嗎？舊連結會立刻失效，但薪資紀錄本身不會被刪除。')) return;
+  const { error } = await sb.from('salary_records').update({ sign_token: null, signature: null, signed_at: null, link_created_at: null }).eq('id', id);
+  if(error){ alert('刪除失敗：' + error.message); return; }
+  loadData();
+}
+
+let previewCanvasBlob = null;
+
+function viewSlip(id){
+  const r = rows.find(x=>x.id===id);
+  if(!r) return;
+  const wrap = document.getElementById('previewWrap');
+  const slipEl = renderSlipInto(wrap, r);
+  const sigImg = slipEl.querySelector('.sigImg');
+  const sigPlaceholder = slipEl.querySelector('.sigPlaceholder');
+  if(r.signature){
+    sigImg.src = r.signature;
+    sigImg.style.display = 'inline-block';
+    sigPlaceholder.style.display = 'none';
+  }
+  const dt = new Date(r.signed_at);
+  slipEl.querySelector('.signDate').textContent =
+    '簽名日期：民國' + (dt.getFullYear()-1911) + '年' + (dt.getMonth()+1) + '月' + dt.getDate() + '日';
+
+  document.getElementById('previewModal').style.display = 'block';
+  window.scrollTo({top:0});
+  previewCanvasBlob = null;
+
+  html2canvas(slipEl, {scale:2, backgroundColor:'#ffffff'}).then(canvas=>{
+    canvas.toBlob(b=>{ previewCanvasBlob = b; }, 'image/png');
+  });
+}
+
+function closePreview(){
+  document.getElementById('previewModal').style.display = 'none';
+  document.getElementById('previewWrap').innerHTML = '';
+  previewCanvasBlob = null;
+}
+
+function downloadPreview(){
+  if(!previewCanvasBlob){ alert('圖片還在準備中，請稍等一下再試一次'); return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(previewCanvasBlob);
+  a.download = '薪資單.png';
+  a.click();
+}
+</script>
+</body>
+</html>

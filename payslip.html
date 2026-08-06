@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>小蘋果托嬰中心 薪資單簽收</title>
+<meta name="description" content="小蘋果托嬰中心 薪資單簽收">
+<meta property="og:title" content="小蘋果托嬰中心 薪資單簽收">
+<meta property="og:description" content="小蘋果托嬰中心 薪資單簽收">
+<meta property="og:type" content="website">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:"Microsoft JhengHei","微軟正黑體","PingFang TC",sans-serif;
+    background:#EDE6E3;
+    color:#1a1a1a;
+    font-size:15px;
+    line-height:1.7;
+  }
+  .wrap { max-width:640px; margin:0 auto; padding:20px 12px 40px; }
+  .card {
+    background:#FAF7F5;
+    border-radius:10px;
+    padding:16px 14px;
+    margin-bottom:12px;
+    box-shadow:0 1px 4px rgba(140,120,115,.15);
+  }
+  h1 { font-size:18px; text-align:center; letter-spacing:2px; margin-bottom:10px; color:#1a1a1a; }
+  h2 { font-size:16px; margin-bottom:8px; color:#1a1a1a; border-left:4px solid #6E97BE; padding-left:8px; }
+  p { margin-bottom:8px; color:#333; }
+  .steps { font-size:13px; color:#333; margin-top:8px; }
+  .steps b { color:#1a1a1a; }
+
+  /* 薪資單樣式 */
+  #slip { background:#fff; padding:18px 16px; border-radius:8px; }
+  #slip h3 { font-size:20px; text-align:center; letter-spacing:6px; margin-bottom:4px; }
+  .slip-sub { text-align:center; font-size:14px; color:#555; margin-bottom:14px; }
+  .slip-section { font-weight:700; font-size:14px; padding:6px 8px; border-radius:6px; margin:12px 0 6px; }
+  .slip-earn-title { background:#D4EDDA; color:#1B6E3A; }
+  .slip-deduct-title { background:#F9D7D7; color:#B91C1C; }
+  .slip-row { display:flex; justify-content:space-between; gap:8px; padding:5px 8px; border-bottom:1px solid #F0EAE3; font-size:14.5px; }
+  .slip-row .lbl { color:#333; }
+  .slip-row .sub { display:block; font-size:12px; color:#B91C1C; }
+  .slip-row .amt-earn { color:#1B6E3A; font-weight:600; white-space:nowrap; }
+  .slip-row .amt-deduct { color:#B91C1C; font-weight:600; white-space:nowrap; }
+  .slip-total { display:flex; justify-content:space-between; padding:6px 8px; font-weight:700; font-size:14.5px; }
+  .slip-net {
+    background:#EEF3F7; border-radius:8px; padding:14px 16px; margin-top:12px;
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px;
+  }
+  .slip-net .net-label { font-size:15px; font-weight:700; }
+  .slip-net .net-amt { font-size:24px; font-weight:700; color:#1a1a1a; }
+  .slip-footer { text-align:center; font-size:12px; color:#888; margin-top:14px; }
+
+  .sig-box {
+    border:1px solid #C9B8B4; border-radius:8px; background:#fff;
+    position:relative; margin-top:4px;
+  }
+  #sig { width:100%; height:160px; display:block; border-radius:8px; touch-action:none; }
+  .sig-hint {
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    color:#b5a8a5; font-size:13px; pointer-events:none;
+  }
+  .sigline { margin-top:14px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  img.sigimg { height:70px; }
+
+  .btn {
+    display:block; width:100%; border:none; border-radius:10px;
+    font-size:16px; font-family:inherit; padding:13px; margin-top:10px;
+    cursor:pointer; letter-spacing:2px;
+  }
+  .btn-main { background:#6E97BE; color:#fff; font-weight:bold; }
+  .btn-sub { background:#DDD0CC; color:#333; font-size:14px; padding:9px; }
+  .err { color:#A5514B; font-size:13px; margin-top:6px; display:none; }
+  #resultImg { width:100%; border:1px solid #C9B8B4; border-radius:8px; margin-top:8px; }
+  .hidden { display:none !important; }
+  .center-msg { text-align:center; color:#7a6e6a; padding:24px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="card">
+    <h1>薪資單簽收</h1>
+    <p id="introText">資料讀取中…</p>
+  </div>
+
+  <div class="card hidden" id="slipCard">
+    <div id="slipWrap"></div>
+
+    <div id="signSection">
+      <label style="display:block;font-size:15px;margin:14px 0 4px;font-weight:bold">以上薪資明細已確認無誤，老師簽名：</label>
+      <div class="sig-box">
+        <canvas id="sig"></canvas>
+        <div class="sig-hint" id="sigHint">請用手指在此簽名</div>
+      </div>
+      <button class="btn btn-sub" type="button" onclick="clearSig()">清除重簽</button>
+      <div class="err" id="signErr"></div>
+      <button class="btn btn-main" type="button" onclick="confirmSign()">確認簽名</button>
+    </div>
+
+    <div id="alreadySignedNote" class="hidden" style="margin-top:14px;font-size:13px;color:#3E5B3E;background:#ECF2EC;border-radius:8px;padding:10px 12px">✅ 這份薪資單已經簽名確認過了，以上簽名為系統紀錄。</div>
+  </div>
+
+  <div class="card hidden" id="doneCard">
+    <h2>已完成簽名</h2>
+    <div class="steps">
+      請以下列方式將簽名回傳給園所：<br>
+      <b>方式一：</b>點下方「分享薪資單圖片」，選擇 LINE 直接傳給園所。<br>
+      <b>方式二：</b>長按下方薪資單圖片存檔後，於 LINE 對話中回傳。<br>
+      （簽名同時也已自動存回系統，園所可以在追蹤頁看到）
+    </div>
+    <img id="resultImg" alt="薪資單">
+    <button class="btn btn-main" type="button" onclick="shareImg()">分享薪資單圖片</button>
+  </div>
+
+</div>
+
+<template id="slipTemplate">
+  <div id="slip">
+    <h3>薪　資　單</h3>
+    <div class="slip-sub"></div>
+    <div class="slip-section slip-earn-title">＋ 應領項目</div>
+    <div class="earnRows"></div>
+    <div class="slip-total"><span>應領小計</span><span class="earnTotal"></span></div>
+    <div class="slip-section slip-deduct-title">－ 應扣項目</div>
+    <div class="deductRows"></div>
+    <div class="slip-total"><span>應扣小計</span><span class="deductTotal"></span></div>
+    <div class="slip-net">
+      <span class="net-label">實領金額</span>
+      <span class="net-amt netTotal"></span>
+    </div>
+    <div class="sigline">
+      <b>老師簽名：</b>
+      <span class="sigPlaceholder" style="color:#999;">（尚未簽名）</span>
+      <img class="sigimg sigImg" alt="" style="display:none;">
+      <span class="signDate" style="margin-left:auto; font-size:12px; color:#555;"></span>
+    </div>
+    <div class="slip-footer">小蘋果托嬰中心　Smithapple Infant Care Center</div>
+  </div>
+</template>
+
+<script>
+const SUPABASE_URL = 'https://vicbgttehkqeqhyvtlet.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_N4DH8txPq9dc9naOPk_Qmg_qEbEcXVM';
+
+function fmtMoney(n){
+  const num = Number(n) || 0;
+  return num.toLocaleString('zh-TW') + ' 元';
+}
+
+function renderSlipInto(container, data){
+  container.innerHTML = '';
+  const tpl = document.getElementById('slipTemplate').content.cloneNode(true);
+  const q = (cls) => tpl.querySelector('.' + cls);
+
+  tpl.querySelector('.slip-sub').textContent =
+    (data.emp_name || '') + '　薪資月份：民國 ' + (data.year_roc || '') + ' 年 ' + (data.month || '') + ' 月';
+
+  const earnRows = q('earnRows');
+  (data.earn_items || []).forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'slip-row';
+    row.innerHTML = '<span class="lbl">' + (item.t || '') + (item.s ? '<span class="sub">' + item.s + '</span>' : '') + '</span><span class="amt-earn">' + (item.a || '') + '</span>';
+    earnRows.appendChild(row);
+  });
+  if(!(data.earn_items||[]).length){
+    earnRows.innerHTML = '<div class="slip-row"><span class="lbl" style="color:#999">（無）</span></div>';
+  }
+  q('earnTotal').textContent = fmtMoney(data.earn_total);
+
+  const deductRows = q('deductRows');
+  (data.deduct_items || []).forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'slip-row';
+    row.innerHTML = '<span class="lbl">' + (item.t || '') + (item.s ? '<span class="sub">' + item.s + '</span>' : '') + '</span><span class="amt-deduct">' + (item.a || '') + '</span>';
+    deductRows.appendChild(row);
+  });
+  if(!(data.deduct_items||[]).length){
+    deductRows.innerHTML = '<div class="slip-row"><span class="lbl" style="color:#999">（無）</span></div>';
+  }
+  q('deductTotal').textContent = fmtMoney(data.deduct_total);
+
+  q('netTotal').textContent = fmtMoney(data.net_total);
+
+  container.appendChild(tpl);
+  return container.querySelector('#slip');
+}
+
+const urlToken = new URLSearchParams(location.search).get('token');
+let slipData = null;
+
+async function loadSlip(){
+  const introText = document.getElementById('introText');
+  if(!urlToken){
+    introText.textContent = '連結不完整，請請園所重新產生簽名連結給您。';
+    return;
+  }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/payslip-view`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({ token: urlToken }),
+    });
+    const result = await res.json().catch(()=>({}));
+    if(!res.ok || result.error || !result.data) throw new Error(result.error || 'not found');
+    slipData = result.data;
+
+    introText.textContent = '請確認以下薪資明細無誤後，於下方簽名確認。';
+    document.getElementById('slipCard').classList.remove('hidden');
+    const slipEl = renderSlipInto(document.getElementById('slipWrap'), slipData);
+
+    if(slipData.signature){
+      const sigImg = slipEl.querySelector('.sigImg');
+      const sigPlaceholder = slipEl.querySelector('.sigPlaceholder');
+      sigImg.src = slipData.signature;
+      sigImg.style.display = 'inline-block';
+      sigPlaceholder.style.display = 'none';
+      const dt = new Date(slipData.signed_at);
+      slipEl.querySelector('.signDate').textContent =
+        '簽名日期：民國' + (dt.getFullYear()-1911) + '年' + (dt.getMonth()+1) + '月' + dt.getDate() + '日';
+      document.getElementById('signSection').classList.add('hidden');
+      document.getElementById('alreadySignedNote').classList.remove('hidden');
+    } else {
+      setupSignaturePad();
+    }
+  } catch(e){
+    introText.textContent = '找不到這份薪資單，請確認連結是否正確，或請園所重新產生連結。';
+  }
+}
+loadSlip();
+
+// ===== 簽名板 =====
+let cv, ctx, drawn = false, drawing = false, last = null;
+
+function setupSignaturePad(){
+  cv = document.getElementById('sig');
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth, h = cv.clientHeight;
+  cv.width = w * dpr; cv.height = h * dpr;
+  ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#1a1a1a';
+
+  const hint = document.getElementById('sigHint');
+  function pos(e){
+    const r = cv.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return { x: t.clientX - r.left, y: t.clientY - r.top };
+  }
+  function start(e){ e.preventDefault(); drawing = true; last = pos(e); hint.style.display='none'; }
+  function move(e){
+    if(!drawing) return;
+    e.preventDefault();
+    const p = pos(e);
+    ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+    last = p; drawn = true;
+  }
+  function end(){ drawing = false; }
+
+  cv.addEventListener('touchstart', start, {passive:false});
+  cv.addEventListener('touchmove', move, {passive:false});
+  cv.addEventListener('touchend', end);
+  cv.addEventListener('mousedown', start);
+  cv.addEventListener('mousemove', move);
+  cv.addEventListener('mouseup', end);
+  cv.addEventListener('mouseleave', end);
+}
+
+function clearSig(){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  drawn = false;
+  document.getElementById('sigHint').style.display = 'block';
+}
+
+let resultBlob = null;
+
+async function confirmSign(){
+  const err = document.getElementById('signErr');
+  if(!drawn){ err.textContent = '※ 請於上方簽名確認'; err.style.display = 'block'; return; }
+  err.style.display = 'none';
+
+  const wrap = document.getElementById('slipWrap');
+  const sigImg = wrap.querySelector('.sigImg');
+  const sigPlaceholder = wrap.querySelector('.sigPlaceholder');
+  const sigDataUrl = cv.toDataURL('image/png');
+  sigImg.src = sigDataUrl;
+  sigImg.style.display = 'inline-block';
+  sigPlaceholder.style.display = 'none';
+
+  const d = new Date();
+  wrap.querySelector('.signDate').textContent =
+    '簽名日期：民國' + (d.getFullYear()-1911) + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日';
+
+  fetch(`${SUPABASE_URL}/functions/v1/payslip-sign`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+    body: JSON.stringify({ token: urlToken, signature: sigDataUrl, signed_at: d.toISOString() })
+  }).then(res => res.json()).then(res => {
+    if(res.error) console.error('簽名存檔失敗：', res.error);
+  }).catch(e => console.error('簽名存檔失敗：', e.message));
+
+  document.getElementById('signSection').classList.add('hidden');
+
+  html2canvas(wrap.querySelector('#slip'), {scale:2, backgroundColor:'#ffffff'}).then(canvas=>{
+    canvas.toBlob(b=>{
+      resultBlob = b;
+      document.getElementById('resultImg').src = URL.createObjectURL(b);
+      document.getElementById('slipCard').classList.add('hidden');
+      document.getElementById('doneCard').classList.remove('hidden');
+      window.scrollTo({top:0, behavior:'smooth'});
+    }, 'image/png');
+  });
+}
+
+function shareImg(){
+  if(!resultBlob) return;
+  const file = new File([resultBlob], '薪資單.png', {type:'image/png'});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    navigator.share({files:[file], title:'薪資單'}).catch(()=>{});
+  } else {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(resultBlob);
+    a.download = '薪資單.png';
+    a.click();
+    alert('圖片已下載，請於 LINE 對話中回傳給園所。');
+  }
+}
+</script>
+</body>
+</html>

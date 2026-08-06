@@ -409,6 +409,7 @@ body.gate-unlocked{padding-top:26px}
   <a href="/consent" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">📷 肖像同意書</a>
   <a href="/deposit-track" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">🔒 定位金追蹤</a>
   <a href="/consent-track" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">🔒 同意書回傳</a>
+  <a href="/payslip-track" style="color:#fff;background:#555;padding:6px 12px;border-radius:6px;text-decoration:none;flex-shrink:0;">🖋 薪資單簽收追蹤</a>
 </div>
 <div style="height:44px;"></div>
 
@@ -847,9 +848,23 @@ async function tryAdminLogin(){
     <button id="save-yearly-btn" onclick="confirmAndSaveYearly()" style="grid-column:span 2;padding:14px 10px;background:#C97B6F;color:#fff;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center">
       <span class="icon">💾</span> 本月薪資已確認並存檔
     </button>
+    <button type="button" onclick="generatePayslipSignLink()" style="grid-column:span 2;padding:14px 10px;background:#6E97BE;color:#fff;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center">
+      <span class="icon">🖋</span> 產生老師簽名連結
+    </button>
     <button type="button" onclick="toggleYearlyPanel()" style="grid-column:span 2;padding:14px 10px;background:#4F8B96;color:#fff;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center">
       <span class="icon">📊</span> 年度統計紀錄
     </button>
+  </div>
+
+  <!-- 老師簽名連結：產生結果 -->
+  <div id="payslip-link-card" style="display:none;background:#EEF3F7;border:2px solid #6E97BE;border-radius:12px;padding:14px 16px;margin:0 0 16px">
+    <div style="font-weight:700;font-size:15px;margin-bottom:6px">✅ 簽名連結已產生</div>
+    <div style="font-size:13px;color:#333;margin-bottom:8px;line-height:1.7">請先按「本月薪資已確認並存檔」存檔後再產生連結，連結對應目前畫面上的員工姓名與年月。把下方連結傳給老師，老師點開後可以看到這份薪資單並簽名，簽名後會自動存回資料庫，可以在「薪資單簽收追蹤」頁面查看。</div>
+    <textarea id="payslip-link-box" rows="2" readonly style="width:100%;font-size:13px;padding:8px;border:1px solid #C9B8B4;border-radius:8px;background:#fff;word-break:break-all;font-family:monospace;box-sizing:border-box"></textarea>
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+      <button type="button" onclick="sharePayslipLink()" style="flex:1;min-width:140px;padding:10px;border:none;border-radius:8px;background:#6E97BE;color:#fff;font-weight:700;cursor:pointer;font-size:13px">用LINE傳送給老師</button>
+      <button type="button" onclick="copyPayslipLink()" style="flex:1;min-width:100px;padding:10px;border:1px solid #C9B8B4;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">複製連結</button>
+    </div>
   </div>
 
   <!-- 年度統計 -->
@@ -1997,6 +2012,55 @@ function syncSalaryRecordToSupabase(y, name, mo, earn, deduct, net, earnItems, d
     if(res.error) console.error('salary_records 同步失敗', res.error);
   });
 }
+
+// ===== 老師薪資單簽名連結：把目前畫面上這位老師這個月的薪資單，產生一個給老師簽名的專屬連結 =====
+function genShortId(len){
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const bytes = new Uint8Array(len);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, function(b){ return chars[b % chars.length]; }).join('');
+}
+async function generatePayslipSignLink(){
+  const name = ((document.getElementById('emp-name')||{}).value||'').trim();
+  const y = (document.getElementById('cal-year')||{}).value || '';
+  const mo = (document.getElementById('cal-month')||{}).value || '';
+  if(!name){ alert('請先填寫員工姓名，並按「本月薪資已確認並存檔」存檔後再產生簽名連結'); return; }
+  if(!sb){ alert('無法連線到資料庫'); return; }
+
+  const token = genShortId(10);
+  const res = await sb.from('salary_records')
+    .update({ sign_token: token, link_created_at: new Date().toISOString(), signature: null, signed_at: null })
+    .eq('emp_name', name).eq('year_roc', parseInt(y)||115).eq('month', parseInt(mo)||1)
+    .select('id');
+  if(res.error){ alert('連結產生失敗：' + res.error.message); return; }
+  if(!res.data || !res.data.length){ alert('找不到「' + name + '」民國' + y + '年' + mo + '月的存檔紀錄，請先按「本月薪資已確認並存檔」存檔後再試一次'); return; }
+
+  const link = location.origin + '/payslip?token=' + token;
+  document.getElementById('payslip-link-box').value = link;
+  document.getElementById('payslip-link-card').style.display = 'block';
+  document.getElementById('payslip-link-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+function copyPayslipLink(){
+  const box = document.getElementById('payslip-link-box');
+  box.select();
+  box.setSelectionRange(0, 99999);
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(box.value).then(function(){ alert('連結已複製，請貼到 LINE 傳給老師。'); });
+  } else {
+    document.execCommand('copy');
+    alert('連結已複製，請貼到 LINE 傳給老師。');
+  }
+}
+function sharePayslipLink(){
+  const link = document.getElementById('payslip-link-box').value;
+  const name = ((document.getElementById('emp-name')||{}).value||'').trim();
+  if(navigator.share){
+    navigator.share({ title:'薪資單 - 請簽名確認', text: (name?name+' ':'') + '的薪資單，請點連結查看並簽名確認：', url: link }).catch(function(){});
+  } else {
+    copyPayslipLink();
+  }
+}
+
 async function migrateLocalRecordsToSupabase(){
   const btn = document.getElementById('sync-all-to-supabase-btn');
   if(!sb){ alert('無法連線到資料庫'); return; }
