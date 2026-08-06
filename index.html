@@ -861,9 +861,8 @@ async function tryAdminLogin(){
     <div style="font-weight:700;font-size:15px;margin-bottom:6px">✅ 簽名連結已產生</div>
     <div style="font-size:13px;color:#333;margin-bottom:8px;line-height:1.7">請先按「本月薪資已確認並存檔」存檔後再產生連結，連結對應目前畫面上的員工姓名與年月。把下方連結傳給老師，老師點開後可以看到這份薪資單並簽名，簽名後會自動存回資料庫，可以在「薪資單簽收追蹤」頁面查看。</div>
     <textarea id="payslip-link-box" rows="2" readonly style="width:100%;font-size:13px;padding:8px;border:1px solid #C9B8B4;border-radius:8px;background:#fff;word-break:break-all;font-family:monospace;box-sizing:border-box"></textarea>
-    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-      <button type="button" onclick="sharePayslipLink()" style="flex:1;min-width:140px;padding:10px;border:none;border-radius:8px;background:#6E97BE;color:#fff;font-weight:700;cursor:pointer;font-size:13px">用LINE傳送給老師</button>
-      <button type="button" onclick="copyPayslipLink()" style="flex:1;min-width:100px;padding:10px;border:1px solid #C9B8B4;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">複製連結</button>
+    <div style="margin-top:8px">
+      <button type="button" onclick="copyPayslipLink()" style="width:100%;padding:10px;border:none;border-radius:8px;background:#6E97BE;color:#fff;font-weight:700;cursor:pointer;font-size:13px">複製連結</button>
     </div>
   </div>
 
@@ -2051,16 +2050,6 @@ function copyPayslipLink(){
     alert('連結已複製，請貼到 LINE 傳給老師。');
   }
 }
-function sharePayslipLink(){
-  const link = document.getElementById('payslip-link-box').value;
-  const name = ((document.getElementById('emp-name')||{}).value||'').trim();
-  if(navigator.share){
-    navigator.share({ title:'薪資單 - 請簽名確認', text: (name?name+' ':'') + '的薪資單，請點連結查看並簽名確認：', url: link }).catch(function(){});
-  } else {
-    copyPayslipLink();
-  }
-}
-
 async function migrateLocalRecordsToSupabase(){
   const btn = document.getElementById('sync-all-to-supabase-btn');
   if(!sb){ alert('無法連線到資料庫'); return; }
