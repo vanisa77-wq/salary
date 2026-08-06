@@ -376,9 +376,18 @@ function signCellHTML(r,idx){
     return `<span class="sign-done" onclick="event.stopPropagation();viewSignedSlip(${idx})">✅已簽名<span class="dt">${dateStr}</span></span>`;
   }
   if(r.sign_token){
-    return `<span class="sign-pending">尚未簽名</span><button class="sign-cell-btn" onclick="event.stopPropagation();copySignLink('${r.sign_token}')">複製連結</button>`;
+    return `<span class="sign-pending">尚未簽名</span><button class="sign-cell-btn" onclick="event.stopPropagation();openLineShare('${r.sign_token}','${escapeForAttr(r.emp_name)}')">📤 傳送LINE</button>`;
   }
   return `<button class="sign-cell-btn" onclick="event.stopPropagation();generateSignLink(${r.id},this)">🖋 產生連結</button>`;
+}
+function escapeForAttr(s){
+  return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+}
+function openLineShare(token,empName){
+  const link=location.origin+'/payslip?token='+token;
+  copyTextToClipboard(link);
+  const text=(empName?empName+' ':'')+'的薪資單，請點連結查看並簽名確認：\n'+link;
+  window.open('https://line.me/R/msg/text/?'+encodeURIComponent(text),'_blank');
 }
 async function generateSignLink(id,btnEl){
   if(!sb){ alert('無法連線到資料庫'); return; }
@@ -391,14 +400,7 @@ async function generateSignLink(id,btnEl){
   const idx=monthRecords.findIndex(r=>r.id===id);
   if(idx>=0) monthRecords[idx]=res.data;
   renderMonth();
-  const link=location.origin+'/payslip?token='+token;
-  copyTextToClipboard(link);
-  alert('連結已複製，請貼到 LINE 傳給老師：\n'+link);
-}
-function copySignLink(token){
-  const link=location.origin+'/payslip?token='+token;
-  copyTextToClipboard(link);
-  alert('連結已複製，請貼到 LINE 傳給老師：\n'+link);
+  openLineShare(token,res.data.emp_name);
 }
 function copyTextToClipboard(text){
   if(navigator.clipboard && navigator.clipboard.writeText){
