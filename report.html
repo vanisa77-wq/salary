@@ -672,9 +672,8 @@ body.gate-unlocked{padding-top:26px}
     </label>
   </div>
 
-  <div class="shift-desc" id="report-hint">填寫完成後按下方按鈕，系統會整理成文字並自動複製，直接貼到 LINE 傳給主任確認即可。</div>
-  <button class="report-btn" onclick="generateTeacherReport()">產生回報內容並複製</button>
-  <button class="report-btn" id="submit-report-btn" onclick="submitReportToSupabase()" style="margin-top:8px;background:#1B6E3A">📤 提交</button>
+  <div class="shift-desc" id="report-hint">填寫完成後按下方按鈕：系統會整理成文字、自動複製（可直接貼到 LINE 給主任看），同時也會正式送出存進系統，兩件事一次完成。</div>
+  <button class="report-btn" id="submit-report-btn" onclick="submitReportToSupabase()" style="background:#1B6E3A">📤 產生回報內容並提交</button>
   <div class="report-box" id="report-box"></div>
   <div class="report-copied" id="report-copied">已複製，可直接貼到 LINE 傳給主任 ✓</div>
   <div id="submit-status" style="font-size:13px;margin-top:8px;color:#666"></div>
@@ -829,7 +828,7 @@ function toggleNoneReport(){
   } else if(noLeave){
     hint.textContent = '已勾選「無請假」，請假相關欄位可略過，請繼續填寫加班資料。';
   } else {
-    hint.textContent = '填寫完成後按下方按鈕，系統會整理成文字並自動複製，直接貼到 LINE 傳給主任確認即可。';
+    hint.textContent = '填寫完成後按下方按鈕：系統會整理成文字、自動複製（可直接貼到 LINE 給主任看），同時也會正式送出存進系統，兩件事一次完成。';
   }
 }
 
