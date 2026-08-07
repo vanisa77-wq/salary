@@ -810,9 +810,11 @@ function collectFlexLines(type){
   (flexEntries[type]||[]).forEach(entry => {
     const dateEl = document.getElementById(type+'-fdate-'+entry.id);
     const qEl = document.getElementById(type+'-fq-'+entry.id);
+    const childEl = document.getElementById(type+'-fchild-'+entry.id);
     if(!dateEl || !dateEl.value) return;
     const q = qEl ? qEl.value : '1';
-    lines.push(fmtDateSimple(dateEl.value)+'　'+q+' 次（'+(q*15)+' 分）');
+    const childName = childEl && childEl.value.trim() ? '　幼兒：'+childEl.value.trim() : '';
+    lines.push(fmtDateSimple(dateEl.value)+'　'+q+' 次（'+(q*15)+' 分）'+childName);
   });
   return lines;
 }

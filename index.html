@@ -1608,8 +1608,10 @@ function extractReportData(text){
       const month=+dm[1],day=+dm[2];
       const qm=line.match(/(\d+)\s*次/);
       const q=qm?Math.min(Math.max(+qm[1],1),4):1;
-      arr.push({month:month,day:day,q:q});
-      detail.push(month+'/'+day+'（'+q+'次）');
+      const cm=line.match(/幼兒[：:]\s*(\S+)/);
+      const child=cm?cm[1]:'';
+      arr.push({month:month,day:day,q:q,child:child});
+      detail.push(month+'/'+day+'（'+q+'次）'+(child?('　幼兒：'+child):''));
     });
     if(arr.length)data.log.push('✅ '+label+'：新增 '+arr.length+' 筆　'+detail.join('、'));
     else data.log.push('⚠️ 「'+label+'」偵測到內容，但格式無法辨識，請手動於對應區塊新增：「'+block.replace(/\n/g,' ')+'」');
@@ -1705,6 +1707,8 @@ function applyReportData(data){
       if(dateInput)dateInput.value=dateStr;
       const qSelect=document.getElementById(kind+'-fq-'+newId);
       if(qSelect)qSelect.value=String(item.q);
+      const childInput=document.getElementById(kind+'-fchild-'+newId);
+      if(childInput&&item.child)childInput.value=item.child;
       onFlexChange(kind,newId);
     });
   }
