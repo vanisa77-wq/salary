@@ -557,8 +557,8 @@ async function tryAdminLogin(){
   <div class="field-row">
     <div class="field"><label>計算年月</label>
       <div style="display:flex;gap:8px">
-        <div class="iw" style="flex:1"><input type="number" id="cal-year" value="115" min="100" max="200" style="padding-right:10px" onchange="autoLinkResignDate()"><span class="unit">年</span></div>
-        <select id="cal-month" onchange="autoLinkResignDate()" style="flex:1"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select>
+        <div class="iw" style="flex:1"><input type="number" id="cal-year" value="115" min="100" max="200" style="padding-right:10px" onchange="autoLinkResignDate();refreshPeriodLockBar()"><span class="unit">年</span></div>
+        <select id="cal-month" onchange="autoLinkResignDate();refreshPeriodLockBar()" style="flex:1"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select>
       </div>
     </div>
     <div class="field"><label>實際在職天數<span id="workdays-auto-badge" style="display:none;font-size:11px;color:#8a6d00;background:#FFF3CD;padding:2px 6px;border-radius:4px;margin-left:6px">自動計算</span></label><div class="iw"><input type="number" id="workdays" value="" min="1" max="30" placeholder="留空＝整月"><span class="unit">天</span></div><div class="hint" id="workdays-hint">留空代表整月出勤</div>
@@ -864,6 +864,12 @@ async function tryAdminLogin(){
     <button type="button" onclick="toggleYearlyPanel()" style="grid-column:span 2;padding:14px 10px;background:#4F8B96;color:#fff;border:none;border-radius:12px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center">
       <span class="icon">📊</span> 年度統計紀錄
     </button>
+  </div>
+
+  <!-- 月結鎖定：整月（不分老師）確認無誤後鎖定，鎖定後任何人存檔都會被擋下，要改必須先解鎖並留原因 -->
+  <div id="period-lock-bar" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 12px;padding:10px 14px;border-radius:10px;background:#F7F6F3;border:1px solid #D5D3CC">
+    <span id="period-lock-status" style="font-size:12.5px;font-weight:700;color:#666">—</span>
+    <button type="button" id="period-lock-btn" onclick="togglePeriodLock()" style="padding:7px 14px;border:none;border-radius:8px;background:#92400E;color:#fff;cursor:pointer;font-size:12.5px;font-weight:700;white-space:nowrap">🔒 月結鎖定本月</button>
   </div>
   <div style="font-size:12px;color:#666;margin:-6px 0 16px;text-align:center">🖋 老師簽名連結請到「📊 薪資彙總表」的月份查詢表格裡發送（月薪、時薪老師都在同一張表）</div>
 
@@ -2059,8 +2065,65 @@ function amendConfirmResolve(ok){
 /* 存進 salary_records 前，先比對資料庫是否已有同一位老師同一個月的舊資料：
    有的話一律先跳出確認視窗＋要求填修正原因，把舊資料存進 salary_record_history 再覆蓋，
    避免像過去一樣一按存檔就無聲覆蓋、查無對證。 */
+/* 月結鎖定：整月（不分老師）狀態＝該年月在 salary_period_lock_log 裡最新一筆 action */
+async function getPeriodLockStatus(y, mo){
+  if(!sb) return { locked:false };
+  const { data, error } = await sb.from('salary_period_lock_log').select('*')
+    .eq('year_roc', y).eq('month', mo).order('at', { ascending:false }).limit(1);
+  if(error){ console.error('查詢月結鎖定狀態失敗', error); return { locked:false }; }
+  const last = data && data[0];
+  if(!last) return { locked:false };
+  return { locked: last.action==='lock', reason: last.reason, at: last.at };
+}
+async function refreshPeriodLockBar(){
+  const bar = document.getElementById('period-lock-status');
+  const btn = document.getElementById('period-lock-btn');
+  if(!bar || !btn) return;
+  const y = parseInt((document.getElementById('cal-year')||{}).value) || 0;
+  const mo = parseInt((document.getElementById('cal-month')||{}).value) || 0;
+  if(!sb || !y || !mo){ bar.textContent = '—'; return; }
+  const status = await getPeriodLockStatus(y, mo);
+  if(status.locked){
+    bar.innerHTML = '🔒 民國'+y+'年'+mo+'月已月結鎖定（'+(status.at?new Date(status.at).toLocaleString('zh-TW'):'')+'）'+(status.reason?'　「'+status.reason+'」':'');
+    bar.style.color = '#92400E';
+    btn.textContent = '🔓 解除本月鎖定';
+    btn.style.background = '#3D6E93';
+  } else {
+    bar.innerHTML = '🔓 民國'+y+'年'+mo+'月尚未月結鎖定，存檔／訂正仍可正常進行';
+    bar.style.color = '#666';
+    btn.textContent = '🔒 月結鎖定本月（全部老師）';
+    btn.style.background = '#92400E';
+  }
+}
+async function togglePeriodLock(){
+  const y = parseInt((document.getElementById('cal-year')||{}).value) || 0;
+  const mo = parseInt((document.getElementById('cal-month')||{}).value) || 0;
+  if(!sb || !y || !mo) return;
+  const status = await getPeriodLockStatus(y, mo);
+  if(status.locked){
+    const reason = prompt('解鎖民國'+y+'年'+mo+'月的原因（必填）。解鎖後這個月所有老師的資料都可以再被存檔／訂正，請謹慎：');
+    if(reason===null) return;
+    const trimmed = reason.trim();
+    if(!trimmed){ alert('請填寫解鎖原因'); return; }
+    const { error } = await sb.from('salary_period_lock_log').insert({ year_roc:y, month:mo, action:'unlock', reason:trimmed });
+    if(error){ alert('解鎖失敗：'+error.message); return; }
+  } else {
+    if(!confirm('確定要月結鎖定民國'+y+'年'+mo+'月嗎？鎖定後所有老師這個月的薪資都不能再存檔覆蓋，除非先解鎖。')) return;
+    const reason2 = prompt('鎖定備註（選填，例如：已全部核對完成）：') || '';
+    const { error } = await sb.from('salary_period_lock_log').insert({ year_roc:y, month:mo, action:'lock', reason:reason2.trim() });
+    if(error){ alert('鎖定失敗：'+error.message); return; }
+  }
+  refreshPeriodLockBar();
+}
 async function syncSalaryRecordToSupabase(y, name, mo, earn, deduct, net, earnItems, deductItems, detailText){
   if(!sb || !name) return { ok:false };
+  const yearRoc0 = parseInt(y) || 115;
+  const monthNum0 = parseInt(mo) || 1;
+  const periodStatus = await getPeriodLockStatus(yearRoc0, monthNum0);
+  if(periodStatus.locked){
+    alert('民國'+yearRoc0+'年'+monthNum0+'月已月結鎖定，無法存檔。如確定需要修改，請先在上方按「🔓 解除本月鎖定」並填寫原因。');
+    return { ok:false, locked:true };
+  }
   const ec = computeEmployerCosts();
   const yearRoc = parseInt(y) || 115;
   const monthNum = parseInt(mo) || 1;
@@ -2131,15 +2194,25 @@ async function migrateLocalRecordsToSupabase(){
     });
   });
   if(!jobs.length){ alert('本機沒有找到任何已存檔的年度紀錄'); return; }
-  if(!confirm('將把本機瀏覽器裡 ' + jobs.length + ' 筆已存檔的薪資紀錄同步到資料庫，確定要繼續嗎？')) return;
+  if(!confirm('將把本機瀏覽器裡 ' + jobs.length + ' 筆已存檔的薪資紀錄同步到資料庫，確定要繼續嗎？（已月結鎖定的月份會自動跳過，不會被覆蓋）')) return;
   if(btn){ btn.disabled = true; btn.textContent = '⏳ 同步中… 0/' + jobs.length; }
-  let done = 0, failed = 0;
+  const lockedKeys = new Set();
+  {
+    const { data: lockRows, error: lockErr } = await sb.from('salary_period_lock_log').select('*').order('at', { ascending:true });
+    if(lockErr) console.error('查詢月結鎖定清單失敗', lockErr);
+    const latestByKey = {};
+    (lockRows||[]).forEach(function(r){ latestByKey[r.year_roc+'-'+r.month] = r.action; });
+    Object.keys(latestByKey).forEach(function(k){ if(latestByKey[k]==='lock') lockedKeys.add(k); });
+  }
+  let done = 0, failed = 0, skippedLocked = 0;
   for(const job of jobs){
     const rec = job.rec;
+    const yearRoc = parseInt(job.y) || 115, monthNum = parseInt(job.mo) || 1;
+    if(lockedKeys.has(yearRoc+'-'+monthNum)){ skippedLocked++; if(btn) btn.textContent = '⏳ 同步中… ' + (done + failed + skippedLocked) + '/' + jobs.length; continue; }
     const res = await sb.from('salary_records').upsert({
       emp_name: job.name,
-      year_roc: parseInt(job.y) || 115,
-      month: parseInt(job.mo) || 1,
+      year_roc: yearRoc,
+      month: monthNum,
       pay_type: '月薪',
       earn_items: (rec.items && rec.items.earn) || [],
       deduct_items: (rec.items && rec.items.deduct) || [],
@@ -2150,12 +2223,12 @@ async function migrateLocalRecordsToSupabase(){
       saved_at: new Date().toISOString()
     }, { onConflict: 'emp_name,year_roc,month' });
     if(res.error){ failed++; console.error('salary_records 同步失敗', job.y, job.name, job.mo, res.error); } else { done++; }
-    if(btn) btn.textContent = '⏳ 同步中… ' + (done + failed) + '/' + jobs.length;
+    if(btn) btn.textContent = '⏳ 同步中… ' + (done + failed + skippedLocked) + '/' + jobs.length;
   }
   if(btn){
     btn.disabled = false;
-    btn.textContent = failed ? ('⚠️ 完成，' + done + ' 成功／' + failed + ' 失敗') : ('✅ 已同步 ' + done + ' 筆');
-    setTimeout(function(){ btn.textContent = '📡 同步本機舊資料到薪資彙總表'; }, 4000);
+    btn.textContent = (failed || skippedLocked) ? ('⚠️ 完成，' + done + ' 成功／' + failed + ' 失敗／' + skippedLocked + ' 因月結鎖定已跳過') : ('✅ 已同步 ' + done + ' 筆');
+    setTimeout(function(){ btn.textContent = '📡 同步本機舊資料到薪資彙總表'; }, 5000);
   }
 }
 async function saveToYearly(silent){
@@ -2167,7 +2240,7 @@ async function saveToYearly(silent){
   var earn = numFrom('h-earn'), deduct = numFrom('h-deduct'), net = numFrom('r-net');
   var earnItemsNow = collectRows('earn-body'), deductItemsNow = collectRows('deduct-body'), detailNow = buildResultText();
   var syncResult = await syncSalaryRecordToSupabase(y, name, mo, earn, deduct, net, earnItemsNow, deductItemsNow, detailNow);
-  if(syncResult && syncResult.cancelled) return false;
+  if(syncResult && (syncResult.cancelled || syncResult.locked)) return false;
   if(!yearlyRecords[y]) yearlyRecords[y] = {};
   if(!yearlyRecords[y][name]) yearlyRecords[y][name] = {};
   var existed = !!yearlyRecords[y][name][mo];
@@ -2676,15 +2749,20 @@ async function openPersonalLedger(){
   var yearRoc = parseInt(y) || 0;
   var recRes = await sb.from('salary_records').select('*').eq('emp_name', name).eq('year_roc', yearRoc).order('month');
   var histRes = await sb.from('salary_record_history').select('*').eq('emp_name', name).eq('year_roc', yearRoc).order('changed_at');
+  var lockRes = await sb.from('salary_period_lock_log').select('*').eq('year_roc', yearRoc).order('at', { ascending:true });
   if(recRes.error){ body.innerHTML = '<div style="padding:20px;color:#DC2626">載入失敗：'+recRes.error.message+'</div>'; return; }
   if(histRes.error) console.error('salary_record_history 載入失敗', histRes.error);
-  body.innerHTML = renderPersonalLedgerHTML(name, yearRoc, recRes.data||[], histRes.data||[]);
+  if(lockRes.error) console.error('salary_period_lock_log 載入失敗', lockRes.error);
+  var lockedMonths = {};
+  (lockRes.data||[]).forEach(function(r){ lockedMonths[r.month] = (r.action==='lock'); });
+  body.innerHTML = renderPersonalLedgerHTML(name, yearRoc, recRes.data||[], histRes.data||[], lockedMonths);
 }
 function closePersonalLedger(){
   var overlay = document.getElementById('personal-ledger-overlay');
   if(overlay) overlay.style.display = 'none';
 }
-function renderPersonalLedgerHTML(name, y, records, hist){
+function renderPersonalLedgerHTML(name, y, records, hist, lockedMonths){
+  lockedMonths = lockedMonths || {};
   var fmtN = function(n){ return Number(n||0).toLocaleString('zh-TW'); };
   var byMonth = {};
   records.forEach(function(r){ byMonth[r.month] = r; });
@@ -2726,7 +2804,7 @@ function renderPersonalLedgerHTML(name, y, records, hist){
   html += '<tr style="background:#FDE68A"><th style="padding:6px 8px;border:1px solid #D5D3CC;text-align:left;position:sticky;left:0;background:#FDE68A;white-space:nowrap">項目＼月份</th>';
   monthCols.forEach(function(m){
     var r = byMonth[m];
-    var lockTag = r ? '<div style="font-size:10px;color:#1B6E3A;font-weight:700">🔒已核薪</div>' : '<div style="font-size:10px;color:#999">未存檔</div>';
+    var lockTag = lockedMonths[m] ? '<div style="font-size:10px;color:#92400E;font-weight:700">🔒月結鎖定</div>' : (r ? '<div style="font-size:10px;color:#1B6E3A;font-weight:700">已核薪</div>' : '<div style="font-size:10px;color:#999">未存檔</div>');
     html += '<th style="padding:6px 8px;border:1px solid #D5D3CC;white-space:nowrap">'+m+'月'+lockTag+'</th>';
   });
   html += '<th style="padding:6px 8px;border:1px solid #D5D3CC;background:#FCD34D;white-space:nowrap">年度合計</th></tr>';
@@ -3023,6 +3101,7 @@ function importYearlyBackup(){
   }catch(e){ alert('格式不正確，請確認貼上的是完整的備份文字'); }
 }
 loadYearlyRecords();
+refreshPeriodLockBar();
 
 window.supaLoadToken = 0;
 async function loadFromSupabase(){
