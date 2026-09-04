@@ -370,7 +370,7 @@ hr.sd{border:none;border-top:1.5px solid #e8ddd6;margin:12px 0}
   <div class="row2">
     <div class="field">
       <label>計算年月</label>
-      <input type="month" id="ym">
+      <input type="month" id="ym" onchange="refreshPeriodLockBar()">
     </div>
     <div class="field">
       <label>時薪（元 / 小時）</label>
@@ -526,6 +526,10 @@ hr.sd{border:none;border-top:1.5px solid #e8ddd6;margin:12px 0}
     <div class="slip-note">本薪資單由小蘋果薪資系統產出，如有疑問請洽主任</div>
     <button class="btn-print-slip no-print" onclick="window.print()">列印薪資單</button>
     <button class="btn-print-slip no-print" id="save-summary-btn" onclick="saveSlipToSupabase()" style="margin-top:8px">💾 存入薪資彙總表</button>
+    <div id="period-lock-bar" class="no-print" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px;padding:10px 14px;border-radius:10px;background:#F7F6F3;border:1px solid #D5D3CC">
+      <span id="period-lock-status" style="font-size:12.5px;font-weight:700;color:#666">—</span>
+      <button type="button" id="period-lock-btn" onclick="togglePeriodLock()" style="padding:7px 14px;border:none;border-radius:8px;background:#92400E;color:#fff;cursor:pointer;font-size:12.5px;font-weight:700;white-space:nowrap">🔒 月結鎖定本月</button>
+    </div>
   </div>
 </div>
 
@@ -985,14 +989,101 @@ function showSlip(){
   };
 }
 let lastSlipData=null;
-function saveSlipToSupabase(){
+
+/* 訂正確認彈窗：回傳 Promise<{ok, reason}>，取消時 ok:false（與 index.html 同一套邏輯） */
+var _amendConfirmResolver=null;
+function showAmendConfirm(info){
+  return new Promise(function(resolve){
+    _amendConfirmResolver=resolve;
+    document.getElementById('amend-confirm-msg').innerHTML=
+      info.name+'．民國'+info.y+'年'+info.mo+'月的薪資已於 <b>'+(info.savedAt?new Date(info.savedAt).toLocaleString('zh-TW'):'先前')+'</b> 存檔。原始金額不會消失、會保留在訂正記錄裡，確定要用新金額覆蓋嗎？';
+    document.getElementById('amend-confirm-diff').innerHTML=
+      '實領 NT$ <span style="text-decoration:line-through;color:#DC2626;font-weight:400">'+Number(info.oldNet||0).toLocaleString('zh-TW')+'</span> → NT$ '+Number(info.newNet||0).toLocaleString('zh-TW');
+    document.getElementById('amend-confirm-reason').value='';
+    document.getElementById('amend-confirm-overlay').style.display='flex';
+  });
+}
+function amendConfirmResolve(ok){
+  const overlay=document.getElementById('amend-confirm-overlay');
+  if(ok){
+    const reason=document.getElementById('amend-confirm-reason').value.trim();
+    if(!reason){ alert('請填寫修正原因，才能送出'); return; }
+    overlay.style.display='none';
+    if(_amendConfirmResolver) _amendConfirmResolver({ok:true,reason:reason});
+  } else {
+    overlay.style.display='none';
+    if(_amendConfirmResolver) _amendConfirmResolver({ok:false});
+  }
+  _amendConfirmResolver=null;
+}
+/* 月結鎖定：整月（不分老師、不分月薪時薪）狀態，跟 index.html 讀同一張 salary_period_lock_log */
+function currentYmParts(){
+  const ym=document.getElementById('ym').value;
+  if(!ym) return {y:0,mo:0};
+  const[yy,mm]=ym.split('-').map(Number);
+  return {y:yy-1911, mo:mm};
+}
+async function getPeriodLockStatus(y,mo){
+  if(!sb) return {locked:false};
+  const{data,error}=await sb.from('salary_period_lock_log').select('*')
+    .eq('year_roc',y).eq('month',mo).order('at',{ascending:false}).limit(1);
+  if(error){ console.error('查詢月結鎖定狀態失敗',error); return {locked:false}; }
+  const last=data&&data[0];
+  if(!last) return {locked:false};
+  return {locked:last.action==='lock', reason:last.reason, at:last.at};
+}
+async function refreshPeriodLockBar(){
+  const bar=document.getElementById('period-lock-status');
+  const btn=document.getElementById('period-lock-btn');
+  if(!bar||!btn) return;
+  const {y,mo}=currentYmParts();
+  if(!sb||!y||!mo){ bar.textContent='—'; return; }
+  const status=await getPeriodLockStatus(y,mo);
+  if(status.locked){
+    bar.innerHTML='🔒 民國'+y+'年'+mo+'月已月結鎖定（'+(status.at?new Date(status.at).toLocaleString('zh-TW'):'')+'）'+(status.reason?'　「'+status.reason+'」':'');
+    bar.style.color='#92400E';
+    btn.textContent='🔓 解除本月鎖定';
+    btn.style.background='#3D6E93';
+  } else {
+    bar.innerHTML='🔓 民國'+y+'年'+mo+'月尚未月結鎖定，存檔／訂正仍可正常進行';
+    bar.style.color='#666';
+    btn.textContent='🔒 月結鎖定本月（全部老師）';
+    btn.style.background='#92400E';
+  }
+}
+async function togglePeriodLock(){
+  const {y,mo}=currentYmParts();
+  if(!sb||!y||!mo) return;
+  const status=await getPeriodLockStatus(y,mo);
+  if(status.locked){
+    const reason=prompt('解鎖民國'+y+'年'+mo+'月的原因（必填）。解鎖後這個月所有老師的資料都可以再被存檔／訂正，請謹慎：');
+    if(reason===null) return;
+    const trimmed=reason.trim();
+    if(!trimmed){ alert('請填寫解鎖原因'); return; }
+    const{error}=await sb.from('salary_period_lock_log').insert({year_roc:y,month:mo,action:'unlock',reason:trimmed});
+    if(error){ alert('解鎖失敗：'+error.message); return; }
+  } else {
+    if(!confirm('確定要月結鎖定民國'+y+'年'+mo+'月嗎？鎖定後所有老師這個月的薪資都不能再存檔覆蓋，除非先解鎖。')) return;
+    const reason2=prompt('鎖定備註（選填，例如：已全部核對完成）：')||'';
+    const{error}=await sb.from('salary_period_lock_log').insert({year_roc:y,month:mo,action:'lock',reason:reason2.trim()});
+    if(error){ alert('鎖定失敗：'+error.message); return; }
+  }
+  refreshPeriodLockBar();
+}
+async function saveSlipToSupabase(){
   const btn=document.getElementById('save-summary-btn');
   if(!sb){ alert('無法連線到資料庫'); return; }
   if(!lastSlipData || lastSlipData.rocY==='—'){ alert('請先選擇計算年月並產出薪資單'); return; }
   if(!document.getElementById('emp-name').value.trim()){ alert('請先填寫員工姓名'); return; }
   const d=lastSlipData;
   if(btn){btn.textContent='⏳ 存檔中…';btn.disabled=true;}
-  sb.from('salary_records').upsert({
+  const periodStatus=await getPeriodLockStatus(d.rocY,d.mm);
+  if(periodStatus.locked){
+    alert('民國'+d.rocY+'年'+d.mm+'月已月結鎖定，無法存檔。如確定需要修改，請先在下方按「🔓 解除本月鎖定」並填寫原因。');
+    if(btn){btn.disabled=false;btn.textContent='💾 存入薪資彙總表';}
+    return;
+  }
+  const newRow={
     emp_name:d.name,
     year_roc:d.rocY,
     month:d.mm,
@@ -1007,14 +1098,67 @@ function saveSlipToSupabase(){
     employer_pension:d.employerPension,
     detail_text:d.detailText,
     saved_at:new Date().toISOString()
-  },{onConflict:'emp_name,year_roc,month'}).then(res=>{
-    if(btn){btn.disabled=false;}
-    if(res.error){ if(btn)btn.textContent='⚠️ 存檔失敗'; console.error('salary_records 同步失敗',res.error); }
-    else{ if(btn)btn.textContent='✅ 已存入薪資彙總表'; }
-    setTimeout(()=>{ if(btn)btn.textContent='💾 存入薪資彙總表'; },2500);
-  });
+  };
+  const{data:existingRows,error:selErr}=await sb.from('salary_records').select('*')
+    .eq('emp_name',d.name).eq('year_roc',d.rocY).eq('month',d.mm).eq('pay_type','時薪').limit(1);
+  if(selErr) console.error('salary_records 查詢舊資料失敗',selErr);
+  const existing=existingRows&&existingRows[0];
+  if(existing){
+    const sameAmount=Number(existing.earn_total)===Number(d.gross)&&Number(existing.deduct_total)===Number(d.totalDeduct)&&Number(existing.net_total)===Number(d.net);
+    const sameItems=JSON.stringify(existing.earn_items||[])===JSON.stringify(d.earnItems||[])&&JSON.stringify(existing.deduct_items||[])===JSON.stringify(d.deductItems||[]);
+    if(!sameAmount||!sameItems){
+      const confirmed=await showAmendConfirm({name:d.name,y:d.rocY,mo:d.mm,oldNet:existing.net_total,newNet:d.net,savedAt:existing.saved_at});
+      if(!confirmed.ok){
+        if(btn){btn.disabled=false;btn.textContent='💾 存入薪資彙總表';}
+        return;
+      }
+      const{error:histErr}=await sb.from('salary_record_history').insert({
+        emp_name:existing.emp_name,
+        year_roc:existing.year_roc,
+        month:existing.month,
+        pay_type:existing.pay_type,
+        old_earn_items:existing.earn_items,
+        old_deduct_items:existing.deduct_items,
+        old_earn_total:existing.earn_total,
+        old_deduct_total:existing.deduct_total,
+        old_net_total:existing.net_total,
+        old_detail_text:existing.detail_text,
+        old_employer_labor:existing.employer_labor,
+        old_employer_health:existing.employer_health,
+        old_employer_pension:existing.employer_pension,
+        old_saved_at:existing.saved_at,
+        reason:confirmed.reason
+      });
+      if(histErr){
+        console.error('salary_record_history 寫入失敗',histErr);
+        alert('訂正記錄寫入失敗，本次修改未存檔，請檢查網路後重試：'+histErr.message);
+        if(btn){btn.disabled=false;btn.textContent='💾 存入薪資彙總表';}
+        return;
+      }
+    }
+  }
+  const{error:upErr}=await sb.from('salary_records').upsert(newRow,{onConflict:'emp_name,year_roc,month'});
+  if(btn){btn.disabled=false;}
+  if(upErr){ if(btn)btn.textContent='⚠️ 存檔失敗'; console.error('salary_records 同步失敗',upErr); }
+  else{ if(btn)btn.textContent='✅ 已存入薪資彙總表'; }
+  setTimeout(()=>{ if(btn)btn.textContent='💾 存入薪資彙總表'; },2500);
 }
+refreshPeriodLockBar();
 </script>
 
+<!-- 已存檔資料訂正確認視窗：跟 index.html 同一套邏輯，已存進資料庫的月份要被覆蓋前，強制要求確認並填寫原因 -->
+<div id="amend-confirm-overlay" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(30,26,20,.45);z-index:9999;align-items:center;justify-content:center;padding:16px">
+  <div style="background:#fff;border:2px solid #BF9241;border-radius:14px;padding:22px 24px;max-width:420px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,.25);font-family:inherit">
+    <div style="font-size:16px;font-weight:700;color:#92400E;margin-bottom:10px">🔒 這筆資料已存檔，即將被覆蓋</div>
+    <div id="amend-confirm-msg" style="font-size:13.5px;color:#555;line-height:1.7;margin-bottom:12px"></div>
+    <div id="amend-confirm-diff" style="font-family:monospace;font-weight:700;font-size:15px;background:#F7F6F3;border-radius:8px;padding:10px 12px;margin-bottom:14px"></div>
+    <label style="font-size:12.5px;color:#555;display:block;margin-bottom:4px">修正原因（必填）</label>
+    <textarea id="amend-confirm-reason" style="width:100%;min-height:60px;border:1px solid #D5D3CC;border-radius:8px;padding:8px 10px;font-size:13.5px;font-family:inherit;box-sizing:border-box;margin-bottom:14px" placeholder="例如：時數登錄有誤，同仁提出後更正"></textarea>
+    <div style="display:flex;justify-content:flex-end;gap:10px">
+      <button type="button" onclick="amendConfirmResolve(false)" style="padding:8px 16px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;color:#666;font-weight:700;cursor:pointer;font-size:13.5px">取消</button>
+      <button type="button" onclick="amendConfirmResolve(true)" style="padding:8px 16px;border:none;border-radius:8px;background:#C97B6F;color:#fff;font-weight:700;cursor:pointer;font-size:13.5px">確定訂正</button>
+    </div>
+  </div>
+</div>
 
 </body></html>
