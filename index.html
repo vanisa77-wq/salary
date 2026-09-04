@@ -875,6 +875,7 @@ async function tryAdminLogin(){
         <select id="yearly-year-sel" onchange="renderYearlyStats()" style="height:36px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 10px"></select>
         <span style="font-size:14px">老師：</span>
         <select id="yearly-name-sel" onchange="renderYearlyStats()" style="height:36px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;font-size:14px;font-family:inherit;padding:0 10px"><option value="">全部老師</option></select>
+        <button type="button" id="open-personal-ledger-btn" style="display:none;padding:8px 14px;border:none;border-radius:8px;background:#BF9241;color:#fff;cursor:pointer;font-size:13px;font-weight:700" onclick="openPersonalLedger()">📊 個人年度薪資總表</button>
         <button type="button" onclick="exportYearlyCSV()" style="padding:8px 14px;border:none;border-radius:8px;background:#1B6E3A;color:#fff;cursor:pointer;font-size:13px">⬇️ 匯出 Excel</button>
         <button type="button" id="export-yearly-form-btn" onclick="exportYearlyEmployeeForm()" style="padding:8px 14px;border:none;border-radius:8px;background:#B45309;color:#fff;cursor:pointer;font-size:13px">📋 匯出老師統計表（每人一分頁）</button>
         <button type="button" onclick="exportYearlyBackup()" style="padding:8px 14px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">⬇️ 匯出備份</button>
@@ -1763,7 +1764,7 @@ function applySavedBatchDone(){
   var map=loadBatchDoneMap();
   batchReports.forEach(function(r){ if(map[batchDoneKey(r)]) r.done=true; });
 }
-function toggleBatchDone(i){
+async function toggleBatchDone(i){
   const data=batchReports[i];
   if(!data)return;
   data.done=!data.done;
@@ -1772,7 +1773,7 @@ function toggleBatchDone(i){
   if(data.done) map[key]=true; else delete map[key];
   saveBatchDoneMap(map);
   if(data.done && i===currentBatchIndex){
-    try{ saveToYearly(true); }catch(e){}
+    try{ await saveToYearly(true); }catch(e){}
   }
   if(lastBatchResults) renderBatchResultsTable(); else renderBatchList();
 }
@@ -1982,8 +1983,8 @@ function numFrom(id){
   var n = parseFloat(t);
   return isNaN(n) ? 0 : n;
 }
-function confirmAndSaveYearly(){
-  var ok=saveToYearly();
+async function confirmAndSaveYearly(){
+  var ok=await saveToYearly();
   if(!ok)return;
   if(currentBatchIndex!==null && batchReports[currentBatchIndex]){
     var data=batchReports[currentBatchIndex];
@@ -1996,9 +1997,11 @@ function confirmAndSaveYearly(){
   }
   if(lastBatchResults) renderBatchResultsTable(); else renderBatchList();
 }
-function quickSave(el){
-  var ok=saveToYearly(true);
-  if(!ok){ alert('請先填寫員工姓名，再存檔'); return; }
+async function quickSave(el){
+  var name = (document.getElementById('emp-name')||{}).value || '';
+  if(!name.trim()){ alert('請先填寫員工姓名，再存檔'); return; }
+  var ok=await saveToYearly(true);
+  if(!ok) return;
   if(el){
     var orig=el.textContent;
     el.textContent='已儲存';
@@ -2027,13 +2030,44 @@ function computeEmployerCosts(){
   const employerPension = grade ? Math.round(grade * 0.06 * (laborSelfFull ? (laborSelfActual / laborSelfFull) : 1)) : null;
   return { employerLabor, employerHealth, employerPension };
 }
-function syncSalaryRecordToSupabase(y, name, mo, earn, deduct, net, earnItems, deductItems, detailText){
-  if(!sb || !name) return;
+/* 訂正確認彈窗：回傳 Promise<{ok, reason}>，取消時 ok:false */
+var _amendConfirmResolver = null;
+function showAmendConfirm(info){
+  return new Promise(function(resolve){
+    _amendConfirmResolver = resolve;
+    document.getElementById('amend-confirm-msg').innerHTML =
+      info.name+'．民國'+info.y+'年'+info.mo+'月的薪資已於 <b>'+(info.savedAt?new Date(info.savedAt).toLocaleString('zh-TW'):'先前')+'</b> 存檔。原始金額不會消失、會保留在訂正記錄裡，確定要用新金額覆蓋嗎？';
+    document.getElementById('amend-confirm-diff').innerHTML =
+      '實領 NT$ <span style="text-decoration:line-through;color:#DC2626;font-weight:400">'+Number(info.oldNet||0).toLocaleString('zh-TW')+'</span> → NT$ '+Number(info.newNet||0).toLocaleString('zh-TW');
+    document.getElementById('amend-confirm-reason').value = '';
+    document.getElementById('amend-confirm-overlay').style.display = 'flex';
+  });
+}
+function amendConfirmResolve(ok){
+  var overlay = document.getElementById('amend-confirm-overlay');
+  if(ok){
+    var reason = document.getElementById('amend-confirm-reason').value.trim();
+    if(!reason){ alert('請填寫修正原因，才能送出'); return; }
+    overlay.style.display = 'none';
+    if(_amendConfirmResolver) _amendConfirmResolver({ok:true, reason:reason});
+  } else {
+    overlay.style.display = 'none';
+    if(_amendConfirmResolver) _amendConfirmResolver({ok:false});
+  }
+  _amendConfirmResolver = null;
+}
+/* 存進 salary_records 前，先比對資料庫是否已有同一位老師同一個月的舊資料：
+   有的話一律先跳出確認視窗＋要求填修正原因，把舊資料存進 salary_record_history 再覆蓋，
+   避免像過去一樣一按存檔就無聲覆蓋、查無對證。 */
+async function syncSalaryRecordToSupabase(y, name, mo, earn, deduct, net, earnItems, deductItems, detailText){
+  if(!sb || !name) return { ok:false };
   const ec = computeEmployerCosts();
-  sb.from('salary_records').upsert({
+  const yearRoc = parseInt(y) || 115;
+  const monthNum = parseInt(mo) || 1;
+  const newRow = {
     emp_name: name,
-    year_roc: parseInt(y) || 115,
-    month: parseInt(mo) || 1,
+    year_roc: yearRoc,
+    month: monthNum,
     pay_type: '月薪',
     earn_items: earnItems,
     deduct_items: deductItems,
@@ -2045,9 +2079,44 @@ function syncSalaryRecordToSupabase(y, name, mo, earn, deduct, net, earnItems, d
     employer_health: ec.employerHealth,
     employer_pension: ec.employerPension,
     saved_at: new Date().toISOString()
-  }, { onConflict: 'emp_name,year_roc,month' }).then(function(res){
-    if(res.error) console.error('salary_records 同步失敗', res.error);
-  });
+  };
+  const { data: existingRows, error: selErr } = await sb.from('salary_records').select('*')
+    .eq('emp_name', name).eq('year_roc', yearRoc).eq('month', monthNum).eq('pay_type', '月薪').limit(1);
+  if(selErr) console.error('salary_records 查詢舊資料失敗', selErr);
+  const existing = existingRows && existingRows[0];
+  if(existing){
+    const sameAmount = Number(existing.earn_total)===Number(earn) && Number(existing.deduct_total)===Number(deduct) && Number(existing.net_total)===Number(net);
+    const sameItems = JSON.stringify(existing.earn_items||[])===JSON.stringify(earnItems||[]) && JSON.stringify(existing.deduct_items||[])===JSON.stringify(deductItems||[]);
+    if(!sameAmount || !sameItems){
+      const confirmed = await showAmendConfirm({ name:name, y:yearRoc, mo:monthNum, oldNet:existing.net_total, newNet:net, savedAt:existing.saved_at });
+      if(!confirmed.ok) return { ok:false, cancelled:true };
+      const { error: histErr } = await sb.from('salary_record_history').insert({
+        emp_name: existing.emp_name,
+        year_roc: existing.year_roc,
+        month: existing.month,
+        pay_type: existing.pay_type,
+        old_earn_items: existing.earn_items,
+        old_deduct_items: existing.deduct_items,
+        old_earn_total: existing.earn_total,
+        old_deduct_total: existing.deduct_total,
+        old_net_total: existing.net_total,
+        old_detail_text: existing.detail_text,
+        old_employer_labor: existing.employer_labor,
+        old_employer_health: existing.employer_health,
+        old_employer_pension: existing.employer_pension,
+        old_saved_at: existing.saved_at,
+        reason: confirmed.reason
+      });
+      if(histErr){
+        console.error('salary_record_history 寫入失敗', histErr);
+        alert('訂正記錄寫入失敗，本次修改未存檔，請檢查網路後重試：'+histErr.message);
+        return { ok:false, error:histErr };
+      }
+    }
+  }
+  const { error: upErr } = await sb.from('salary_records').upsert(newRow, { onConflict: 'emp_name,year_roc,month' });
+  if(upErr){ console.error('salary_records 同步失敗', upErr); return { ok:false, error:upErr }; }
+  return { ok:true };
 }
 
 async function migrateLocalRecordsToSupabase(){
@@ -2089,20 +2158,23 @@ async function migrateLocalRecordsToSupabase(){
     setTimeout(function(){ btn.textContent = '📡 同步本機舊資料到薪資彙總表'; }, 4000);
   }
 }
-function saveToYearly(silent){
+async function saveToYearly(silent){
   var name = (document.getElementById('emp-name')||{}).value || '';
   var y = (document.getElementById('cal-year')||{}).value || '';
   var mo = (document.getElementById('cal-month')||{}).value || '';
   var btn = document.getElementById('save-yearly-btn');
   if(!name.trim()){ if(!silent) alert('請先填寫員工姓名，再存入年度紀錄'); return false; }
   var earn = numFrom('h-earn'), deduct = numFrom('h-deduct'), net = numFrom('r-net');
+  var earnItemsNow = collectRows('earn-body'), deductItemsNow = collectRows('deduct-body'), detailNow = buildResultText();
+  var syncResult = await syncSalaryRecordToSupabase(y, name, mo, earn, deduct, net, earnItemsNow, deductItemsNow, detailNow);
+  if(syncResult && syncResult.cancelled) return false;
   if(!yearlyRecords[y]) yearlyRecords[y] = {};
   if(!yearlyRecords[y][name]) yearlyRecords[y][name] = {};
   var existed = !!yearlyRecords[y][name][mo];
   yearlyRecords[y][name][mo] = {
     earn: earn, deduct: deduct, net: net,
-    items: { earn: collectRows('earn-body'), deduct: collectRows('deduct-body') },
-    detail: buildResultText(),
+    items: { earn: earnItemsNow, deduct: deductItemsNow },
+    detail: detailNow,
     savedAt: new Date().toLocaleString('zh-TW'),
     manualState: {
       extraEarn: extraItems.earn.filter(function(it){ return !it.fromEmp; }),
@@ -2117,7 +2189,6 @@ function saveToYearly(silent){
     }
   };
   saveYearlyRecords();
-  syncSalaryRecordToSupabase(y, name, mo, earn, deduct, net, collectRows('earn-body'), collectRows('deduct-body'), buildResultText());
   refreshYearlySel();
   renderYearlyStats();
   if(lastBatchResults && currentBatchIndex!==null){
@@ -2548,6 +2619,8 @@ function renderYearlyStats(){
     }).join('');
     if(allNames.indexOf(curName) === -1) nameSel.value = '';
   }
+  var ledgerBtn = document.getElementById('open-personal-ledger-btn');
+  if(ledgerBtn) ledgerBtn.style.display = (nameSel && nameSel.value) ? 'inline-block' : 'none';
   var names = allNames;
   if(nameSel && nameSel.value){ names = names.filter(function(n){ return n === nameSel.value; }); }
   if(names.length === 0){
@@ -2587,6 +2660,103 @@ function renderYearlyStats(){
   h += '<div style="font-size:12px;color:#666;margin-top:6px">表格數字為「實領金額」，點擊數字可查看該月完整明細或刪除。</div>';
   box.innerHTML = h;
 }
+
+/* ===== 個人年度薪資總表：讀 Supabase 正式資料（salary_records＋salary_record_history），
+   跟上面「年度統計紀錄」讀本機瀏覽器快取不同，這裡看到的是資料庫裡實際存檔的內容，含訂正記錄 ===== */
+async function openPersonalLedger(){
+  var y = (document.getElementById('yearly-year-sel')||{}).value;
+  var name = (document.getElementById('yearly-name-sel')||{}).value;
+  if(!y || !name){ alert('請先選擇年度與老師'); return; }
+  if(!sb){ alert('無法連線到資料庫'); return; }
+  var overlay = document.getElementById('personal-ledger-overlay');
+  var body = document.getElementById('personal-ledger-body');
+  document.getElementById('personal-ledger-title').textContent = name + '．民國' + y + '年　個人年度薪資總表';
+  body.innerHTML = '<div style="padding:20px;text-align:center;color:#666">載入中…</div>';
+  overlay.style.display = 'flex';
+  var yearRoc = parseInt(y) || 0;
+  var recRes = await sb.from('salary_records').select('*').eq('emp_name', name).eq('year_roc', yearRoc).order('month');
+  var histRes = await sb.from('salary_record_history').select('*').eq('emp_name', name).eq('year_roc', yearRoc).order('changed_at');
+  if(recRes.error){ body.innerHTML = '<div style="padding:20px;color:#DC2626">載入失敗：'+recRes.error.message+'</div>'; return; }
+  if(histRes.error) console.error('salary_record_history 載入失敗', histRes.error);
+  body.innerHTML = renderPersonalLedgerHTML(name, yearRoc, recRes.data||[], histRes.data||[]);
+}
+function closePersonalLedger(){
+  var overlay = document.getElementById('personal-ledger-overlay');
+  if(overlay) overlay.style.display = 'none';
+}
+function renderPersonalLedgerHTML(name, y, records, hist){
+  var fmtN = function(n){ return Number(n||0).toLocaleString('zh-TW'); };
+  var byMonth = {};
+  records.forEach(function(r){ byMonth[r.month] = r; });
+  var earnLabels = [], deductLabels = [];
+  function collectLabels(items, list){
+    (items||[]).forEach(function(it){ if(it && it.t && list.indexOf(it.t)===-1) list.push(it.t); });
+  }
+  records.forEach(function(r){ collectLabels(r.earn_items, earnLabels); collectLabels(r.deduct_items, deductLabels); });
+  function amtOf(items, label){
+    var found = (items||[]).filter(function(it){ return it && it.t===label; });
+    var s=0; found.forEach(function(it){ s+=amtNum(it.a); });
+    return s;
+  }
+  var monthCols = []; for(var m=1;m<=12;m++) monthCols.push(m);
+
+  function itemRow(label, kind){
+    var total = 0, cells = '';
+    monthCols.forEach(function(m){
+      var r = byMonth[m];
+      if(!r){ cells += '<td style="padding:6px 8px;border:1px solid #D5D3CC;text-align:center;color:#ccc">—</td>'; return; }
+      var v = amtOf(kind==='earn'?r.earn_items:r.deduct_items, label);
+      total += v;
+      cells += '<td style="padding:6px 8px;border:1px solid #D5D3CC;text-align:right">'+(v?fmtN(v):'<span style="color:#ccc">·</span>')+'</td>';
+    });
+    return '<tr><td style="padding:6px 8px;border:1px solid #D5D3CC;position:sticky;left:0;background:#fff;white-space:nowrap">'+label+'</td>'+cells+'<td style="padding:6px 8px;border:1px solid #D5D3CC;text-align:right;font-weight:700">'+fmtN(total)+'</td></tr>';
+  }
+  function totalRow(label, kind, bg){
+    var total=0, cells='';
+    monthCols.forEach(function(m){
+      var r = byMonth[m], v = 0;
+      if(r){ v = kind==='earn'?Number(r.earn_total)||0 : kind==='deduct'?Number(r.deduct_total)||0 : Number(r.net_total)||0; }
+      total += v;
+      cells += '<td style="padding:6px 8px;border:1px solid #D5D3CC;text-align:right;font-weight:700">'+(r?fmtN(v):'—')+'</td>';
+    });
+    return '<tr style="background:'+bg+';font-weight:700"><td style="padding:6px 8px;border:1px solid #D5D3CC;position:sticky;left:0;background:'+bg+';white-space:nowrap">'+label+'</td>'+cells+'<td style="padding:6px 8px;border:1px solid #D5D3CC;text-align:right;background:#FCD34D">'+fmtN(total)+'</td></tr>';
+  }
+
+  var html = '<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:12px;min-width:100%">';
+  html += '<tr style="background:#FDE68A"><th style="padding:6px 8px;border:1px solid #D5D3CC;text-align:left;position:sticky;left:0;background:#FDE68A;white-space:nowrap">項目＼月份</th>';
+  monthCols.forEach(function(m){
+    var r = byMonth[m];
+    var lockTag = r ? '<div style="font-size:10px;color:#1B6E3A;font-weight:700">🔒已核薪</div>' : '<div style="font-size:10px;color:#999">未存檔</div>';
+    html += '<th style="padding:6px 8px;border:1px solid #D5D3CC;white-space:nowrap">'+m+'月'+lockTag+'</th>';
+  });
+  html += '<th style="padding:6px 8px;border:1px solid #D5D3CC;background:#FCD34D;white-space:nowrap">年度合計</th></tr>';
+  html += '<tr><td colspan="'+(monthCols.length+2)+'" style="padding:6px 8px;border:1px solid #D5D3CC;background:#DCECE9;font-weight:700;color:#3E7370">應領薪資項目</td></tr>';
+  earnLabels.forEach(function(l){ html += itemRow(l,'earn'); });
+  html += totalRow('應領合計','earn','#DCECE9');
+  html += '<tr><td colspan="'+(monthCols.length+2)+'" style="padding:6px 8px;border:1px solid #D5D3CC;background:#F5E2D8;font-weight:700;color:#B15C3F">應扣金額項目</td></tr>';
+  deductLabels.forEach(function(l){ html += itemRow(l,'deduct'); });
+  html += totalRow('應扣合計','deduct','#F5E2D8');
+  html += totalRow('※ 實領總計','net','#E3E3F1');
+  html += '</table></div>';
+
+  html += '<div style="margin-top:18px;padding-top:14px;border-top:1px solid #D5D3CC">';
+  html += '<div style="font-weight:700;font-size:14px;margin-bottom:8px">訂正備註</div>';
+  if(!hist.length){
+    html += '<div style="font-size:12.5px;color:#999">此年度目前沒有任何訂正紀錄——已核薪的月份都維持原始存檔金額。</div>';
+  } else {
+    html += hist.slice().reverse().map(function(h){
+      return '<div style="border:1px solid #D5D3CC;border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:12.5px;background:#fff">'
+        + '<div style="color:#666;margin-bottom:4px">'+h.month+'月　原存檔於 '+(h.old_saved_at?new Date(h.old_saved_at).toLocaleString('zh-TW'):'—')+'　→　訂正於 '+(h.changed_at?new Date(h.changed_at).toLocaleString('zh-TW'):'—')+'</div>'
+        + '<div style="font-family:monospace;font-weight:700;margin-bottom:4px">實領原本 NT$ '+fmtN(h.old_net_total)+'（訂正後金額請見上方表格當月數字）</div>'
+        + '<div>「'+((h.reason||'').replace(/</g,'&lt;'))+'」</div>'
+        + '</div>';
+    }).join('');
+  }
+  html += '</div>';
+  html += '<div style="font-size:11.5px;color:#999;margin-top:10px">此表讀取資料庫「salary_records」正式存檔資料，跟上方「年度統計紀錄」讀取的本機瀏覽器快取是兩份不同的資料來源。</div>';
+  return html;
+}
+
 function showYearlyDetail(y, nm, m){
   var rec = yearlyRecords[y] && yearlyRecords[y][nm] && yearlyRecords[y][nm][m];
   if(!rec) return;
@@ -3029,5 +3199,31 @@ function applyLeaveRange(type){
   fromEl.value=''; toEl.value='';
 }
 </script>
+
+<!-- 已存檔資料訂正確認視窗：已存進資料庫的月份要被覆蓋前，強制要求確認並填寫原因 -->
+<div id="amend-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(30,26,20,.45);z-index:9999;align-items:center;justify-content:center;padding:16px">
+  <div style="background:#fff;border:2px solid #BF9241;border-radius:14px;padding:22px 24px;max-width:420px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,.25);font-family:inherit">
+    <div style="font-size:16px;font-weight:700;color:#92400E;margin-bottom:10px">🔒 這筆資料已存檔，即將被覆蓋</div>
+    <div id="amend-confirm-msg" style="font-size:13.5px;color:#555;line-height:1.7;margin-bottom:12px"></div>
+    <div id="amend-confirm-diff" style="font-family:monospace;font-weight:700;font-size:15px;background:#F7F6F3;border-radius:8px;padding:10px 12px;margin-bottom:14px"></div>
+    <label style="font-size:12.5px;color:#555;display:block;margin-bottom:4px">修正原因（必填）</label>
+    <textarea id="amend-confirm-reason" style="width:100%;min-height:60px;border:1px solid #D5D3CC;border-radius:8px;padding:8px 10px;font-size:13.5px;font-family:inherit;box-sizing:border-box;margin-bottom:14px" placeholder="例如：漏加當月早班津貼，同仁提出後更正"></textarea>
+    <div style="display:flex;justify-content:flex-end;gap:10px">
+      <button type="button" onclick="amendConfirmResolve(false)" style="padding:8px 16px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;color:#666;font-weight:700;cursor:pointer;font-size:13.5px">取消</button>
+      <button type="button" onclick="amendConfirmResolve(true)" style="padding:8px 16px;border:none;border-radius:8px;background:#C97B6F;color:#fff;font-weight:700;cursor:pointer;font-size:13.5px">確定訂正</button>
+    </div>
+  </div>
+</div>
+
+<!-- 個人年度薪資總表：讀 Supabase salary_records + salary_record_history，單一老師整年度橫向並列 -->
+<div id="personal-ledger-overlay" style="display:none;position:fixed;inset:0;background:rgba(30,26,20,.5);z-index:9998;align-items:flex-start;justify-content:center;padding:24px;overflow-y:auto">
+  <div style="background:#fff;border:2px solid #BF9241;border-radius:14px;max-width:1140px;width:100%;padding:20px 22px;box-shadow:0 8px 30px rgba(0,0,0,.3);font-family:inherit">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div id="personal-ledger-title" style="font-size:16px;font-weight:700;color:#3F435E"></div>
+      <button type="button" onclick="closePersonalLedger()" style="padding:6px 14px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">關閉</button>
+    </div>
+    <div id="personal-ledger-body"></div>
+  </div>
+</div>
 </body>
 </html>
