@@ -1986,6 +1986,8 @@ function renderBatchList(){
   const btnSlot=document.getElementById('batch-btn-slot');
   if(btnSlot)btnSlot.innerHTML='<button type="button" id="batch-calc-btn" onclick="batchCalcAll()" style="display:block;width:100%;box-sizing:border-box;text-align:center;padding:10px 20px;border:none;border-radius:8px;background:#E1AC4F;color:#4A3A17;font-size:15px;cursor:pointer;font-weight:700">一鍵預覽全部薪資明細（不會自動存檔）</button>';
   let html='<div id="batch-summary-top"></div>';
+  html+='<div style="margin:10px 0"><button type="button" onclick="showTransferListFromBatch()" style="padding:10px 16px;border:none;border-radius:8px;background:#3D6E93;color:#fff;font-size:14px;font-weight:700;cursor:pointer">產出薪資轉帳清單</button></div>';
+  html+='<div id="transfer-list-wrap"></div>';
   html+='<div id="batch-detail-log" style="margin-top:10px;font-size:13px;line-height:1.8"></div>';
   resultBox.style.display='block';
   resultBox.innerHTML=html;
@@ -2693,6 +2695,52 @@ function statusIcon(kind){
       ? '<line x1="12" y1="7.5" x2="12" y2="13"/><circle cx="12" cy="16.3" r="0.9" fill="'+stroke+'" stroke="none"/>'
       : '<line x1="8.5" y1="8.5" x2="15.5" y2="15.5"/><line x1="15.5" y1="8.5" x2="8.5" y2="15.5"/>');
   return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="'+stroke+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><circle cx="12" cy="12" r="9.5"/>'+inner+'</svg>';
+}
+/* 薪資轉帳清單：只留序號、姓名、實領總計，方便登錄網銀轉帳用 */
+function showTransferListFromBatch(){
+  var wrap = document.getElementById('transfer-list-wrap');
+  if(!wrap) return;
+  if(!lastBatchResults || !lastBatchResults.length){
+    wrap.innerHTML = '<div style="color:#999;font-size:13px;padding:6px 0">請先按「一鍵預覽全部薪資明細」載入資料</div>';
+    return;
+  }
+  var fmtN = function(x){ return Number(x).toLocaleString('zh-TW'); };
+  var total = 0;
+  var rows = lastBatchResults.map(function(rs, idx){
+    total += rs.net;
+    return '<tr><td style="padding:6px 10px;border:1px solid #E5E3DC;text-align:center;color:#999">'+(idx+1)+'</td><td style="padding:6px 10px;border:1px solid #E5E3DC;font-weight:600">'+rs.name+'</td><td style="padding:6px 10px;border:1px solid #E5E3DC;text-align:right;font-weight:700">'+fmtN(rs.net)+'</td></tr>';
+  }).join('');
+  wrap.innerHTML = '<div style="margin-top:6px;padding:14px;background:#fff;border:1px solid #D5D3CC;border-radius:10px;max-width:420px">'
+    +'<table style="border-collapse:collapse;width:100%;font-size:14px"><thead><tr style="background:#F3EFEA"><th style="padding:6px 10px;border:1px solid #E5E3DC">NO.</th><th style="padding:6px 10px;border:1px solid #E5E3DC;text-align:left">姓名</th><th style="padding:6px 10px;border:1px solid #E5E3DC;text-align:right">總計</th></tr></thead><tbody>'
+    +rows
+    +'</tbody><tfoot><tr style="font-weight:700;background:#FDE68A"><td colspan="2" style="padding:6px 10px;border:1px solid #E5E3DC;text-align:center">合計</td><td style="padding:6px 10px;border:1px solid #E5E3DC;text-align:right">'+fmtN(total)+'</td></tr></tfoot></table>'
+    +'<div style="display:flex;gap:8px;margin-top:10px">'
+    +'<button type="button" onclick="exportTransferListImage()" style="padding:8px 14px;border:1px solid #1B6E3A;border-radius:8px;background:#fff;color:#1B6E3A;cursor:pointer;font-size:13px">🖼 匯出圖片(JPG)</button>'
+    +'<button type="button" onclick="copyTransferListText()" style="padding:8px 14px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">📋 複製文字</button>'
+    +'</div></div>';
+}
+function exportTransferListImage(){
+  var el = document.querySelector('#transfer-list-wrap > div');
+  if(!el || typeof html2canvas === 'undefined'){ alert('匯出圖片功能載入失敗，請重新整理頁面再試一次'); return; }
+  html2canvas(el, {backgroundColor:'#ffffff', scale:2}).then(function(canvas){
+    var y = (document.getElementById('cal-year')||{}).value||'';
+    var mo = (document.getElementById('cal-month')||{}).value||'';
+    var link = document.createElement('a');
+    link.download = '薪資轉帳清單_'+y+'年'+mo+'月.jpg';
+    link.href = canvas.toDataURL('image/jpeg', 0.95);
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  }).catch(function(err){ console.error(err); alert('匯出圖片時發生錯誤：'+err.message); });
+}
+function copyTransferListText(){
+  if(!lastBatchResults || !lastBatchResults.length) return;
+  var fmtN = function(x){ return Number(x).toLocaleString('zh-TW'); };
+  var lines = lastBatchResults.map(function(rs, idx){ return (idx+1)+'\t'+rs.name+'\t'+fmtN(rs.net); });
+  var total = lastBatchResults.reduce(function(s,rs){ return s+rs.net; }, 0);
+  lines.push('合計\t\t'+fmtN(total));
+  var text = lines.join('\n');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){ alert('已複製到剪貼簿，可直接貼到 Excel'); }).catch(function(){ alert('複製失敗，請手動選取複製'); });
+  }
 }
 function renderBatchResultsTable(){
   var topBox = document.getElementById('batch-summary-top');
