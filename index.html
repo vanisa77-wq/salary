@@ -557,8 +557,8 @@ async function tryAdminLogin(){
   <div class="field-row">
     <div class="field"><label>計算年月</label>
       <div style="display:flex;gap:8px">
-        <div class="iw" style="flex:1"><input type="number" id="cal-year" value="115" min="100" max="200" style="padding-right:10px" onchange="autoLinkResignDate();autoLinkRaiseSplit();refreshPeriodLockBar()"><span class="unit">年</span></div>
-        <select id="cal-month" onchange="autoLinkResignDate();autoLinkRaiseSplit();refreshPeriodLockBar()" style="flex:1"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select>
+        <div class="iw" style="flex:1"><input type="number" id="cal-year" value="115" min="100" max="200" style="padding-right:10px" onchange="autoLinkResignDate();autoLinkRaiseSplit();autoLinkGradeChange();refreshPeriodLockBar()"><span class="unit">年</span></div>
+        <select id="cal-month" onchange="autoLinkResignDate();autoLinkRaiseSplit();autoLinkGradeChange();refreshPeriodLockBar()" style="flex:1"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select>
       </div>
     </div>
     <div class="field"><label>實際在職天數<span id="workdays-auto-badge" style="display:none;font-size:11px;color:#8a6d00;background:#FFF3CD;padding:2px 6px;border-radius:4px;margin-left:6px">自動計算</span></label><div class="iw"><input type="number" id="workdays" value="" min="1" max="30" placeholder="留空＝整月"><span class="unit">天</span></div><div class="hint" id="workdays-hint">留空代表整月出勤</div>
@@ -638,6 +638,7 @@ async function tryAdminLogin(){
   <option value="7">45,800 元（勞保 1,145 元 / 健保 710 元）</option>
 </select>
     <div class="grade-note" style="margin-top:4px">勞保、健保共用同一級距</div>
+    <div id="grade-change-note" style="display:none;margin-top:4px;font-size:11.5px;color:#2C5A73"></div>
   </div>
 
   <div class="ins-grid">
@@ -1313,7 +1314,7 @@ let dependentsByEmp={};
 let allowancesByEmp={};
 let insuranceHistory={};
 try{ var _ihCache=localStorage.getItem('scInsuranceHistory'); if(_ihCache) insuranceHistory=JSON.parse(_ihCache); }catch(e){}
-function rowToEmp(r){return {id:r.id,account:r.account||'',password:r.password||'',name:r.name||'',base:r.base||0,bonus:r.bonus||0,insGrade:r.ins_grade||0,dependents:r.dependents||0,hireDate:r.hire_date||'',resignDate:r.resign_date||'',jobTitle:r.job_title||'',healthInsGrade:r.health_ins_grade||0,laborInsExempt:r.labor_ins_exempt===true,raiseDate:r.raise_effective_date||'',raiseNewBase:r.raise_new_base||0};}
+function rowToEmp(r){return {id:r.id,account:r.account||'',password:r.password||'',name:r.name||'',base:r.base||0,bonus:r.bonus||0,insGrade:r.ins_grade||0,dependents:r.dependents||0,hireDate:r.hire_date||'',resignDate:r.resign_date||'',jobTitle:r.job_title||'',healthInsGrade:r.health_ins_grade||0,laborInsExempt:r.labor_ins_exempt===true,raiseDate:r.raise_effective_date||'',raiseNewBase:r.raise_new_base||0,gradeEffDate:r.grade_effective_date||'',gradeNewGrade:(r.grade_new_ins_grade===null||r.grade_new_ins_grade===undefined)?'':r.grade_new_ins_grade};}
 function depAge(birthDate){
   if(!birthDate)return null;
   const b=new Date(birthDate);
@@ -1763,6 +1764,30 @@ function autoLinkRaiseSplit(){
   }
   calc();
 }
+/* 投保級距調整：跟月中調薪不同，級距是整月套用（不拆算），
+   計算年月一到（或超過）生效月，就直接改用新級距；不像調薪，過渡月不需要分段。 */
+function autoLinkGradeChange(){
+  var noteEl=document.getElementById('grade-change-note');
+  var name=((document.getElementById('emp-name')||{}).value||'').trim();
+  var emp=name?lookupEmployee(name):null;
+  if(noteEl){noteEl.style.display='none';noteEl.textContent='';}
+  if(!emp||!emp.gradeEffDate)return;
+  var y=+((document.getElementById('cal-year')||{}).value)||0;
+  var mo=+((document.getElementById('cal-month')||{}).value)||0;
+  if(!y||!mo)return;
+  var ad=y+1911;
+  var parts=emp.gradeEffDate.split('-');
+  var gy=+parts[0],gm=+parts[1];
+  if(ad<gy||(ad===gy&&mo<gm))return;
+  var gradeEl=document.getElementById('ins-grade');
+  var newGradeAmt=(LABOR[emp.gradeNewGrade]||LABOR[0])[0];
+  if(gradeEl)gradeEl.value=emp.gradeNewGrade||0;
+  if(noteEl){
+    noteEl.style.display='block';
+    noteEl.textContent='已依 '+gy+'/'+String(gm).padStart(2,'0')+' 起投保級距調整設定，自動改用 '+newGradeAmt.toLocaleString('zh-TW')+' 元計算，確認無誤後請到員工資料管理按「套用為正式級距」清除此設定';
+  }
+  calc();
+}
 function applyEmployeeLookup(name){
   const statusEl=document.getElementById('empdb-match-status');
   const emp=name?lookupEmployee(name):null;
@@ -1775,6 +1800,7 @@ function applyEmployeeLookup(name){
     applyEmployeeAllowances(emp.id);
     autoLinkResignDate();
     autoLinkRaiseSplit();
+    autoLinkGradeChange();
     calc();
     if(statusEl){statusEl.style.color='#1B6E3A';statusEl.textContent='✅ 已從員工資料庫自動帶入本薪/全勤獎金/投保級距/眷屬人數/固定津貼';}
     return true;
@@ -1895,6 +1921,7 @@ function applyReportData(data){
   if(data.rocYear){document.getElementById('cal-year').value=data.rocYear;document.getElementById('cal-month').value=data.month;}
   autoLinkResignDate();
   autoLinkRaiseSplit();
+  autoLinkGradeChange();
   buildCal();
   data.earlyDays.forEach(d=>{dayState[d]=dayState[d]==='e'?'b':'m';});
   data.lateDays.forEach(d=>{dayState[d]=dayState[d]==='m'?'b':'e';});
