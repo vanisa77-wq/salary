@@ -1018,13 +1018,16 @@ function updateNameBadge(){
       var depBillable=computeBillableDependents(emp.id);
       var allowances=allowancesByEmp[emp.id]||[];
       var allowanceTxt=allowances.length?allowances.map(function(a){return (a.name||'津貼')+' '+Number(a.amount||0).toLocaleString('zh-TW')+'元';}).join('、'):'無';
+      var tenure=tenureText(emp.hireDate, emp.resignDate||null);
       var sub='到職日 '+(rocDateDisp(emp.hireDate)||'未設定')
         +(emp.resignDate?'　離職日 '+rocDateDisp(emp.resignDate):'')
+        +(tenure?'　在職年資 '+tenure:'')
         +'　職稱 '+(emp.jobTitle||'－')
         +'　勞保級距 '+laborGrade.toLocaleString('zh-TW')+'元'
         +'　健保級距 '+healthGrade.toLocaleString('zh-TW')+'元'
         +'　眷屬 '+depTotal+'人(計費'+depBillable+')'
         +'　固定津貼:'+allowanceTxt;
+      if(emp.birthDate||emp.nationalId)sub+='　🔒生日 '+(rocDateDisp(emp.birthDate)||'未設定')+'　身分證字號 '+(emp.nationalId||'未設定');
       if(emp.raiseDate)sub+='　📈調薪生效日 '+rocDateDisp(emp.raiseDate)+'→調薪後本薪 '+Number(emp.raiseNewBase||0).toLocaleString('zh-TW')+'元　全勤 '+Number(emp.bonus||0).toLocaleString('zh-TW')+'元';
       badge.innerHTML='🧑‍🏫 目前計算：'+name+(y&&mo?'　'+y+'年'+mo+'月':'')
         +'<div style="font-size:14px;font-weight:400;color:#3F435E;margin-top:4px;line-height:1.8">'+sub+'</div>';
@@ -1143,6 +1146,34 @@ function personalLeaveAllClosedDays(){
 /* 個別事假不扣全勤：每筆事假記錄旁邊的「這筆事假不扣全勤」勾選框＋原因，
    用於腸病毒停課等臨時個案，不用像休園日那樣寫死日期。
    所有「有填日期」的事假記錄都要勾選＋填原因，才會整月免扣全勤。 */
+/* 「這筆事假不扣全勤」的勾選狀態存在畫面上的 checkbox，換人/重新載入就會被重建成未勾選，
+   所以存檔時要記錄哪幾天有勾（用日期比對，因為 leaveEntries 的 id 每次重建都不一樣），
+   下次載入這筆存檔紀錄時（restoreSavedManualState）再依日期把勾選狀態套回去。 */
+function collectPersNoAttend(){
+  var out=[];
+  (leaveEntries['pers']||[]).forEach(function(e){
+    var fromEl=document.getElementById('pers-from-'+e.id);
+    var cb=document.getElementById('pers-noattend-'+e.id);
+    var reasonEl=document.getElementById('pers-noattend-reason-'+e.id);
+    if(fromEl&&fromEl.value&&cb&&cb.checked){
+      out.push({date:fromEl.value, reason:reasonEl?reasonEl.value:''});
+    }
+  });
+  return out;
+}
+function applyPersNoAttend(list){
+  if(!list||!list.length)return;
+  list.forEach(function(rec){
+    (leaveEntries['pers']||[]).forEach(function(e){
+      var fromEl=document.getElementById('pers-from-'+e.id);
+      if(!fromEl||fromEl.value!==rec.date)return;
+      var cb=document.getElementById('pers-noattend-'+e.id);
+      var reasonEl=document.getElementById('pers-noattend-reason-'+e.id);
+      if(cb)cb.checked=true;
+      if(reasonEl){ reasonEl.value=rec.reason||''; reasonEl.style.display='block'; }
+    });
+  });
+}
 function personalLeaveManualExempt(){
   var entries = leaveEntries['pers'];
   if(!entries || entries.length===0) return false;
@@ -1584,6 +1615,42 @@ function applyEmployeeAllowances(empId){
   });
   renderExtras();
 }
+/* employee_pii 的 RLS 只開放已登入(authenticated)讀取；index.html 本身已經有登入閘門，
+   跟 employees.html 共用同一個 Supabase Auth session，所以登入後這裡也查得到。
+   未登入時查詢會直接失敗（回傳 error），不影響其它欄位正常運作。 */
+function loadEmployeePii(){
+  const client=initSupabase();
+  if(!client)return;
+  client.from('employee_pii').select('*').then(function(res){
+    if(res.error){ console.error('讀取員工個資失敗（可能尚未登入）',res.error); return; }
+    var piiByEmp={};
+    (res.data||[]).forEach(function(p){ piiByEmp[p.employee_id]=p; });
+    employeeDB.forEach(function(e){
+      var p=piiByEmp[e.id];
+      e.birthDate=p?(p.birth_date||''):'';
+      e.nationalId=p?(p.national_id||''):'';
+    });
+    try{localStorage.setItem('scEmployeeDB',JSON.stringify(employeeDB));}catch(err){}
+    updateNameBadge();
+  });
+}
+function tenureText(hireDate, untilDate){
+  if(!hireDate) return '';
+  var start=new Date(hireDate+'T00:00:00');
+  if(isNaN(start)) return '';
+  var end=untilDate?new Date(untilDate+'T00:00:00'):new Date();
+  if(isNaN(end)||end<start) return '';
+  var y=end.getFullYear()-start.getFullYear();
+  var m=end.getMonth()-start.getMonth();
+  var d=end.getDate()-start.getDate();
+  if(d<0){ m--; d+=new Date(end.getFullYear(),end.getMonth(),0).getDate(); }
+  if(m<0){ y--; m+=12; }
+  var parts=[];
+  if(y>0)parts.push(y+'年');
+  if(m>0)parts.push(m+'個月');
+  if(y===0&&m===0)parts.push(d+'天');
+  return parts.join('')||'未滿1個月';
+}
 function loadEmployeeDB(){
   try{
     const cached=localStorage.getItem('scEmployeeDB');
@@ -1595,6 +1662,8 @@ function loadEmployeeDB(){
     if(res.error){console.error(res.error);return;}
     employeeDB=(res.data||[]).map(rowToEmp);
     try{localStorage.setItem('scEmployeeDB',JSON.stringify(employeeDB));}catch(e){}
+    loadEmployeePii();
+    updateNameBadge();
   });
   client.from('dependents').select('*').order('id').then(function(res){
     if(res.error){console.error(res.error);return;}
@@ -1879,7 +1948,7 @@ var lastBatchResults=null;
 function renderBatchList(){
   const resultBox=document.getElementById('line-report-result');
   const countSlot=document.getElementById('batch-count-slot');
-  if(countSlot)countSlot.textContent='偵測到 '+batchReports.length+' 位老師的回報';
+  if(countSlot)countSlot.textContent='';
   const btnSlot=document.getElementById('batch-btn-slot');
   if(btnSlot)btnSlot.innerHTML='<button type="button" id="batch-calc-btn" onclick="batchCalcAll()" style="display:block;width:100%;box-sizing:border-box;text-align:center;padding:10px 20px;border:none;border-radius:8px;background:#E1AC4F;color:#4A3A17;font-size:15px;cursor:pointer;font-weight:700">一鍵預覽全部薪資明細（不會自動存檔）</button>';
   let html='<div id="batch-summary-top"></div>';
@@ -1945,6 +2014,7 @@ function restoreSavedManualState(){
     if(hireDateEl&&ms.hireDateManual)hireDateEl.value=ms.hireDateManual;
     syncRocDisplay('hire-date-roc',ms.hireDateManual||'');
   }
+  applyPersNoAttend(ms.persNoAttend);
   renderExtras();
   renderAdjustments();
   calc();
@@ -2387,7 +2457,8 @@ async function saveToYearly(silent){
       unusedAnnualLeave: (document.getElementById('unused-annual-leave')||{}).value || '0',
       annualLeaveTotal: (document.getElementById('annual-leave-total')||{}).value || '0',
       isHireMonth: document.getElementById('is-hire-month').checked,
-      hireDateManual: (document.getElementById('hire-date')||{}).value || ''
+      hireDateManual: (document.getElementById('hire-date')||{}).value || '',
+      persNoAttend: collectPersNoAttend()
     }
   };
   saveYearlyRecords();
@@ -2598,7 +2669,7 @@ function renderBatchResultsTable(){
   var C_SAGE='#C4D3C3', C_MUSTARD='#E1AC4F', C_TERRA='#DE9F8B', C_BLUSH='#F2D9D2', C_BLUE='#93A7B4';
   var summarySlot = document.getElementById('batch-summary-slot');
   if(summarySlot){
-    summarySlot.innerHTML = '<div style="font-weight:700;font-size:13px;color:#8a5c50;background:'+C_BLUSH+';padding:8px 12px;border-radius:8px;text-align:center">已預覽 '+results.length+' 位（依到職日舊到新排序，僅供參考，尚未存檔）。已核薪鎖定 '+doneCount+' / '+results.length+'</div>';
+    summarySlot.innerHTML = '';
   }
   var h = '<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:13px;min-width:100%;text-align:center"><tr style="background:'+C_TERRA+';color:#fff">';
   ['NO.','姓名','薪資','全勤','加班費','其它','應領小計','勞保','健保','病假','事假','其它','應扣小計','總計','上月勞保','上月健保','狀態','操作'].forEach(function(th){ h += '<th style="padding:8px;border:1px solid #E5E3DC;white-space:nowrap;text-align:center;font-weight:600">'+th+'</th>'; });
