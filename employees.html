@@ -265,6 +265,23 @@ function readRocDate(prefix){
   const ad=y+1911;
   return ad+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
 }
+/* 投保級距調整一律當月1號生效，不需要日欄位，只填年／月 */
+function rocYearMonthFields(prefix,iso,onChangeExpr){
+  const p=iso?iso.split('-'):['',''];
+  const y=p[0]?(+p[0]-1911):'',m=p[1]?+p[1]:'';
+  const base='height:36px;border:1px solid var(--border-mid);border-radius:6px;padding:0 4px;text-align:center;font-family:inherit;font-size:15px';
+  const hy='style="width:62px;'+base+'"';
+  const h='style="width:48px;'+base+'"';
+  return '<input type="number" id="'+prefix+'-y" value="'+y+'" placeholder="民國" '+hy+' onchange="'+onChangeExpr+'">年'
+    +'<input type="number" id="'+prefix+'-m" value="'+m+'" placeholder="月" min="1" max="12" '+h+' onchange="'+onChangeExpr+'">月';
+}
+function readRocYearMonth(prefix){
+  const y=+((document.getElementById(prefix+'-y')||{}).value||0);
+  const m=+((document.getElementById(prefix+'-m')||{}).value||0);
+  if(!y||!m)return '';
+  const ad=y+1911;
+  return ad+'-'+String(m).padStart(2,'0')+'-01';
+}
 function rocDateDisp(iso){
   if(!iso)return '';
   var p=String(iso).split('-');
@@ -431,12 +448,12 @@ function renderEmpDetail(e,i){
 
   html+='<div class="card"><div class="card-title">'+ic('shield')+' 投保級距調整'+(e.gradeEffDate?'<span class="badge">已生效</span>':'')+(e.gradeEffDate?'<button type="button" class="clear-link" onclick="updateEmpDBField('+i+',\'gradeEffDate\',\'\');renderEmpDBList()">清除設定</button>':'')+'</div>';
   if(e.gradeEffDate){
-    html+='<div class="f-line"><span class="f-label">生效日</span>'+rocDateFields('grade-date-'+i,e.gradeEffDate,'updateEmpDBField('+i+',\'gradeEffDate\',readRocDate(\'grade-date-'+i+'\'))')+'</div>';
+    html+='<div class="f-line"><span class="f-label">生效月</span>'+rocYearMonthFields('grade-date-'+i,e.gradeEffDate,'updateEmpDBField('+i+',\'gradeEffDate\',readRocYearMonth(\'grade-date-'+i+'\'))')+'<span style="font-size:12px;color:var(--ink-faint)">（固定當月1號生效）</span></div>';
     html+='<div class="f-line"><span class="f-label">調整後</span><select class="f-select" onchange="updateEmpDBField('+i+',\'gradeNewGrade\',+this.value)">'+empDBInsGradeOptions(e.gradeNewGrade)+'</select></div>';
     html+='<button type="button" class="btn btn-fill" style="width:100%;justify-content:center;margin-top:4px" onclick="promoteGrade('+i+')">✓ 套用為正式級距並清除設定</button>';
     html+='<div class="help-text">生效月份（含）之後直接改用調整後級距試算勞健保（整月套用，不像調薪需要拆算）；生效月之前仍照原級距計算。確認無誤後按上方按鈕套用為正式級距。</div>';
   }else{
-    html+='<button type="button" class="btn btn-dashed" onclick="updateEmpDBField('+i+',\'gradeEffDate\',new Date().toISOString().slice(0,10));renderEmpDBList()">＋設定調整生效月</button>';
+    html+='<button type="button" class="btn btn-dashed" onclick="updateEmpDBField('+i+',\'gradeEffDate\',new Date().toISOString().slice(0,7)+\'-01\');renderEmpDBList()">＋設定調整生效月</button>';
   }
   html+='</div>';
   html+='</div>';
