@@ -229,12 +229,12 @@ function renderEmpDetail(e,i){
   html+='<label style="font-size:12px;color:#B45309;display:flex;align-items:center;gap:4px"><input type="checkbox" '+(e.laborInsExempt?'checked':'')+' onchange="updateEmpDBField('+i+',\'laborInsExempt\',this.checked)">固定免收勞保費（例如已領勞保老年給付者）</label>';
   html+='</div>';
   html+='<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:8px;background:#F3EFEA;border:1px dashed #999;border-radius:8px">';
-  html+='<span style="font-size:12px;color:#555;font-weight:700">🔒 生日／身分證字號（敏感個資，需登入才看得到）</span>';
+  html+='<span style="font-size:12px;color:#555;font-weight:700">生日／身分證字號（敏感個資，需登入才看得到）</span>';
   html+=rocDateFields('pii-birth-'+i,e.birthDate,'updateEmpPii('+i+',\'birthDate\',readRocDate(\'pii-birth-'+i+'\'))');
   html+='<input type="text" value="'+(e.nationalId||'').replace(/"/g,'&quot;')+'" placeholder="身分證字號" maxlength="10" style="width:120px;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px;font-family:monospace" oninput="updateEmpPii('+i+',\'nationalId\',this.value.toUpperCase())">';
   html+='</div>';
   html+='<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:8px;background:#FFF7E8;border:1px dashed #D9A441;border-radius:8px">';
-  html+='<span style="font-size:12px;color:#8a5c1e;font-weight:700">📈 月中調薪（例如試用期滿）</span>';
+  html+='<span style="font-size:12px;color:#8a5c1e;font-weight:700">月中調薪（例如試用期滿）</span>';
   html+=e.raiseDate?('<label style="font-size:12px;color:#666">生效日</label>'+rocDateFields('raise-date-'+i,e.raiseDate,'updateEmpDBField('+i+',\'raiseDate\',readRocDate(\'raise-date-'+i+'\'))')+'<button type="button" onclick="updateEmpDBField('+i+',\'raiseDate\',\'\');renderEmpDBList()" style="color:#999;background:none;border:none;cursor:pointer;font-size:12px">✕清除</button>')
     :('<button type="button" onclick="updateEmpDBField('+i+',\'raiseDate\',new Date().toISOString().slice(0,10));renderEmpDBList()" style="padding:5px 8px;border:1px dashed #C5C3BB;border-radius:6px;background:transparent;font-size:12px;cursor:pointer;color:#999">＋設定調薪生效日</button>');
   if(e.raiseDate){

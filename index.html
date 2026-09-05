@@ -991,7 +991,7 @@ function getRaiseSplitNote(){
   var daysOld=Math.min(rd-1,30), daysNew=30-daysOld;
   var oldAmt=Math.round((emp.base||0)/30*daysOld);
   var newAmt=Math.round((emp.raiseNewBase||0)/30*daysNew);
-  return '📈'+mo+'/'+rd+'調薪為'+fmt(emp.raiseNewBase||0)+'元:'+fmt(emp.base||0)+'×('+daysOld+'/30)＋'+fmt(emp.raiseNewBase||0)+'×('+daysNew+'/30)＝'+fmt(oldAmt+newAmt)+'元';
+  return ''+mo+'/'+rd+'調薪為'+fmt(emp.raiseNewBase||0)+'元:'+fmt(emp.base||0)+'×('+daysOld+'/30)＋'+fmt(emp.raiseNewBase||0)+'×('+daysNew+'/30)＝'+fmt(oldAmt+newAmt)+'元';
 }
 function rocDateDisp(iso){
   if(!iso)return '';
@@ -1032,7 +1032,7 @@ function updateNameBadge(){
         +'　健保級距 '+healthGrade.toLocaleString('zh-TW')+'元'
         +'　眷屬 '+depTotal+'人(計費'+depBillable+')'
         +'　固定津貼:'+allowanceTxt;
-      if(emp.raiseDate)sub+='　📈調薪生效日 '+rocDateDisp(emp.raiseDate)+'→調薪後本薪 '+Number(emp.raiseNewBase||0).toLocaleString('zh-TW')+'元　全勤 '+Number(emp.bonus||0).toLocaleString('zh-TW')+'元';
+      if(emp.raiseDate)sub+='　調薪生效日 '+rocDateDisp(emp.raiseDate)+'→調薪後本薪 '+Number(emp.raiseNewBase||0).toLocaleString('zh-TW')+'元　全勤 '+Number(emp.bonus||0).toLocaleString('zh-TW')+'元';
       badge.innerHTML='目前計算：'+headline+(y&&mo?'　'+y+'年'+mo+'月':'')
         +'<div style="font-size:14px;font-weight:400;color:#3F435E;margin-top:4px;line-height:1.8">'+sub+'</div>';
     }
@@ -1752,13 +1752,13 @@ function autoLinkRaiseSplit(){
     if(baseEl)baseEl.value=blended;
     if(noteEl){
       noteEl.style.display='block';
-      noteEl.textContent='📈 本月'+rd+'日調薪生效，已自動拆算:舊薪資'+(emp.base||0)+'元×'+daysOld+'天 ＋ 調薪後'+(emp.raiseNewBase||0)+'元×'+daysNew+'天(固定合計30天)＝'+blended+'元';
+      noteEl.textContent='本月'+rd+'日調薪生效，已自動拆算:舊薪資'+(emp.base||0)+'元×'+daysOld+'天 ＋ 調薪後'+(emp.raiseNewBase||0)+'元×'+daysNew+'天(固定合計30天)＝'+blended+'元';
     }
   }else{
     if(baseEl)baseEl.value=emp.raiseNewBase||0;
     if(noteEl){
       noteEl.style.display='block';
-      noteEl.textContent='📈 已依 '+ry+'/'+String(rm).padStart(2,'0')+'/'+String(rd).padStart(2,'0')+' 調薪設定自動帶入調薪後本薪，確認無誤後請到員工資料管理按「套用為正式本薪」清除此設定';
+      noteEl.textContent='已依 '+ry+'/'+String(rm).padStart(2,'0')+'/'+String(rd).padStart(2,'0')+' 調薪設定自動帶入調薪後本薪，確認無誤後請到員工資料管理按「套用為正式本薪」清除此設定';
     }
   }
   calc();
