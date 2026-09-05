@@ -1010,7 +1010,7 @@ function updateNameBadge(){
         +'　固定津貼:'+allowanceTxt;
       if(emp.raiseDate)sub+='　📈調薪生效日 '+rocDateDisp(emp.raiseDate)+'→調薪後本薪 '+Number(emp.raiseNewBase||0).toLocaleString('zh-TW')+'元';
       badge.innerHTML='🧑‍🏫 目前計算：'+name+(y&&mo?'　'+y+'年'+mo+'月':'')
-        +'<div style="font-size:11.5px;font-weight:400;color:#3F435E;margin-top:4px;line-height:1.6">'+sub+'</div>';
+        +'<div style="font-size:14px;font-weight:400;color:#3F435E;margin-top:4px;line-height:1.8">'+sub+'</div>';
     }
   }
   var previewBadge=document.getElementById('preview-emp-badge');
