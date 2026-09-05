@@ -6,14 +6,35 @@
 <title>小蘋果托嬰中心｜員工資料管理</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
+:root{
+  --fill:#B0705A;
+  --accent:#C08268;
+  --accent-deep:#8C5442;
+  --tint:#FAEDE6;
+  --tint-mid:#F3DCD1;
+  --border:#EBD3C7;
+  --border-mid:#E2C3B4;
+  --zebra:#FEFAF7;
+  --divider:#F6EBE4;
+  --hover:#FCF4EE;
+  --danger:#A8503F;
+  --ink:#33322F;
+  --ink-soft:#7A7873;
+  --ink-faint:#A3A19B;
+  --page-bg:#FBF6F2;
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'PingFang TC','Helvetica Neue',sans-serif;background:#F5F4F0;color:#1a1a1a;font-size:16px;line-height:1.6}
-.container{max-width:960px;margin:0 auto;padding:24px 16px 60px}
-.section{background:#fff;border:1px solid #E5E3DC;border-radius:14px;padding:20px;margin-bottom:14px}
-.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:8px}
-.topbar h1{font-size:20px}
-.topbar a{font-size:14px;color:#1B6E3A;text-decoration:none;font-weight:600}
-.topbar a:hover{text-decoration:underline}
+body{font-family:'Noto Sans TC','PingFang TC','Helvetica Neue',sans-serif;background:var(--page-bg);color:var(--ink);font-size:16px;line-height:1.6}
+.num{font-family:'Nunito','Noto Sans TC',sans-serif}
+svg.ic{width:16px;height:16px;stroke:currentColor;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px;flex:0 0 auto}
+.topbar{background:#1a1a1a;color:#fff;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.topbar h1{font-size:18px;font-weight:700}
+.topbar a{font-size:14px;color:#EDD9CE;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:5px}
+.topbar a:hover{color:#fff}
+.container{max-width:820px;margin:0 auto;padding:24px 16px 60px}
+.intro{background:var(--tint);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:16px;font-size:13px;color:var(--ink-soft);line-height:1.75}
+.intro b{color:var(--ink)}
+.intro .ok{color:#4E7D5B;margin-top:4px;display:block}
 
 body.gate-lock{overflow:hidden}
 #login-gate{position:fixed;inset:0;z-index:99999;background:#1a1a1a;display:flex;align-items:center;justify-content:center;padding:20px}
@@ -23,17 +44,100 @@ body.gate-lock{overflow:hidden}
 #login-gate label{font-size:14px;color:#333;font-weight:500;display:block;margin-bottom:5px}
 #login-gate .lg-field{margin-bottom:14px}
 #login-gate input{width:100%;height:44px;border:1px solid #D5D3CC;border-radius:8px;background:#FAFAF8;color:#1a1a1a;font-size:16px;font-family:inherit;padding:0 12px;outline:none}
-#login-gate input:focus{border-color:#C0392B;box-shadow:0 0 0 3px rgba(192,57,43,.1)}
-#login-gate button{width:100%;height:46px;border:none;border-radius:8px;background:#C0392B;color:#fff;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:6px}
-#login-gate button:hover{background:#A93226}
-#login-gate .lg-err{color:#C0392B;font-size:13px;text-align:center;margin-top:10px;min-height:18px}
+#login-gate input:focus{border-color:var(--fill);box-shadow:0 0 0 3px rgba(176,112,90,.15)}
+#login-gate button{width:100%;height:46px;border:none;border-radius:8px;background:var(--fill);color:#fff;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:6px}
+#login-gate button:hover{background:var(--accent-deep)}
+#login-gate .lg-err{color:var(--danger);font-size:13px;text-align:center;margin-top:10px;min-height:18px}
+
+/* ===== 員工清單卡片 ===== */
+.list-card{background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.06);overflow:hidden;margin-bottom:14px}
+.list-head{background:var(--fill);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.list-head .lh-left{display:flex;align-items:center;gap:10px}
+.list-head h2{font-size:16px;font-weight:700}
+.list-head .sync{font-size:11.5px;background:rgba(255,255,255,.2);border-radius:999px;padding:3px 10px;display:inline-flex;align-items:center;gap:4px}
+.list-head .lh-btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:none;border-radius:20px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:.15s}
+.btn-ghost-light{background:rgba(255,255,255,.16);color:#fff}
+.btn-ghost-light:hover{background:rgba(255,255,255,.28)}
+.btn-solid-dark{background:var(--accent-deep);color:#fff}
+.btn-solid-dark:hover{background:#734334}
+.btn-fill{background:var(--fill);color:#fff}
+.btn-fill:hover{background:var(--accent-deep)}
+.btn-outline{background:#fff;border:1px solid var(--border-mid);color:var(--ink)}
+.btn-outline:hover{background:var(--hover)}
+.btn-dashed{background:transparent;border:1px dashed var(--border-mid);color:var(--ink-soft)}
+.btn-dashed:hover{background:var(--hover)}
+.btn-icon{background:transparent;border:1px solid var(--border-mid);border-radius:20px;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-soft)}
+.btn-icon:hover{background:var(--hover);color:var(--ink)}
+.btn-icon.danger{color:var(--danger);border-color:#EBC9C2}
+.btn-icon.danger:hover{background:#FBEEEC}
+.pill-resigned{background:var(--tint-mid);color:var(--ink-soft);border:1px solid var(--border-mid);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:700}
+
+table.emp-table{width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed}
+table.emp-table col.c-no{width:32px}
+table.emp-table col.c-name{width:110px}
+table.emp-table col.c-tenure{width:168px}
+table.emp-table col.c-base{width:92px}
+table.emp-table col.c-bonus{width:88px}
+table.emp-table col.c-grade{width:94px}
+table.emp-table col.c-op{width:64px}
+table.emp-table thead th{background:var(--tint-mid);color:var(--ink-soft);font-size:12px;font-weight:700;text-align:left;padding:9px 10px;border-bottom:1px solid var(--border)}
+table.emp-table thead th.r{text-align:right}
+table.emp-table thead th.c{text-align:center}
+table.emp-table tbody tr.emp-row{border-bottom:1px solid var(--divider);cursor:pointer}
+table.emp-table tbody tr.emp-row:nth-child(even){background:var(--zebra)}
+table.emp-table tbody tr.emp-row:hover{background:var(--hover)}
+table.emp-table tbody tr.emp-row.resigned{opacity:.62}
+table.emp-table td{padding:7px 10px;vertical-align:middle}
+table.emp-table td.r{text-align:right}
+table.emp-table td.c{text-align:center}
+.name-cell{display:flex;align-items:center;gap:7px;font-weight:600}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--fill);flex:0 0 auto}
+.dot.off{background:transparent;border:1.5px solid var(--ink-faint)}
+.tenure-cell{display:flex;align-items:center;gap:5px;color:var(--ink-soft);font-size:12.5px}
+.tenure-cell svg{color:var(--accent)}
+.base-cell{color:var(--accent-deep);font-weight:700}
+.dash{color:var(--ink-faint)}
+.resign-sep td{background:var(--tint);color:var(--ink-soft);font-weight:700;font-size:12.5px;padding:8px 10px;border-bottom:1px solid var(--border)}
+.list-foot{display:flex;gap:22px;flex-wrap:wrap;padding:10px 18px;background:var(--tint);font-size:12.5px;color:var(--ink-soft)}
+.list-foot b{color:var(--ink);font-weight:700}
+
+/* ===== 展開詳細 ===== */
+.detail-wrap{background:var(--page-bg);border-top:1px solid var(--border);padding:16px 18px 20px;display:flex;flex-direction:column;gap:12px}
+.detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.detail-head .dh-name{font-size:17px;font-weight:700;color:var(--ink)}
+.detail-head .dh-sub{font-size:12px;color:var(--ink-faint);margin-top:2px}
+.detail-head .dh-stats{display:flex;gap:22px;flex-wrap:wrap;margin-top:6px}
+.detail-head .dh-stats .s-label{font-size:11px;color:var(--ink-faint);display:block}
+.detail-head .dh-stats .s-val{font-size:13.5px;font-weight:700;color:var(--ink)}
+.card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.card-title{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--accent-deep);margin-bottom:10px}
+.card-title .badge{margin-left:auto;background:var(--tint-mid);color:var(--accent-deep);font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px}
+.card-title .clear-link{margin-left:auto;font-size:11.5px;color:var(--ink-faint);background:none;border:none;cursor:pointer;text-decoration:underline}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:640px){.row2{grid-template-columns:1fr}}
+.f-line{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.f-line:last-child{margin-bottom:0}
+.f-label{width:68px;flex:0 0 68px;font-size:12.5px;color:var(--ink-soft)}
+.f-input,.f-select{flex:1;height:34px;border:1px solid var(--border-mid);border-radius:8px;padding:0 10px;font-size:14px;font-family:inherit;color:var(--ink);background:#fff}
+.f-input.num-input{font-family:'Nunito',sans-serif;font-weight:700}
+.f-input:disabled{background:var(--divider);color:var(--ink-faint)}
+.check-line{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft);margin-top:6px}
+.help-text{font-size:11px;color:var(--ink-faint);line-height:1.6;margin-top:8px}
+.dep-table{width:100%;border-collapse:collapse;font-size:13px}
+.dep-table th{text-align:left;font-size:11.5px;color:var(--ink-faint);font-weight:700;padding:4px 6px;border-bottom:1px solid var(--border)}
+.dep-table td{padding:5px 6px;vertical-align:middle}
+.dep-table tr:nth-child(even){background:var(--zebra)}
+.tag-billable{color:var(--danger);font-size:11.5px;font-weight:700;background:#FBEEEC;border-radius:6px;padding:2px 7px}
+.tag-exempt{color:#4E7D5B;font-size:11.5px;font-weight:700;background:#E7F1EA;border-radius:6px;padding:2px 7px}
+.allow-row{display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
 </style>
 </head>
 <body class="gate-lock">
 
 <div id="login-gate">
   <div class="lg-card">
-    <div class="lg-title">🔒 小蘋果托嬰中心｜員工資料管理</div>
+    <div class="lg-title">小蘋果托嬰中心｜員工資料管理</div>
     <div class="lg-sub">管理員登入</div>
     <div class="lg-field">
       <label>Email</label>
@@ -48,20 +152,30 @@ body.gate-lock{overflow:hidden}
   </div>
 </div>
 
+<div class="topbar">
+  <h1>員工資料管理</h1>
+  <a href="index.html">← 回到薪資系統</a>
+</div>
+
 <div class="container">
-  <div class="topbar">
-    <h1>📇 員工資料管理</h1>
-    <a href="index.html">← 回到薪資系統</a>
+  <div class="intro">
+    在這裡建立每位老師的固定資料（本薪、全勤獎金、投保級距、眷屬人數、登入帳號密碼、固定津貼），之後在薪資系統的「員工姓名」欄位輸入相同姓名（或用 LINE 回報載入），系統會自動帶入這些設定，不用每次重填。
+    <span class="ok">✓ 資料存在 Supabase 雲端資料庫，換電腦、換瀏覽器都會看到最新資料，新增／修改／刪除即時同步。</span>
   </div>
 
-  <div class="section" style="background:#EFF6FF;border:1px solid #BFDBFE">
-    <div style="font-size:13px;color:#666;margin-bottom:10px">在這裡建立每位老師的固定資料（本薪、全勤獎金、投保級距、眷屬人數、登入帳號密碼、固定津貼），之後在薪資系統的「員工姓名」欄位輸入相同姓名（或用 LINE 回報載入），系統會自動帶入這些設定，不用每次重填。<br>✅ 資料直接存在 <b>Supabase 雲端資料庫</b>，換電腦、換瀏覽器都會看到最新資料，新增/修改/刪除都會即時同步，不需要手動備份。</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-      <button type="button" onclick="addEmpDBRow()" style="padding:8px 14px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">➕ 新增員工</button>
-      <button type="button" onclick="exportEmpDB()" style="padding:8px 14px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">⬇️ 匯出目前清單（唯讀）</button>
+  <div class="list-card">
+    <div class="list-head">
+      <div class="lh-left">
+        <h2>員工資料管理</h2>
+        <span class="sync">雲端即時同步</span>
+      </div>
+      <div class="lh-btns">
+        <button type="button" class="btn btn-ghost-light" onclick="exportEmpDB()"><svg class="ic" viewBox="0 0 24 24" stroke="currentColor"><path d="M20 15v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> 匯出清單</button>
+        <button type="button" class="btn btn-solid-dark" onclick="addEmpDBRow()">＋ 新增員工</button>
+      </div>
     </div>
-    <textarea id="empdb-io" style="display:none;width:100%;height:120px;margin-bottom:10px;border:1px solid #D5D3CC;border-radius:8px;padding:8px;box-sizing:border-box;font-family:monospace;font-size:12px" placeholder="貼上備份的文字內容" readonly></textarea>
-    <div id="empdb-list" style="margin-bottom:10px"></div>
+    <textarea id="empdb-io" style="display:none;width:100%;height:120px;border:none;border-top:1px solid var(--border);padding:10px 16px;box-sizing:border-box;font-family:monospace;font-size:12px" placeholder="貼上備份的文字內容" readonly></textarea>
+    <div id="empdb-list"></div>
   </div>
 </div>
 
@@ -107,6 +221,27 @@ if(sb) sb.auth.getSession().then(function(res){ if(res.data.session) unlockGate(
 const LABOR=[[0x8214,0x341],[0x87f0,0x366],[0x8dcc,0x38c],[0x9538,0x3bb],[0x9ca4,0x3ea],[0xa410,0x41a],[0xab7c,0x44a],[0xb2e8,0x479]];
 const HEALTH=[[0x8214,0x204],[0x87f0,0x21c],[0x8dcc,0x233],[0x9538,0x250],[0x9ca4,0x26e],[0xa410,0x28b],[0xab7c,0x2a9],[0xb2e8,0x2c6]];
 
+/* ===== 線性圖示（Lucide 風格） ===== */
+function ic(name){
+  var paths={
+    calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+    chevronDown:'<path d="m6 9 6 6 6-6"/>',
+    chevronUp:'<path d="m18 15-6-6-6 6"/>',
+    trash:'<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/><path d="M10 11v6M14 11v6"/>',
+    key:'<circle cx="7.5" cy="15.5" r="3.5"/><path d="m10.5 12.5 7-7 3 3-2.5 2.5m-2-2 2 2"/>',
+    shield:'<path d="M12 2 4 5v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V5z"/>',
+    trending:'<path d="M3 17 9 11 13 15 21 7"/><path d="M15 7h6v6"/>',
+    users:'<path d="M17 21a6 6 0 0 0-11 0"/><circle cx="11.5" cy="9.5" r="4"/><path d="M22 20c0-2.5-1.7-4.3-4-4.8"/><circle cx="17" cy="8" r="2.6"/>',
+    wallet:'<path d="M20 12V7H5a2 2 0 0 1 0-4h13v4"/><path d="M3 5v14a2 2 0 0 0 2 2h15v-6"/><path d="M17 12a2 2 0 0 0 0 4h4v-4Z"/>',
+    plus:'<path d="M12 5v14M5 12h14"/>',
+    download:'<path d="M20 15v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/>',
+    x:'<path d="M18 6 6 18M6 6l12 12"/>',
+    arrowLeft:'<path d="M19 12H5M12 19l-7-7 7-7"/>',
+    pin:'<path d="M12 22s7-6.1 7-12A7 7 0 0 0 5 10c0 5.9 7 12 7 12Z"/><circle cx="12" cy="10" r="2.5"/>'
+  };
+  return '<svg class="ic" viewBox="0 0 24 24">'+(paths[name]||'')+'</svg>';
+}
+
 let employeeDB=[];
 let dependentsByEmp={};
 let allowancesByEmp={};
@@ -115,7 +250,7 @@ function rowToEmp(r){return {id:r.id,account:r.account||'',password:r.password||
 function rocDateFields(prefix,iso,onChangeExpr){
   const p=iso?iso.split('-'):['','',''];
   const y=p[0]?(+p[0]-1911):'',m=p[1]?+p[1]:'',d=p[2]?+p[2]:'';
-  const h='style="width:44px;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 4px;text-align:center"';
+  const h='style="width:44px;height:34px;border:1px solid var(--border-mid);border-radius:6px;padding:0 4px;text-align:center;font-family:inherit"';
   return '<input type="number" id="'+prefix+'-y" value="'+y+'" placeholder="民國" '+h+' onchange="'+onChangeExpr+'">年'
     +'<input type="number" id="'+prefix+'-m" value="'+m+'" placeholder="月" min="1" max="12" '+h+' onchange="'+onChangeExpr+'">月'
     +'<input type="number" id="'+prefix+'-d" value="'+d+'" placeholder="日" min="1" max="31" '+h+' onchange="'+onChangeExpr+'">日';
@@ -127,6 +262,12 @@ function readRocDate(prefix){
   if(!y||!m||!d)return '';
   const ad=y+1911;
   return ad+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+}
+function rocDateDisp(iso){
+  if(!iso)return '';
+  var p=String(iso).split('-');
+  if(p.length<3)return iso;
+  return (+p[0]-1911)+'/'+(+p[1])+'/'+(+p[2]);
 }
 function depAge(birthDate){
   if(!birthDate)return null;
@@ -144,6 +285,19 @@ function depIsBillable(d){
   const age=depAge(d.birth_date);
   if(age===null)return true;
   return age<65;
+}
+function tenureFull(hireDate, untilDate){
+  if(!hireDate) return '';
+  var start=new Date(hireDate+'T00:00:00');
+  if(isNaN(start)) return '';
+  var end=untilDate?new Date(untilDate+'T00:00:00'):new Date();
+  if(isNaN(end)||end<start) return '';
+  var y=end.getFullYear()-start.getFullYear();
+  var m=end.getMonth()-start.getMonth();
+  var d=end.getDate()-start.getDate();
+  if(d<0){ m--; d+=new Date(end.getFullYear(),end.getMonth(),0).getDate(); }
+  if(m<0){ y--; m+=12; }
+  return y+' 年 '+m+' 個月 '+d+' 天';
 }
 let piiByEmp={};
 function loadEmployeePii(){
@@ -208,52 +362,85 @@ function loadEmployeeDB(){
   });
 }
 function empDBInsGradeOptions(selectedIdx){
-  return LABOR.map(([sal,fee],i)=>'<option value="'+i+'"'+(i===+selectedIdx?' selected':'')+'>'+sal.toLocaleString('zh-TW')+'元</option>').join('');
+  return LABOR.map(([sal,fee],i)=>'<option value="'+i+'"'+(i===+selectedIdx?' selected':'')+'>'+sal.toLocaleString('zh-TW')+' 元</option>').join('');
 }
 function empDBHealthGradeOptions(selectedIdx){
-  return HEALTH.map(([sal,fee],i)=>'<option value="'+i+'"'+(i===+selectedIdx?' selected':'')+'>'+sal.toLocaleString('zh-TW')+'元</option>').join('');
+  return HEALTH.map(([sal,fee],i)=>'<option value="'+i+'"'+(i===+selectedIdx?' selected':'')+'>'+sal.toLocaleString('zh-TW')+' 元</option>').join('');
 }
 function toggleEmpExpand(id){expandedEmpId=(expandedEmpId===id)?null:id;renderEmpDBList();}
 function renderEmpDetail(e,i){
   const deps=dependentsByEmp[e.id]||[];
   const billableCount=deps.filter(depIsBillable).length;
   const exemptCount=deps.length-billableCount;
-  let html='<div style="padding:10px;background:#F7F6F3;border-radius:8px;margin:-4px 0 8px;display:flex;flex-direction:column;gap:8px">';
-  html+='<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">';
-  html+='<label style="font-size:12px;color:#666">到職日</label>'+rocDateFields('hire-date-'+i,e.hireDate,'updateEmpDBField('+i+',\'hireDate\',readRocDate(\'hire-date-'+i+'\'))');
-  html+=e.resignDate?('<label style="font-size:12px;color:#C0392B">離職日</label>'+rocDateFields('resign-date-'+i,e.resignDate,'updateEmpDBField('+i+',\'resignDate\',readRocDate(\'resign-date-'+i+'\'))')+'<button type="button" onclick="updateEmpDBField('+i+',\'resignDate\',\'\');renderEmpDBList()" style="color:#999;background:none;border:none;cursor:pointer;font-size:12px">✕清除</button>')
-    :('<button type="button" onclick="updateEmpDBField('+i+',\'resignDate\',new Date().toISOString().slice(0,10));renderEmpDBList()" style="padding:5px 8px;border:1px dashed #C5C3BB;border-radius:6px;background:transparent;font-size:12px;cursor:pointer;color:#999">＋設定離職日</button>');
-  html+='<label style="font-size:12px;color:#666">職稱</label><input type="text" value="'+(e.jobTitle||'').replace(/"/g,'&quot;')+'" style="width:100px;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateEmpDBField('+i+',\'jobTitle\',this.value)">';
-  html+='<label style="font-size:12px;color:#666">勞保級距</label><select style="height:32px;border:1px solid #D5D3CC;border-radius:6px" onchange="updateEmpDBField('+i+',\'insGrade\',+this.value)">'+empDBInsGradeOptions(e.insGrade)+'</select>';
-  html+='<label style="font-size:12px;color:#666">健保級距</label><select style="height:32px;border:1px solid #D5D3CC;border-radius:6px" onchange="updateEmpDBField('+i+',\'healthInsGrade\',+this.value)">'+empDBHealthGradeOptions(e.healthInsGrade)+'</select>';
-  html+='<label style="font-size:12px;color:#B45309;display:flex;align-items:center;gap:4px"><input type="checkbox" '+(e.laborInsExempt?'checked':'')+' onchange="updateEmpDBField('+i+',\'laborInsExempt\',this.checked)">固定免收勞保費（例如已領勞保老年給付者）</label>';
+  const tenure=tenureFull(e.hireDate, e.resignDate||null);
+
+  let html='<div class="detail-wrap">';
+
+  html+='<div class="detail-head">';
+  html+='<div><div class="dh-name">'+(e.name||'（未命名）')+'</div><div class="dh-sub">'+(e.jobTitle||'－')+'．編號 '+e.id+'</div>';
+  html+='<div class="dh-stats">';
+  html+='<div><span class="s-label">在職年資</span><span class="s-val">'+(tenure||'－')+'</span></div>';
+  html+='<div><span class="s-label">生日</span><span class="s-val">'+(rocDateDisp(e.birthDate)||'未設定')+'</span></div>';
+  html+='<div><span class="s-label">身分證字號</span><span class="s-val">'+(e.nationalId||'未設定')+'</span></div>';
+  html+='</div></div>';
+  html+='<button type="button" class="btn btn-outline" onclick="toggleEmpExpand('+e.id+')">'+ic('chevronUp')+' 收合</button>';
   html+='</div>';
-  html+='<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:8px;background:#F3EFEA;border:1px dashed #999;border-radius:8px">';
-  html+='<span style="font-size:12px;color:#555;font-weight:700">生日／身分證字號（敏感個資，需登入才看得到）</span>';
-  html+=rocDateFields('pii-birth-'+i,e.birthDate,'updateEmpPii('+i+',\'birthDate\',readRocDate(\'pii-birth-'+i+'\'))');
-  html+='<input type="text" value="'+(e.nationalId||'').replace(/"/g,'&quot;')+'" placeholder="身分證字號" maxlength="10" style="width:120px;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px;font-family:monospace" oninput="updateEmpPii('+i+',\'nationalId\',this.value.toUpperCase())">';
+
+  html+='<div class="row2">';
+  html+='<div class="card"><div class="card-title">'+ic('calendar')+' 任職</div>';
+  html+='<div class="f-line"><span class="f-label">到職日</span>'+rocDateFields('hire-date-'+i,e.hireDate,'updateEmpDBField('+i+',\'hireDate\',readRocDate(\'hire-date-'+i+'\'))')+'</div>';
+  if(e.resignDate){
+    html+='<div class="f-line"><span class="f-label">離職日</span>'+rocDateFields('resign-date-'+i,e.resignDate,'updateEmpDBField('+i+',\'resignDate\',readRocDate(\'resign-date-'+i+'\'))')+'<button type="button" class="btn-icon danger" title="清除離職日" onclick="updateEmpDBField('+i+',\'resignDate\',\'\');renderEmpDBList()">'+ic('x')+'</button></div>';
+  }else{
+    html+='<div class="f-line"><span class="f-label">離職日</span><button type="button" class="btn btn-dashed" onclick="updateEmpDBField('+i+',\'resignDate\',new Date().toISOString().slice(0,10));renderEmpDBList()">＋設定離職</button></div>';
+  }
+  html+='<div class="f-line"><span class="f-label">職稱</span><input type="text" class="f-input" value="'+(e.jobTitle||'').replace(/"/g,'&quot;')+'" oninput="updateEmpDBField('+i+',\'jobTitle\',this.value)"></div>';
   html+='</div>';
-  html+='<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:8px;background:#FFF7E8;border:1px dashed #D9A441;border-radius:8px">';
-  html+='<span style="font-size:12px;color:#8a5c1e;font-weight:700">月中調薪（例如試用期滿）</span>';
-  html+=e.raiseDate?('<label style="font-size:12px;color:#666">生效日</label>'+rocDateFields('raise-date-'+i,e.raiseDate,'updateEmpDBField('+i+',\'raiseDate\',readRocDate(\'raise-date-'+i+'\'))')+'<button type="button" onclick="updateEmpDBField('+i+',\'raiseDate\',\'\');renderEmpDBList()" style="color:#999;background:none;border:none;cursor:pointer;font-size:12px">✕清除</button>')
-    :('<button type="button" onclick="updateEmpDBField('+i+',\'raiseDate\',new Date().toISOString().slice(0,10));renderEmpDBList()" style="padding:5px 8px;border:1px dashed #C5C3BB;border-radius:6px;background:transparent;font-size:12px;cursor:pointer;color:#999">＋設定調薪生效日</button>');
+
+  html+='<div class="card"><div class="card-title">'+ic('pin')+' 投保級距</div>';
+  html+='<div class="f-line"><span class="f-label">勞保</span><select class="f-select" onchange="updateEmpDBField('+i+',\'insGrade\',+this.value)">'+empDBInsGradeOptions(e.insGrade)+'</select></div>';
+  html+='<div class="f-line"><span class="f-label">健保</span><select class="f-select" onchange="updateEmpDBField('+i+',\'healthInsGrade\',+this.value)">'+empDBHealthGradeOptions(e.healthInsGrade)+'</select></div>';
+  html+='<label class="check-line"><input type="checkbox" '+(e.laborInsExempt?'checked':'')+' onchange="updateEmpDBField('+i+',\'laborInsExempt\',this.checked)">固定免收勞保費（已領勞保老年給付者）</label>';
+  html+='</div>';
+  html+='</div>';
+
+  html+='<div class="card"><div class="card-title">'+ic('key')+' 登入帳號</div>';
+  html+='<div class="row2">';
+  html+='<div class="f-line"><span class="f-label">帳號</span><input type="text" class="f-input" value="'+(e.account||'').replace(/"/g,'&quot;')+'" oninput="updateEmpDBField('+i+',\'account\',this.value)"></div>';
+  html+='<div class="f-line"><span class="f-label">密碼</span><input type="text" class="f-input" value="'+(e.password||'').replace(/"/g,'&quot;')+'" oninput="updateEmpDBField('+i+',\'password\',this.value)"></div>';
+  html+='</div><div class="help-text">老師用此帳密登入 report.html 回報請假加班</div>';
+  html+='</div>';
+
+  html+='<div class="row2">';
+  html+='<div class="card"><div class="card-title">'+ic('trending')+' 月中調薪'+(e.raiseDate?'<span class="badge">已生效</span>':'')+(e.raiseDate?'<button type="button" class="clear-link" onclick="updateEmpDBField('+i+',\'raiseDate\',\'\');renderEmpDBList()">清除設定</button>':'')+'</div>';
   if(e.raiseDate){
-    html+='<label style="font-size:12px;color:#666">調薪後本薪</label><input type="number" value="'+(e.raiseNewBase||'')+'" placeholder="例：36000" style="width:90px;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateEmpDBField('+i+',\'raiseNewBase\',+this.value)">';
-    html+='<button type="button" onclick="promoteRaise('+i+')" style="padding:5px 10px;border:none;border-radius:6px;background:#1B6E3A;color:#fff;font-size:12px;cursor:pointer">✓ 已生效，套用為正式本薪並清除設定</button>';
+    html+='<div class="f-line"><span class="f-label">生效日</span>'+rocDateFields('raise-date-'+i,e.raiseDate,'updateEmpDBField('+i+',\'raiseDate\',readRocDate(\'raise-date-'+i+'\'))')+'</div>';
+    html+='<div class="f-line"><span class="f-label">調薪後</span><input type="number" class="f-input num-input" value="'+(e.raiseNewBase||'')+'" placeholder="例：36000" oninput="updateEmpDBField('+i+',\'raiseNewBase\',+this.value)"></div>';
+    html+='<button type="button" class="btn btn-fill" style="width:100%;justify-content:center;margin-top:4px" onclick="promoteRaise('+i+')">✓ 套用為正式本薪並清除設定</button>';
+    html+='<div class="help-text">生效當月薪資計算器會自動把本薪拆成「生效日前用原本薪、生效日後用調薪後本薪」兩段合計（按30天基準分配，不受大小月影響）；生效月份過了之後直接改用調薪後本薪。確認無誤後按上方按鈕套用為正式本薪。</div>';
+  }else{
+    html+='<button type="button" class="btn btn-dashed" onclick="updateEmpDBField('+i+',\'raiseDate\',new Date().toISOString().slice(0,10));renderEmpDBList()">＋設定調薪生效日（例如試用期滿）</button>';
   }
   html+='</div>';
-  if(e.raiseDate)html+='<div style="font-size:11.5px;color:#8a5c1e;margin-top:-2px">生效當月，薪資計算器會自動把本薪拆成「生效日前用原本薪、生效日後用調薪後本薪」兩段合計（固定按30天基準分配，不受大小月影響）；生效月份過了之後，計算器會直接改用「調薪後本薪」試算。等正式調薪確認無誤，記得按左邊按鈕套用成正式本薪，之後就不用再靠這組設定了。</div>';
-  html+='<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:8px;background:#EAF3F8;border:1px dashed #6FA8C7;border-radius:8px">';
-  html+='<span style="font-size:12px;color:#2C5A73;font-weight:700">投保級距調整</span>';
-  html+=e.gradeEffDate?('<label style="font-size:12px;color:#666">生效日</label>'+rocDateFields('grade-date-'+i,e.gradeEffDate,'updateEmpDBField('+i+',\'gradeEffDate\',readRocDate(\'grade-date-'+i+'\'))')+'<button type="button" onclick="updateEmpDBField('+i+',\'gradeEffDate\',\'\');renderEmpDBList()" style="color:#999;background:none;border:none;cursor:pointer;font-size:12px">✕清除</button>')
-    :('<button type="button" onclick="updateEmpDBField('+i+',\'gradeEffDate\',new Date().toISOString().slice(0,10));renderEmpDBList()" style="padding:5px 8px;border:1px dashed #C5C3BB;border-radius:6px;background:transparent;font-size:12px;cursor:pointer;color:#999">＋設定調整生效月</button>');
+
+  html+='<div class="card"><div class="card-title">'+ic('shield')+' 投保級距調整'+(e.gradeEffDate?'<span class="badge">已生效</span>':'')+(e.gradeEffDate?'<button type="button" class="clear-link" onclick="updateEmpDBField('+i+',\'gradeEffDate\',\'\');renderEmpDBList()">清除設定</button>':'')+'</div>';
   if(e.gradeEffDate){
-    html+='<label style="font-size:12px;color:#666">調整後級距</label><select style="height:32px;border:1px solid #D5D3CC;border-radius:6px" onchange="updateEmpDBField('+i+',\'gradeNewGrade\',+this.value)">'+empDBInsGradeOptions(e.gradeNewGrade)+'</select>';
-    html+='<button type="button" onclick="promoteGrade('+i+')" style="padding:5px 10px;border:none;border-radius:6px;background:#1B6E3A;color:#fff;font-size:12px;cursor:pointer">✓ 已生效，套用為正式級距並清除設定</button>';
+    html+='<div class="f-line"><span class="f-label">生效日</span>'+rocDateFields('grade-date-'+i,e.gradeEffDate,'updateEmpDBField('+i+',\'gradeEffDate\',readRocDate(\'grade-date-'+i+'\'))')+'</div>';
+    html+='<div class="f-line"><span class="f-label">調整後</span><select class="f-select" onchange="updateEmpDBField('+i+',\'gradeNewGrade\',+this.value)">'+empDBInsGradeOptions(e.gradeNewGrade)+'</select></div>';
+    html+='<button type="button" class="btn btn-fill" style="width:100%;justify-content:center;margin-top:4px" onclick="promoteGrade('+i+')">✓ 套用為正式級距並清除設定</button>';
+    html+='<div class="help-text">生效月份（含）之後直接改用調整後級距試算勞健保（整月套用，不像調薪需要拆算）；生效月之前仍照原級距計算。確認無誤後按上方按鈕套用為正式級距。</div>';
+  }else{
+    html+='<button type="button" class="btn btn-dashed" onclick="updateEmpDBField('+i+',\'gradeEffDate\',new Date().toISOString().slice(0,10));renderEmpDBList()">＋設定調整生效月</button>';
   }
   html+='</div>';
-  if(e.gradeEffDate)html+='<div style="font-size:11.5px;color:#2C5A73;margin-top:-2px">生效月份（含）之後，薪資計算器會直接改用「調整後級距」試算勞健保（整月套用，不像調薪需要拆算）；生效月之前仍照原本的勞保級距／健保級距計算。確認正式調整無誤後，記得按左邊按鈕套用成正式級距，之後就不用再靠這組設定了。</div>';
-  html+='<div style="font-size:13px;font-weight:600;color:#333;margin-top:4px">👪 眷屬管理</div>';
+  html+='</div>';
+
+  html+='<div class="card"><div class="card-title">'+ic('pin')+' 生日／身分證字號<span class="badge" style="background:var(--tint);color:var(--ink-soft)">敏感個資．需登入才看得到</span></div>';
+  html+='<div class="row2">';
+  html+='<div class="f-line"><span class="f-label">生日</span>'+rocDateFields('pii-birth-'+i,e.birthDate,'updateEmpPii('+i+',\'birthDate\',readRocDate(\'pii-birth-'+i+'\'))')+'</div>';
+  html+='<div class="f-line"><span class="f-label">身分證</span><input type="text" class="f-input" style="font-family:monospace" value="'+(e.nationalId||'').replace(/"/g,'&quot;')+'" maxlength="10" oninput="updateEmpPii('+i+',\'nationalId\',this.value.toUpperCase())"></div>';
+  html+='</div></div>';
+
   const depsSorted=deps.slice().sort(function(a,b){
     const ageA=depAge(a.birth_date), ageB=depAge(b.birth_date);
     if(ageA===null&&ageB===null)return 0;
@@ -261,39 +448,49 @@ function renderEmpDetail(e,i){
     if(ageB===null)return -1;
     return ageB-ageA;
   });
-  html+='<div>'+depsSorted.map(function(d){
-    const billable=depIsBillable(d);
-    const age=depAge(d.birth_date);
-    const tag=billable?'<span style="color:#B45309;font-size:12px">計費</span>':'<span style="color:#1B6E3A;font-size:12px">免計費</span>';
-    const ageTag=age!==null?('（'+age+'歲'+(age>=65?'，滿65':'')+'）'):'';
-    return '<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap">'
-      +'<input type="text" value="'+(d.name||'').replace(/"/g,'&quot;')+'" placeholder="姓名" style="width:80px;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateDependentField('+d.id+',\'name\',this.value)">'
-      +'<input type="text" value="'+(d.relation||'').replace(/"/g,'&quot;')+'" placeholder="關係" style="width:70px;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateDependentField('+d.id+',\'relation\',this.value)">'
-      +rocDateFields('dep-birth-'+d.id,d.birth_date,'updateDependentField('+d.id+',\'birth_date\',readRocDate(\'dep-birth-'+d.id+'\'),true)')
-      +'<span style="font-size:12px;color:#999">'+ageTag+'</span>'
-      +tag
-      +'<label style="font-size:12px;color:#666;display:flex;align-items:center;gap:3px"><input type="checkbox" '+(d.billable_override===true?'checked':'')+' onchange="updateDependentField('+d.id+',\'billable_override\',this.checked?true:null,true)">強制計費</label>'
-      +'<button type="button" onclick="removeDependent('+e.id+','+d.id+')" style="color:#C0392B;background:none;border:none;cursor:pointer;font-size:12px">✕</button>'
-      +'</div>';
-  }).join('')+'</div>';
-  html+='<button type="button" onclick="addDependent('+e.id+')" style="align-self:flex-start;padding:5px 10px;border:1px dashed #C5C3BB;border-radius:6px;background:transparent;font-size:12px;cursor:pointer">＋新增眷屬</button>';
-  html+='<div style="font-size:12px;color:#666;margin-top:4px">眷屬總數:'+deps.length+'　免計費:'+exemptCount+'　計費:'+billableCount+'</div>';
+  html+='<div class="card"><div class="card-title">'+ic('users')+' 眷屬　共'+deps.length+'人・免計費'+exemptCount+'・計費'+billableCount+'<button type="button" class="btn btn-dashed" style="margin-left:auto" onclick="addDependent('+e.id+')">'+ic('plus')+' 新增眷屬</button></div>';
+  if(depsSorted.length){
+    html+='<table class="dep-table"><thead><tr><th>姓名</th><th>關係</th><th>生日</th><th>年齡</th><th>健保計費</th><th>強制計費</th><th></th></tr></thead><tbody>';
+    html+=depsSorted.map(function(d){
+      const billable=depIsBillable(d);
+      const age=depAge(d.birth_date);
+      const tag=billable?'<span class="tag-billable">計費</span>':'<span class="tag-exempt">免計費</span>';
+      const ageTxt=age!==null?(age+' 歲'+(age>=65?'・滿65':'')):'－';
+      return '<tr>'
+        +'<td><input type="text" class="f-input" style="height:30px" value="'+(d.name||'').replace(/"/g,'&quot;')+'" placeholder="姓名" oninput="updateDependentField('+d.id+',\'name\',this.value)"></td>'
+        +'<td><input type="text" class="f-input" style="height:30px;width:70px" value="'+(d.relation||'').replace(/"/g,'&quot;')+'" placeholder="關係" oninput="updateDependentField('+d.id+',\'relation\',this.value)"></td>'
+        +'<td style="white-space:nowrap">'+rocDateFields('dep-birth-'+d.id,d.birth_date,'updateDependentField('+d.id+',\'birth_date\',readRocDate(\'dep-birth-'+d.id+'\'),true)')+'</td>'
+        +'<td style="color:var(--ink-soft);white-space:nowrap">'+ageTxt+'</td>'
+        +'<td>'+tag+'</td>'
+        +'<td><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-soft)"><input type="checkbox" '+(d.billable_override===true?'checked':'')+' onchange="updateDependentField('+d.id+',\'billable_override\',this.checked?true:null,true)"></label></td>'
+        +'<td><button type="button" class="btn-icon danger" onclick="removeDependent('+e.id+','+d.id+')">'+ic('x')+'</button></td>'
+        +'</tr>';
+    }).join('');
+    html+='</tbody></table>';
+  }
+  html+='</div>';
+
   const allowances=allowancesByEmp[e.id]||[];
-  html+='<div style="font-size:13px;font-weight:600;color:#333;margin-top:8px">💰 固定津貼（每月自動帶入「其它應領項目」）</div>';
-  html+='<div>'+allowances.map(function(a){
-    return '<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap">'
-      +'<input type="text" value="'+(a.name||'').replace(/"/g,'&quot;')+'" placeholder="津貼名稱，例：學檔津貼(2人)" style="width:180px;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateAllowanceField('+a.id+',\'name\',this.value)">'
-      +'<input type="number" value="'+(a.amount||0)+'" placeholder="金額" style="width:90px;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateAllowanceField('+a.id+',\'amount\',+this.value)">'
-      +'<button type="button" onclick="removeAllowance('+e.id+','+a.id+')" style="color:#C0392B;background:none;border:none;cursor:pointer;font-size:12px">✕</button>'
-      +'</div>';
-  }).join('')+'</div>';
-  html+='<button type="button" onclick="addAllowance('+e.id+')" style="align-self:flex-start;padding:5px 10px;border:1px dashed #C5C3BB;border-radius:6px;background:transparent;font-size:12px;cursor:pointer">＋新增津貼項目</button>';
+  html+='<div class="card"><div class="card-title">'+ic('wallet')+' 固定津貼（每月自動帶入「其它應領項目」）<button type="button" class="btn btn-dashed" style="margin-left:auto" onclick="addAllowance('+e.id+')">'+ic('plus')+' 新增津貼項目</button></div>';
+  if(allowances.length){
+    html+=allowances.map(function(a){
+      return '<div class="allow-row">'
+        +'<input type="text" class="f-input" style="flex:2" value="'+(a.name||'').replace(/"/g,'&quot;')+'" placeholder="津貼名稱，例：學檔津貼(2人)" oninput="updateAllowanceField('+a.id+',\'name\',this.value)">'
+        +'<input type="number" class="f-input num-input" style="width:100px" value="'+(a.amount||0)+'" placeholder="金額" oninput="updateAllowanceField('+a.id+',\'amount\',+this.value)">'
+        +'<button type="button" class="btn-icon danger" onclick="removeAllowance('+e.id+','+a.id+')">'+ic('x')+'</button>'
+        +'</div>';
+    }).join('');
+  }else{
+    html+='<div class="help-text">目前尚未設定固定津貼</div>';
+  }
+  html+='</div>';
+
   html+='</div>';
   return html;
 }
 function renderEmpDBList(){
   const box=document.getElementById('empdb-list');
-  if(!employeeDB.length){box.innerHTML='<div style="color:#999;font-size:13px">尚未建立任何員工資料</div>';return;}
+  if(!employeeDB.length){box.innerHTML='<div style="padding:16px 18px;color:var(--ink-faint);font-size:13px">尚未建立任何員工資料</div>';return;}
   const indices=employeeDB.map((e,i)=>i);
   const byHireDate=(ia,ib)=>{
     const a=employeeDB[ia].hireDate||'',b=employeeDB[ib].hireDate||'';
@@ -308,26 +505,40 @@ function renderEmpDBList(){
   };
   const active=indices.filter(i=>!employeeDB[i].resignDate).sort(byHireDate);
   const resigned=indices.filter(i=>employeeDB[i].resignDate).sort(byResignDateDesc);
+
+  let baseSum=0, bonusSum=0;
+  active.forEach(i=>{ baseSum+=(+employeeDB[i].base||0); bonusSum+=(+employeeDB[i].bonus||0); });
+
   const renderRow=(i,seq)=>{
     const e=employeeDB[i];
-    let row='<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap;padding:8px;background:#fff;border:1px solid #E5E3DC;border-radius:8px'+(e.resignDate?';opacity:.7':'')+'">'
-    +'<span style="width:28px;text-align:center;color:#999;font-size:13px">'+seq+'</span>'
-    +'<input type="text" value="'+(e.name||'').replace(/"/g,'&quot;')+'" placeholder="姓名" style="width:80px;height:34px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateEmpDBField('+i+',\'name\',this.value)">'
-    +'<input type="text" value="'+(e.account||'').replace(/"/g,'&quot;')+'" placeholder="登入帳號" style="width:150px;height:34px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateEmpDBField('+i+',\'account\',this.value)">'
-    +'<input type="text" value="'+(e.password||'').replace(/"/g,'&quot;')+'" placeholder="密碼" style="width:90px;height:34px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateEmpDBField('+i+',\'password\',this.value)">'
-    +'<input type="number" value="'+(e.base||'')+'" placeholder="本薪" style="width:90px;height:34px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateEmpDBField('+i+',\'base\',+this.value)">'
-    +'<input type="number" value="'+(e.bonus||'')+'" placeholder="全勤獎金" style="width:90px;height:34px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateEmpDBField('+i+',\'bonus\',+this.value)">'
-    +'<button type="button" onclick="toggleEmpExpand('+e.id+')" style="padding:6px 10px;border:1px solid #D5D3CC;border-radius:6px;background:#FAFAF8;cursor:pointer;font-size:13px">'+(expandedEmpId===e.id?'▼ 收合':'▶ 展開')+'</button>'
-    +'<button type="button" onclick="removeEmpDBRow('+i+')" style="color:#C0392B;background:none;border:none;cursor:pointer;font-size:13px">✕刪除</button>'
-    +'</div>';
-    if(expandedEmpId===e.id)row+=renderEmpDetail(e,i);
+    const isResigned=!!e.resignDate;
+    const gradeAmt=e.insGrade!==''&&e.insGrade!==undefined&&LABOR[e.insGrade]?LABOR[e.insGrade][0].toLocaleString('zh-TW'):'';
+    let row='<tr class="emp-row'+(isResigned?' resigned':'')+'" onclick="toggleEmpExpand('+e.id+')">'
+      +'<td class="c" style="color:var(--ink-faint)">'+seq+'</td>'
+      +'<td><div class="name-cell"><span class="dot'+(isResigned?' off':'')+'"></span>'+(e.name||'（未命名）')+'</div></td>'
+      +'<td>'+(isResigned?'<span class="dash">—</span>':'<span class="tenure-cell">'+ic('calendar')+(tenureFull(e.hireDate)||'<span class="dash">—</span>')+'</span>')+'</td>'
+      +'<td class="r base-cell num">'+(e.base?Number(e.base).toLocaleString('zh-TW'):'<span class="dash">—</span>')+'</td>'
+      +'<td class="r num" style="color:var(--ink-soft)">'+(e.bonus?Number(e.bonus).toLocaleString('zh-TW'):'<span class="dash">—</span>')+'</td>'
+      +'<td class="r num" style="color:var(--ink-soft)">'+(gradeAmt||'<span class="dash">—</span>')+'</td>'
+      +'<td class="c" onclick="event.stopPropagation()">'
+      +(isResigned
+        ? '<span class="pill-resigned">離職</span>'
+        : '<button type="button" class="btn-icon" title="展開" onclick="toggleEmpExpand('+e.id+')">'+ic(expandedEmpId===e.id?'chevronUp':'chevronDown')+'</button> <button type="button" class="btn-icon danger" title="刪除" onclick="removeEmpDBRow('+i+')">'+ic('trash')+'</button>')
+      +'</td>'
+      +'</tr>';
+    if(expandedEmpId===e.id)row+='<tr><td colspan="7" style="padding:0">'+renderEmpDetail(e,i)+'</td></tr>';
     return row;
   };
-  let out=active.map((i,pos)=>renderRow(i,pos+1)).join('');
+
+  let out='<table class="emp-table"><colgroup><col class="c-no"><col class="c-name"><col class="c-tenure"><col class="c-base"><col class="c-bonus"><col class="c-grade"><col class="c-op"></colgroup>';
+  out+='<thead><tr><th>#</th><th>姓名</th><th>在職年資</th><th class="r">本薪</th><th class="r">全勤獎金</th><th class="r">投保級距</th><th class="c">操作</th></tr></thead><tbody>';
+  out+=active.map((i,pos)=>renderRow(i,pos+1)).join('');
   if(resigned.length){
-    out+='<div style="margin:14px 0 8px;padding-top:10px;border-top:2px dashed #D5D3CC;font-size:13px;font-weight:700;color:#999">已離職（'+resigned.length+'）</div>';
+    out+='<tr class="resign-sep"><td colspan="7">已離職（'+resigned.length+'）</td></tr>';
     out+=resigned.map((i,pos)=>renderRow(i,active.length+pos+1)).join('');
   }
+  out+='</tbody></table>';
+  out+='<div class="list-foot"><span>在職 <b>'+active.length+'</b></span><span>本薪合計 <b>'+baseSum.toLocaleString('zh-TW')+'</b></span><span>全勤獎金合計 <b>'+bonusSum.toLocaleString('zh-TW')+'</b></span></div>';
   box.innerHTML=out;
 }
 function empFieldToColumn(field){
@@ -462,6 +673,6 @@ function removeAllowance(empId,allowId){
 }
 function exportEmpDB(){const io=document.getElementById('empdb-io');io.style.display='block';io.value=JSON.stringify(employeeDB,null,2);io.focus();io.select();}
 </script>
-<div id="versionStamp" style="position:fixed;bottom:6px;right:10px;font-size:11px;color:#999;background:rgba(255,255,255,.85);padding:2px 8px;border-radius:8px;z-index:9999;">最後更新:2026-07-10</div>
+<div id="versionStamp" style="position:fixed;bottom:6px;right:10px;font-size:11px;color:#999;background:rgba(255,255,255,.85);padding:2px 8px;border-radius:8px;z-index:9999;">最後更新:2026-09-05</div>
 </body>
 </html>
