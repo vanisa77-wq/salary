@@ -1019,17 +1019,21 @@ function updateNameBadge(){
       var allowances=allowancesByEmp[emp.id]||[];
       var allowanceTxt=allowances.length?allowances.map(function(a){return (a.name||'津貼')+' '+Number(a.amount||0).toLocaleString('zh-TW')+'元';}).join('、'):'無';
       var tenure=tenureText(emp.hireDate, emp.resignDate||null);
+      var headline=name;
+      var headTags=[];
+      if(tenure)headTags.push('在職年資 '+tenure);
+      if(emp.birthDate||emp.nationalId)headTags.push('🔒生日 '+(rocDateDisp(emp.birthDate)||'未設定'));
+      if(emp.birthDate||emp.nationalId)headTags.push('身分證字號 '+(emp.nationalId||'未設定'));
+      if(headTags.length)headline+='　<span style="font-size:13px;font-weight:700;color:#B45309">('+headTags.join('／')+')</span>';
       var sub='到職日 '+(rocDateDisp(emp.hireDate)||'未設定')
         +(emp.resignDate?'　離職日 '+rocDateDisp(emp.resignDate):'')
-        +(tenure?'　在職年資 '+tenure:'')
         +'　職稱 '+(emp.jobTitle||'－')
         +'　勞保級距 '+laborGrade.toLocaleString('zh-TW')+'元'
         +'　健保級距 '+healthGrade.toLocaleString('zh-TW')+'元'
         +'　眷屬 '+depTotal+'人(計費'+depBillable+')'
         +'　固定津貼:'+allowanceTxt;
-      if(emp.birthDate||emp.nationalId)sub+='　🔒生日 '+(rocDateDisp(emp.birthDate)||'未設定')+'　身分證字號 '+(emp.nationalId||'未設定');
       if(emp.raiseDate)sub+='　📈調薪生效日 '+rocDateDisp(emp.raiseDate)+'→調薪後本薪 '+Number(emp.raiseNewBase||0).toLocaleString('zh-TW')+'元　全勤 '+Number(emp.bonus||0).toLocaleString('zh-TW')+'元';
-      badge.innerHTML='🧑‍🏫 目前計算：'+name+(y&&mo?'　'+y+'年'+mo+'月':'')
+      badge.innerHTML='🧑‍🏫 目前計算：'+headline+(y&&mo?'　'+y+'年'+mo+'月':'')
         +'<div style="font-size:14px;font-weight:400;color:#3F435E;margin-top:4px;line-height:1.8">'+sub+'</div>';
     }
   }
