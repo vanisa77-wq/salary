@@ -991,7 +991,7 @@ function getRaiseSplitNote(){
   var daysOld=Math.min(rd-1,30), daysNew=30-daysOld;
   var oldAmt=Math.round((emp.base||0)/30*daysOld);
   var newAmt=Math.round((emp.raiseNewBase||0)/30*daysNew);
-  return '📈'+rd+'日調薪生效:舊薪資'+fmt(emp.base||0)+'元×'+daysOld+'天＋調薪後'+fmt(emp.raiseNewBase||0)+'元×'+daysNew+'天(固定合計30天)＝'+fmt(oldAmt+newAmt)+'元';
+  return '📈'+mo+'/'+rd+'調薪為'+fmt(emp.raiseNewBase||0)+'元:'+fmt(emp.base||0)+'×('+daysOld+'/30)＋'+fmt(emp.raiseNewBase||0)+'×('+daysNew+'/30)＝'+fmt(oldAmt+newAmt)+'元';
 }
 function rocDateDisp(iso){
   if(!iso)return '';
