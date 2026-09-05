@@ -976,16 +976,41 @@ function exportPDF(){const _0x4a8d2e=_0x2976a6,_0x36d57a=document['getElementByI
     alert('匯出圖片時發生錯誤，請把這段訊息回報給開發者：\n'+err.message);
   });
 },0x12c);}function getWeekDay(_0xe9559d){const _0x5e52f5=_0x2976a6;if(!_0xe9559d)return'';const _0x9c1c24=new Date(_0xe9559d);if(isNaN(_0x9c1c24))return'';return['日','一','二','三','四','五','六'][_0x9c1c24["getDay"]()];}function fmtDateWithDay(_0x5ed307){const _0x4678cd=_0x2976a6;if(!_0x5ed307)return'';const _0x449a08=new Date(_0x5ed307);if(isNaN(_0x449a08))return _0x5ed307;return _0x449a08["getMonth"]()+0x1+'/'+_0x449a08["getDate"]()+'（'+getWeekDay(_0x5ed307)+'）';}const HOLIDAYS_2026={'2026-01-01':'元旦','2026-01-03':'元旦假期','2026-02-16':'除夕','2026-02-17':'春節','2026-02-18':'春節','2026-02-19':'春節','2026-02-20':'春節','2026-02-27':'228前夕','2026-02-28':"228紀念日",'2026-04-03':'清明假期','2026-04-04':"兒童節",'2026-04-05':"清明節",'2026-04-06':"清明假期",'2026-05-01':"勞動節",'2026-05-30':'端午假期','2026-05-31':'端午假期','2026-06-19':"端午節",'2026-06-20':"端午假期",'2026-06-21':"端午假期",'2026-09-26':'中秋假期','2026-09-27':"中秋節",'2026-09-28':"中秋假期",'2026-10-09':"國慶假期",'2026-10-10':"國慶日",'2026-12-25':"行憲紀念日",'2026-07-29':'休園','2026-07-30':'休園','2026-07-31':'休園','2026-08-02':"大掃除"};function isHoliday(_0x45a076){const _0xdc50fa=_0x2976a6;if(!_0x45a076)return![];const _0x4ba0c6=new Date(_0x45a076),_0x565bcf=_0x4ba0c6["getDay"]();if(_0x565bcf===0x0||_0x565bcf===0x6)return!![];return _0x45a076 in HOLIDAYS_2026;}function getHolidayName(_0x2a80bb){if(!_0x2a80bb)return'';const _0x467588=new Date(_0x2a80bb),_0x55f535=_0x467588['getDay']();if(_0x55f535===0x0)return'日';if(_0x55f535===0x6)return'六';return HOLIDAYS_2026[_0x2a80bb]||'';}
+function rocDateDisp(iso){
+  if(!iso)return '';
+  var p=String(iso).split('-');
+  if(p.length<3)return iso;
+  return (+p[0]-1911)+'/'+p[1]+'/'+p[2];
+}
 function updateNameBadge(){
   var badge=document.getElementById('current-emp-badge');
   var name=((document.getElementById('emp-name')||{}).value||'').trim();
   var y=((document.getElementById('cal-year')||{}).value||'').trim();
   var mo=((document.getElementById('cal-month')||{}).value||'').trim();
   if(badge){
+    var emp=name?lookupEmployee(name):null;
     if(!name){ badge.style.display='none'; }
-    else{
+    else if(!emp){
       badge.style.display='block';
-      badge.textContent='🧑‍🏫 目前計算：'+name+(y&&mo?'　'+y+'年'+mo+'月':'');
+      badge.innerHTML='🧑‍🏫 目前計算：'+name+(y&&mo?'　'+y+'年'+mo+'月':'')+'<div style="font-size:12px;font-weight:400;color:#B45309;margin-top:4px">⚠️ 員工資料庫中沒有這個人的資料</div>';
+    }else{
+      badge.style.display='block';
+      var laborGrade=(LABOR[emp.insGrade]||LABOR[0])[0];
+      var healthGrade=(HEALTH[emp.healthInsGrade]||HEALTH[0])[0];
+      var depTotal=(dependentsByEmp[emp.id]||[]).length;
+      var depBillable=computeBillableDependents(emp.id);
+      var allowances=allowancesByEmp[emp.id]||[];
+      var allowanceTxt=allowances.length?allowances.map(function(a){return (a.name||'津貼')+' '+Number(a.amount||0).toLocaleString('zh-TW')+'元';}).join('、'):'無';
+      var sub='到職日 '+(rocDateDisp(emp.hireDate)||'未設定')
+        +(emp.resignDate?'　離職日 '+rocDateDisp(emp.resignDate):'')
+        +'　職稱 '+(emp.jobTitle||'－')
+        +'　勞保級距 '+laborGrade.toLocaleString('zh-TW')+'元'
+        +'　健保級距 '+healthGrade.toLocaleString('zh-TW')+'元'
+        +'　眷屬 '+depTotal+'人(計費'+depBillable+')'
+        +'　固定津貼:'+allowanceTxt;
+      if(emp.raiseDate)sub+='　📈調薪生效日 '+rocDateDisp(emp.raiseDate)+'→調薪後本薪 '+Number(emp.raiseNewBase||0).toLocaleString('zh-TW')+'元';
+      badge.innerHTML='🧑‍🏫 目前計算：'+name+(y&&mo?'　'+y+'年'+mo+'月':'')
+        +'<div style="font-size:11.5px;font-weight:400;color:#3F435E;margin-top:4px;line-height:1.6">'+sub+'</div>';
     }
   }
   var previewBadge=document.getElementById('preview-emp-badge');
@@ -1779,6 +1804,7 @@ function applyReportData(data){
   data.dbMatched=matched;
   if(data.rocYear){document.getElementById('cal-year').value=data.rocYear;document.getElementById('cal-month').value=data.month;}
   autoLinkResignDate();
+  autoLinkRaiseSplit();
   buildCal();
   data.earlyDays.forEach(d=>{dayState[d]=dayState[d]==='e'?'b':'m';});
   data.lateDays.forEach(d=>{dayState[d]=dayState[d]==='m'?'b':'e';});
