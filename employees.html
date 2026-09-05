@@ -31,7 +31,7 @@ svg.ic{width:16px;height:16px;stroke:currentColor;stroke-width:1.7;fill:none;str
 .topbar h1{font-size:18px;font-weight:700}
 .topbar a{font-size:14px;color:#EDD9CE;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:5px}
 .topbar a:hover{color:#fff}
-.container{max-width:820px;margin:0 auto;padding:24px 16px 60px}
+.container{max-width:1180px;margin:0 auto;padding:24px 16px 60px}
 .intro{background:var(--tint);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:16px;font-size:13px;color:var(--ink-soft);line-height:1.75}
 .intro b{color:var(--ink)}
 .intro .ok{color:#4E7D5B;margin-top:4px;display:block}
@@ -125,7 +125,7 @@ table.emp-table td.c{text-align:center}
 .check-line{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft);margin-top:6px}
 .help-text{font-size:11px;color:var(--ink-faint);line-height:1.6;margin-top:8px}
 .dep-table{width:100%;border-collapse:collapse;font-size:13px}
-.dep-table th{text-align:left;font-size:11.5px;color:var(--ink-faint);font-weight:700;padding:4px 6px;border-bottom:1px solid var(--border)}
+.dep-table th{text-align:left;font-size:11.5px;color:var(--ink-faint);font-weight:700;padding:4px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
 .dep-table td{padding:5px 6px;vertical-align:middle}
 .dep-table tr:nth-child(even){background:var(--zebra)}
 .tag-billable{color:var(--danger);font-size:11.5px;font-weight:700;background:#FBEEEC;border-radius:6px;padding:2px 7px}
@@ -380,8 +380,8 @@ function renderEmpDetail(e,i){
   html+='<div><div class="dh-name">'+(e.name||'（未命名）')+'</div><div class="dh-sub">'+(e.jobTitle||'－')+'．編號 '+e.id+'</div>';
   html+='<div class="dh-stats">';
   html+='<div><span class="s-label">在職年資</span><span class="s-val">'+(tenure||'－')+'</span></div>';
-  html+='<div><span class="s-label">生日</span><span class="s-val">'+(rocDateDisp(e.birthDate)||'未設定')+'</span></div>';
-  html+='<div><span class="s-label">身分證字號</span><span class="s-val">'+(e.nationalId||'未設定')+'</span></div>';
+  html+='<div><span class="s-label">生日（敏感個資）</span><span class="s-val" style="display:flex;align-items:center;gap:4px">'+rocDateFields('pii-birth-'+i,e.birthDate,'updateEmpPii('+i+',\'birthDate\',readRocDate(\'pii-birth-'+i+'\'))')+'</span></div>';
+  html+='<div><span class="s-label">身分證字號</span><span class="s-val"><input type="text" class="f-input" style="height:30px;width:120px;font-family:monospace" value="'+(e.nationalId||'').replace(/"/g,'&quot;')+'" maxlength="10" oninput="updateEmpPii('+i+',\'nationalId\',this.value.toUpperCase())"></span></div>';
   html+='</div></div>';
   html+='<button type="button" class="btn btn-outline" onclick="toggleEmpExpand('+e.id+')">'+ic('chevronUp')+' 收合</button>';
   html+='</div>';
@@ -435,11 +435,6 @@ function renderEmpDetail(e,i){
   html+='</div>';
   html+='</div>';
 
-  html+='<div class="card"><div class="card-title">'+ic('pin')+' 生日／身分證字號<span class="badge" style="background:var(--tint);color:var(--ink-soft)">敏感個資．需登入才看得到</span></div>';
-  html+='<div class="row2">';
-  html+='<div class="f-line"><span class="f-label">生日</span>'+rocDateFields('pii-birth-'+i,e.birthDate,'updateEmpPii('+i+',\'birthDate\',readRocDate(\'pii-birth-'+i+'\'))')+'</div>';
-  html+='<div class="f-line"><span class="f-label">身分證</span><input type="text" class="f-input" style="font-family:monospace" value="'+(e.nationalId||'').replace(/"/g,'&quot;')+'" maxlength="10" oninput="updateEmpPii('+i+',\'nationalId\',this.value.toUpperCase())"></div>';
-  html+='</div></div>';
 
   const depsSorted=deps.slice().sort(function(a,b){
     const ageA=depAge(a.birth_date), ageB=depAge(b.birth_date);
