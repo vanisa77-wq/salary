@@ -246,7 +246,7 @@ let employeeDB=[];
 let dependentsByEmp={};
 let allowancesByEmp={};
 let expandedEmpId=null;
-function rowToEmp(r){return {id:r.id,account:r.account||'',password:r.password||'',name:r.name||'',base:r.base||0,bonus:r.bonus||0,insGrade:r.ins_grade||0,dependents:r.dependents||0,hireDate:r.hire_date||'',resignDate:r.resign_date||'',jobTitle:r.job_title||'',healthInsGrade:r.health_ins_grade||0,laborInsExempt:r.labor_ins_exempt===true,raiseDate:r.raise_effective_date||'',raiseNewBase:r.raise_new_base||0,gradeEffDate:r.grade_effective_date||'',gradeNewGrade:(r.grade_new_ins_grade===null||r.grade_new_ins_grade===undefined)?'':r.grade_new_ins_grade};}
+function rowToEmp(r){return {id:r.id,account:r.account||'',password:r.password||'',name:r.name||'',base:r.base||0,bonus:r.bonus||0,insGrade:r.ins_grade||0,dependents:r.dependents||0,hireDate:r.hire_date||'',resignDate:r.resign_date||'',jobTitle:r.job_title||'',healthInsGrade:r.health_ins_grade||0,laborInsExempt:r.labor_ins_exempt===true,raiseDate:r.raise_effective_date||'',raiseNewBase:r.raise_new_base||0,gradeEffDate:r.grade_effective_date||'',gradeNewGrade:(r.grade_new_ins_grade===null||r.grade_new_ins_grade===undefined)?'':r.grade_new_ins_grade,tenureDeductMonths:r.tenure_deduct_months||0};}
 function rocDateFields(prefix,iso,onChangeExpr){
   const p=iso?iso.split('-'):['','',''];
   const y=p[0]?(+p[0]-1911):'',m=p[1]?+p[1]:'',d=p[2]?+p[2]:'';
@@ -286,7 +286,7 @@ function depIsBillable(d){
   if(age===null)return true;
   return age<65;
 }
-function tenureFull(hireDate, untilDate){
+function tenureFull(hireDate, untilDate, deductMonths){
   if(!hireDate) return '';
   var start=new Date(hireDate+'T00:00:00');
   if(isNaN(start)) return '';
@@ -297,6 +297,9 @@ function tenureFull(hireDate, untilDate){
   var d=end.getDate()-start.getDate();
   if(d<0){ m--; d+=new Date(end.getFullYear(),end.getMonth(),0).getDate(); }
   if(m<0){ y--; m+=12; }
+  var totalMonths=y*12+m-(+deductMonths||0);
+  if(totalMonths<0)totalMonths=0;
+  y=Math.floor(totalMonths/12); m=totalMonths%12;
   return y+' 年 '+m+' 個月 '+d+' 天';
 }
 let piiByEmp={};
@@ -372,7 +375,7 @@ function renderEmpDetail(e,i){
   const deps=dependentsByEmp[e.id]||[];
   const billableCount=deps.filter(depIsBillable).length;
   const exemptCount=deps.length-billableCount;
-  const tenure=tenureFull(e.hireDate, e.resignDate||null);
+  const tenure=tenureFull(e.hireDate, e.resignDate||null, e.tenureDeductMonths);
 
   let html='<div class="detail-wrap">';
 
@@ -395,6 +398,7 @@ function renderEmpDetail(e,i){
     html+='<div class="f-line"><span class="f-label">離職日</span><button type="button" class="btn btn-dashed" onclick="updateEmpDBField('+i+',\'resignDate\',new Date().toISOString().slice(0,10));renderEmpDBList()">＋設定離職</button></div>';
   }
   html+='<div class="f-line"><span class="f-label">職稱</span><input type="text" class="f-input" value="'+(e.jobTitle||'').replace(/"/g,'&quot;')+'" oninput="updateEmpDBField('+i+',\'jobTitle\',this.value)"></div>';
+  html+='<div class="f-line"><span class="f-label">年資扣除</span><input type="number" class="f-input num-input" style="width:70px;flex:0 0 70px" value="'+(e.tenureDeductMonths||0)+'" min="0" oninput="updateEmpDBField('+i+',\'tenureDeductMonths\',+this.value)"><span style="font-size:12px;color:var(--ink-faint)">個月（例：育嬰留職停薪期間，依社會局名冊核對）</span></div>';
   html+='</div>';
 
   html+='<div class="card"><div class="card-title">'+ic('pin')+' 投保級距</div>';
@@ -511,7 +515,7 @@ function renderEmpDBList(){
     let row='<tr class="emp-row'+(isResigned?' resigned':'')+'" onclick="toggleEmpExpand('+e.id+')">'
       +'<td class="c" style="color:var(--ink-faint)">'+seq+'</td>'
       +'<td><div class="name-cell"><span class="dot'+(isResigned?' off':'')+'"></span>'+(e.name||'（未命名）')+'</div></td>'
-      +'<td>'+(isResigned?'<span class="dash">—</span>':'<span class="tenure-cell">'+ic('calendar')+(tenureFull(e.hireDate)||'<span class="dash">—</span>')+'</span>')+'</td>'
+      +'<td>'+(isResigned?'<span class="dash">—</span>':'<span class="tenure-cell">'+ic('calendar')+(tenureFull(e.hireDate,null,e.tenureDeductMonths)||'<span class="dash">—</span>')+'</span>')+'</td>'
       +'<td class="r base-cell num">'+(e.base?Number(e.base).toLocaleString('zh-TW'):'<span class="dash">—</span>')+'</td>'
       +'<td class="r num" style="color:var(--ink-soft)">'+(e.bonus?Number(e.bonus).toLocaleString('zh-TW'):'<span class="dash">—</span>')+'</td>'
       +'<td class="r num" style="color:var(--ink-soft)">'+(gradeAmt||'<span class="dash">—</span>')+'</td>'
@@ -537,7 +541,7 @@ function renderEmpDBList(){
   box.innerHTML=out;
 }
 function empFieldToColumn(field){
-  const map={insGrade:'ins_grade',hireDate:'hire_date',resignDate:'resign_date',jobTitle:'job_title',healthInsGrade:'health_ins_grade',laborInsExempt:'labor_ins_exempt',raiseDate:'raise_effective_date',raiseNewBase:'raise_new_base',gradeEffDate:'grade_effective_date',gradeNewGrade:'grade_new_ins_grade'};
+  const map={insGrade:'ins_grade',hireDate:'hire_date',resignDate:'resign_date',jobTitle:'job_title',healthInsGrade:'health_ins_grade',laborInsExempt:'labor_ins_exempt',raiseDate:'raise_effective_date',raiseNewBase:'raise_new_base',gradeEffDate:'grade_effective_date',gradeNewGrade:'grade_new_ins_grade',tenureDeductMonths:'tenure_deduct_months'};
   return map[field]||field;
 }
 function updateEmpDBField(i,field,val){
