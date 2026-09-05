@@ -551,14 +551,14 @@ async function tryAdminLogin(){
     <div id="emp-notes-box" style="margin-top:8px"></div>
   </div>
   <div class="field-row">
-    <div class="field"><label>本薪（底薪）</label><div class="iw"><input type="number" id="base" value="" min="0" step="100" placeholder="請輸入底薪"><span class="unit">元</span></div></div>
+    <div class="field"><label>本薪（底薪）</label><div class="iw"><input type="number" id="base" value="" min="0" step="100" placeholder="請輸入底薪"><span class="unit">元</span></div><div id="raise-split-note" style="display:none;margin-top:4px;font-size:11.5px;color:#B45309"></div></div>
     <div class="field"><label>全勤獎金</label><div class="iw"><input type="number" id="bonus" value="" min="0" step="100" placeholder="請輸入全勤獎金"><span class="unit">元</span></div></div>
   </div>
   <div class="field-row">
     <div class="field"><label>計算年月</label>
       <div style="display:flex;gap:8px">
-        <div class="iw" style="flex:1"><input type="number" id="cal-year" value="115" min="100" max="200" style="padding-right:10px" onchange="autoLinkResignDate();refreshPeriodLockBar()"><span class="unit">年</span></div>
-        <select id="cal-month" onchange="autoLinkResignDate();refreshPeriodLockBar()" style="flex:1"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select>
+        <div class="iw" style="flex:1"><input type="number" id="cal-year" value="115" min="100" max="200" style="padding-right:10px" onchange="autoLinkResignDate();autoLinkRaiseSplit();refreshPeriodLockBar()"><span class="unit">年</span></div>
+        <select id="cal-month" onchange="autoLinkResignDate();autoLinkRaiseSplit();refreshPeriodLockBar()" style="flex:1"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select>
       </div>
     </div>
     <div class="field"><label>實際在職天數<span id="workdays-auto-badge" style="display:none;font-size:11px;color:#8a6d00;background:#FFF3CD;padding:2px 6px;border-radius:4px;margin-left:6px">自動計算</span></label><div class="iw"><input type="number" id="workdays" value="" min="1" max="30" placeholder="留空＝整月"><span class="unit">天</span></div><div class="hint" id="workdays-hint">留空代表整月出勤</div>
@@ -1236,7 +1236,7 @@ let dependentsByEmp={};
 let allowancesByEmp={};
 let insuranceHistory={};
 try{ var _ihCache=localStorage.getItem('scInsuranceHistory'); if(_ihCache) insuranceHistory=JSON.parse(_ihCache); }catch(e){}
-function rowToEmp(r){return {id:r.id,account:r.account||'',password:r.password||'',name:r.name||'',base:r.base||0,bonus:r.bonus||0,insGrade:r.ins_grade||0,dependents:r.dependents||0,hireDate:r.hire_date||'',resignDate:r.resign_date||'',jobTitle:r.job_title||'',healthInsGrade:r.health_ins_grade||0,laborInsExempt:r.labor_ins_exempt===true};}
+function rowToEmp(r){return {id:r.id,account:r.account||'',password:r.password||'',name:r.name||'',base:r.base||0,bonus:r.bonus||0,insGrade:r.ins_grade||0,dependents:r.dependents||0,hireDate:r.hire_date||'',resignDate:r.resign_date||'',jobTitle:r.job_title||'',healthInsGrade:r.health_ins_grade||0,laborInsExempt:r.labor_ins_exempt===true,raiseDate:r.raise_effective_date||'',raiseNewBase:r.raise_new_base||0};}
 function depAge(birthDate){
   if(!birthDate)return null;
   const b=new Date(birthDate);
@@ -1614,6 +1614,40 @@ function autoLinkResignDate(){
   syncRocDisplay('resign-date-roc',emp.resignDate);
   calc();
 }
+/* 月中調薪：計算年月落在調薪生效月，就把本薪拆成「生效前用舊本薪、生效後用調薪後本薪」
+   兩段合計（固定按30天基準分配，跟「整月在職一律算30天」的既有規則一致，不受大小月影響）；
+   計算年月已經在調薪生效月之後，直接改用調薪後本薪。 */
+function autoLinkRaiseSplit(){
+  var noteEl=document.getElementById('raise-split-note');
+  var name=((document.getElementById('emp-name')||{}).value||'').trim();
+  var emp=name?lookupEmployee(name):null;
+  if(noteEl){noteEl.style.display='none';noteEl.textContent='';}
+  if(!emp||!emp.raiseDate)return;
+  var y=+((document.getElementById('cal-year')||{}).value)||0;
+  var mo=+((document.getElementById('cal-month')||{}).value)||0;
+  if(!y||!mo)return;
+  var ad=y+1911;
+  var parts=emp.raiseDate.split('-');
+  var ry=+parts[0],rm=+parts[1],rd=+parts[2];
+  var baseEl=document.getElementById('base');
+  if(ad<ry||(ad===ry&&mo<rm))return;
+  if(ad===ry&&mo===rm){
+    var daysOld=Math.min(rd-1,30), daysNew=30-daysOld;
+    var blended=Math.round((emp.base||0)/30*daysOld+(emp.raiseNewBase||0)/30*daysNew);
+    if(baseEl)baseEl.value=blended;
+    if(noteEl){
+      noteEl.style.display='block';
+      noteEl.textContent='📈 本月'+rd+'日調薪生效，已自動拆算:舊薪資'+(emp.base||0)+'元×'+daysOld+'天 ＋ 調薪後'+(emp.raiseNewBase||0)+'元×'+daysNew+'天(固定合計30天)＝'+blended+'元';
+    }
+  }else{
+    if(baseEl)baseEl.value=emp.raiseNewBase||0;
+    if(noteEl){
+      noteEl.style.display='block';
+      noteEl.textContent='📈 已依 '+ry+'/'+String(rm).padStart(2,'0')+'/'+String(rd).padStart(2,'0')+' 調薪設定自動帶入調薪後本薪，確認無誤後請到員工資料管理按「套用為正式本薪」清除此設定';
+    }
+  }
+  calc();
+}
 function applyEmployeeLookup(name){
   const statusEl=document.getElementById('empdb-match-status');
   const emp=name?lookupEmployee(name):null;
@@ -1625,6 +1659,7 @@ function applyEmployeeLookup(name){
     document.getElementById('no-labor-insurance').checked=!!emp.laborInsExempt;
     applyEmployeeAllowances(emp.id);
     autoLinkResignDate();
+    autoLinkRaiseSplit();
     calc();
     if(statusEl){statusEl.style.color='#1B6E3A';statusEl.textContent='✅ 已從員工資料庫自動帶入本薪/全勤獎金/投保級距/眷屬人數/固定津貼';}
     return true;

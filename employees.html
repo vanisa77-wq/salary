@@ -111,7 +111,7 @@ let employeeDB=[];
 let dependentsByEmp={};
 let allowancesByEmp={};
 let expandedEmpId=null;
-function rowToEmp(r){return {id:r.id,account:r.account||'',password:r.password||'',name:r.name||'',base:r.base||0,bonus:r.bonus||0,insGrade:r.ins_grade||0,dependents:r.dependents||0,hireDate:r.hire_date||'',resignDate:r.resign_date||'',jobTitle:r.job_title||'',healthInsGrade:r.health_ins_grade||0,laborInsExempt:r.labor_ins_exempt===true};}
+function rowToEmp(r){return {id:r.id,account:r.account||'',password:r.password||'',name:r.name||'',base:r.base||0,bonus:r.bonus||0,insGrade:r.ins_grade||0,dependents:r.dependents||0,hireDate:r.hire_date||'',resignDate:r.resign_date||'',jobTitle:r.job_title||'',healthInsGrade:r.health_ins_grade||0,laborInsExempt:r.labor_ins_exempt===true,raiseDate:r.raise_effective_date||'',raiseNewBase:r.raise_new_base||0};}
 function rocDateFields(prefix,iso,onChangeExpr){
   const p=iso?iso.split('-'):['','',''];
   const y=p[0]?(+p[0]-1911):'',m=p[1]?+p[1]:'',d=p[2]?+p[2]:'';
@@ -198,6 +198,16 @@ function renderEmpDetail(e,i){
   html+='<label style="font-size:12px;color:#666">健保級距</label><select style="height:32px;border:1px solid #D5D3CC;border-radius:6px" onchange="updateEmpDBField('+i+',\'healthInsGrade\',+this.value)">'+empDBHealthGradeOptions(e.healthInsGrade)+'</select>';
   html+='<label style="font-size:12px;color:#B45309;display:flex;align-items:center;gap:4px"><input type="checkbox" '+(e.laborInsExempt?'checked':'')+' onchange="updateEmpDBField('+i+',\'laborInsExempt\',this.checked)">固定免收勞保費（例如已領勞保老年給付者）</label>';
   html+='</div>';
+  html+='<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:8px;background:#FFF7E8;border:1px dashed #D9A441;border-radius:8px">';
+  html+='<span style="font-size:12px;color:#8a5c1e;font-weight:700">📈 月中調薪（例如試用期滿）</span>';
+  html+=e.raiseDate?('<label style="font-size:12px;color:#666">生效日</label>'+rocDateFields('raise-date-'+i,e.raiseDate,'updateEmpDBField('+i+',\'raiseDate\',readRocDate(\'raise-date-'+i+'\'))')+'<button type="button" onclick="updateEmpDBField('+i+',\'raiseDate\',\'\');renderEmpDBList()" style="color:#999;background:none;border:none;cursor:pointer;font-size:12px">✕清除</button>')
+    :('<button type="button" onclick="updateEmpDBField('+i+',\'raiseDate\',new Date().toISOString().slice(0,10));renderEmpDBList()" style="padding:5px 8px;border:1px dashed #C5C3BB;border-radius:6px;background:transparent;font-size:12px;cursor:pointer;color:#999">＋設定調薪生效日</button>');
+  if(e.raiseDate){
+    html+='<label style="font-size:12px;color:#666">調薪後本薪</label><input type="number" value="'+(e.raiseNewBase||'')+'" placeholder="例：36000" style="width:90px;height:32px;border:1px solid #D5D3CC;border-radius:6px;padding:0 6px" oninput="updateEmpDBField('+i+',\'raiseNewBase\',+this.value)">';
+    html+='<button type="button" onclick="promoteRaise('+i+')" style="padding:5px 10px;border:none;border-radius:6px;background:#1B6E3A;color:#fff;font-size:12px;cursor:pointer">✓ 已生效，套用為正式本薪並清除設定</button>';
+  }
+  html+='</div>';
+  if(e.raiseDate)html+='<div style="font-size:11.5px;color:#8a5c1e;margin-top:-2px">生效當月，薪資計算器會自動把本薪拆成「生效日前用原本薪、生效日後用調薪後本薪」兩段合計（固定按30天基準分配，不受大小月影響）；生效月份過了之後，計算器會直接改用「調薪後本薪」試算。等正式調薪確認無誤，記得按左邊按鈕套用成正式本薪，之後就不用再靠這組設定了。</div>';
   html+='<div style="font-size:13px;font-weight:600;color:#333;margin-top:4px">👪 眷屬管理</div>';
   html+='<div>'+deps.map(function(d){
     const billable=depIsBillable(d);
@@ -269,7 +279,7 @@ function renderEmpDBList(){
   box.innerHTML=out;
 }
 function empFieldToColumn(field){
-  const map={insGrade:'ins_grade',hireDate:'hire_date',resignDate:'resign_date',jobTitle:'job_title',healthInsGrade:'health_ins_grade',laborInsExempt:'labor_ins_exempt'};
+  const map={insGrade:'ins_grade',hireDate:'hire_date',resignDate:'resign_date',jobTitle:'job_title',healthInsGrade:'health_ins_grade',laborInsExempt:'labor_ins_exempt',raiseDate:'raise_effective_date',raiseNewBase:'raise_new_base'};
   return map[field]||field;
 }
 function updateEmpDBField(i,field,val){
@@ -281,10 +291,19 @@ function updateEmpDBField(i,field,val){
   const client=initSupabase();
   if(!client)return;
   const payload={};
-  payload[empFieldToColumn(field)]=(field==='account'&&val==='')?null:val;
+  payload[empFieldToColumn(field)]=((field==='account'||field==='raiseDate')&&val==='')?null:val;
   client.from('employees').update(payload).eq('id',emp.id).then(function(res){
     if(res.error)console.error(res.error);
   });
+}
+function promoteRaise(i){
+  const emp=employeeDB[i];
+  if(!emp||!emp.raiseDate)return;
+  if(!confirm('確定要把「'+emp.name+'」的正式本薪改成 '+(emp.raiseNewBase||0)+' 元，並清除調薪設定嗎？(之後計算器就不會再自動拆分本薪)'))return;
+  updateEmpDBField(i,'base',emp.raiseNewBase||0);
+  updateEmpDBField(i,'raiseDate','');
+  updateEmpDBField(i,'raiseNewBase',0);
+  renderEmpDBList();
 }
 function addEmpDBRow(){
   const client=initSupabase();
