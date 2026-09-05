@@ -1019,7 +1019,7 @@ function updateNameBadge(){
       var depBillable=computeBillableDependents(emp.id);
       var allowances=allowancesByEmp[emp.id]||[];
       var allowanceTxt=allowances.length?allowances.map(function(a){return (a.name||'津貼')+' '+Number(a.amount||0).toLocaleString('zh-TW')+'元';}).join('、'):'無';
-      var tenure=tenureText(emp.hireDate, emp.resignDate||null);
+      var tenure=tenureText(emp.hireDate, emp.resignDate||null, emp.tenureDeductMonths);
       var headline=name;
       var headTags=[];
       if(tenure)headTags.push('在職年資 '+tenure);
@@ -1314,7 +1314,7 @@ let dependentsByEmp={};
 let allowancesByEmp={};
 let insuranceHistory={};
 try{ var _ihCache=localStorage.getItem('scInsuranceHistory'); if(_ihCache) insuranceHistory=JSON.parse(_ihCache); }catch(e){}
-function rowToEmp(r){return {id:r.id,account:r.account||'',password:r.password||'',name:r.name||'',base:r.base||0,bonus:r.bonus||0,insGrade:r.ins_grade||0,dependents:r.dependents||0,hireDate:r.hire_date||'',resignDate:r.resign_date||'',jobTitle:r.job_title||'',healthInsGrade:r.health_ins_grade||0,laborInsExempt:r.labor_ins_exempt===true,raiseDate:r.raise_effective_date||'',raiseNewBase:r.raise_new_base||0,gradeEffDate:r.grade_effective_date||'',gradeNewGrade:(r.grade_new_ins_grade===null||r.grade_new_ins_grade===undefined)?'':r.grade_new_ins_grade};}
+function rowToEmp(r){return {id:r.id,account:r.account||'',password:r.password||'',name:r.name||'',base:r.base||0,bonus:r.bonus||0,insGrade:r.ins_grade||0,dependents:r.dependents||0,hireDate:r.hire_date||'',resignDate:r.resign_date||'',jobTitle:r.job_title||'',healthInsGrade:r.health_ins_grade||0,laborInsExempt:r.labor_ins_exempt===true,raiseDate:r.raise_effective_date||'',raiseNewBase:r.raise_new_base||0,gradeEffDate:r.grade_effective_date||'',gradeNewGrade:(r.grade_new_ins_grade===null||r.grade_new_ins_grade===undefined)?'':r.grade_new_ins_grade,tenureDeductMonths:r.tenure_deduct_months||0};}
 function depAge(birthDate){
   if(!birthDate)return null;
   const b=new Date(birthDate);
@@ -1639,7 +1639,7 @@ function loadEmployeePii(){
     updateNameBadge();
   });
 }
-function tenureText(hireDate, untilDate){
+function tenureText(hireDate, untilDate, deductMonths){
   if(!hireDate) return '';
   var start=new Date(hireDate+'T00:00:00');
   if(isNaN(start)) return '';
@@ -1650,6 +1650,9 @@ function tenureText(hireDate, untilDate){
   var d=end.getDate()-start.getDate();
   if(d<0){ m--; d+=new Date(end.getFullYear(),end.getMonth(),0).getDate(); }
   if(m<0){ y--; m+=12; }
+  var totalMonths=y*12+m-(+deductMonths||0);
+  if(totalMonths<0)totalMonths=0;
+  y=Math.floor(totalMonths/12); m=totalMonths%12;
   var parts=[];
   if(y>0)parts.push(y+'年');
   if(m>0)parts.push(m+'個月');
