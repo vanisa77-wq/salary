@@ -731,24 +731,59 @@ function renderMonth(){
   calcSummary();
 }
 
+/* 跟 index.html「產出薪資轉帳清單」共用同一套排版（單一 grid，欄寬依內容自動對齊，
+   html2canvas 匯出圖片才不會像 table+border-collapse 那樣跑出多餘空白欄），
+   資料來源改成這裡的 monthRecords（r.emp_name / r.net_total）。 */
 function showTransferTable(){
   const wrap=document.getElementById('transfer-wrap');
   if(!monthRecords.length){
     wrap.innerHTML='<div class="empty-hint">請先在上方查詢並載入月份資料</div>';
     return;
   }
+  const fmtN=x=>Number(x||0).toLocaleString('zh-TW');
   let total=0;
-  const rows=monthRecords.map((r,idx)=>{
+  const CELL='padding:7px 14px;border-bottom:1px solid #E5E3DC;box-sizing:border-box';
+  const rowsHtml=monthRecords.map((r,idx)=>{
     const net=Number(r.net_total)||0;
     total+=net;
-    return `<tr><td>${idx+1}</td><td class="name">${r.emp_name}</td><td>${net.toLocaleString()}</td></tr>`;
+    return `<div style="${CELL};text-align:center;color:#999">${idx+1}</div>`
+      +`<div style="${CELL};font-weight:600;font-size:14px">${r.emp_name}</div>`
+      +`<div style="${CELL};text-align:right;font-weight:700;font-size:14px">${fmtN(net)}</div>`;
   }).join('');
-  wrap.innerHTML=`<table class="detail-table" style="max-width:480px">
-    <thead><tr><th>NO.</th><th>姓名</th><th>實領總計</th></tr></thead>
-    <tbody>${rows}</tbody>
-    <tfoot><tr><td colspan="2">合計</td><td>${total.toLocaleString()}</td></tr></tfoot>
-  </table>
-  <button class="btn-add no-print" style="margin-top:12px" onclick="printTransferTable()">🖨 列印匯款對照表</button>`;
+  wrap.innerHTML=`<div id="transfer-list-card" style="margin-top:6px;padding:14px;background:#fff;border:1px solid #D5D3CC;border-radius:10px;display:inline-block">
+    <div style="display:inline-grid;grid-template-columns:auto auto auto;justify-content:start">
+      <div style="${CELL};text-align:center;font-weight:700;background:#F3EFEA">NO.</div>
+      <div style="${CELL};font-weight:700;background:#F3EFEA">姓名</div>
+      <div style="${CELL};text-align:right;font-weight:700;background:#F3EFEA">實領總計</div>
+      ${rowsHtml}
+      <div style="${CELL};grid-column:1/3;text-align:center;font-weight:700;background:#FDE68A">合計</div>
+      <div style="${CELL};text-align:right;font-weight:700;background:#FDE68A">${fmtN(total)}</div>
+    </div>
+    <div class="no-print" style="display:flex;gap:8px;margin-top:10px">
+      <button type="button" onclick="exportTransferTableImage()" style="padding:8px 14px;border:1px solid #1B6E3A;border-radius:8px;background:#fff;color:#1B6E3A;cursor:pointer;font-size:13px">🖼 匯出圖片(JPG)</button>
+      <button type="button" onclick="copyTransferTableText()" style="padding:8px 14px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">📋 複製文字</button>
+      <button type="button" onclick="printTransferTable()" style="padding:8px 14px;border:1px solid #D5D3CC;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">🖨 列印</button>
+    </div>
+  </div>`;
+}
+function exportTransferTableImage(){
+  const el=document.getElementById('transfer-list-card');
+  if(!el || typeof html2canvas==='undefined'){ alert('匯出圖片功能載入失敗，請重新整理頁面再試一次'); return; }
+  html2canvas(el,{backgroundColor:'#ffffff',scale:2}).then(canvas=>{
+    const ym=ymToRoc();
+    const link=document.createElement('a');
+    link.download='薪資轉帳清單_'+(ym?ym.rocY+'年'+ym.mo+'月':'')+'.jpg';
+    link.href=canvas.toDataURL('image/jpeg',0.95);
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  }).catch(err=>{ console.error(err); alert('匯出圖片時發生錯誤：'+err.message); });
+}
+function copyTransferTableText(){
+  if(!monthRecords.length) return;
+  const lines=monthRecords.map((r,idx)=>`${idx+1}\t${r.emp_name}\t${Number(r.net_total||0).toLocaleString('zh-TW')}`);
+  const total=monthRecords.reduce((s,r)=>s+(Number(r.net_total)||0),0);
+  lines.push(`合計\t\t${total.toLocaleString('zh-TW')}`);
+  copyTextToClipboard(lines.join('\n'));
+  alert('已複製到剪貼簿，可直接貼到 Excel');
 }
 function printTransferTable(){
   document.body.classList.add('print-transfer-only');
