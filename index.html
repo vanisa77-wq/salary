@@ -2706,16 +2706,17 @@ function showTransferListFromBatch(){
   }
   var fmtN = function(x){ return Number(x).toLocaleString('zh-TW'); };
   var total = 0;
-  var GRID = 'display:grid;grid-template-columns:48px 1fr 100px;';
+  var GRID = 'display:grid;grid-template-columns:44px 90px 100px;';
   var CELL = 'padding:7px 10px;border-bottom:1px solid #E5E3DC;box-sizing:border-box';
   var rowsHtml = lastBatchResults.map(function(rs, idx){
+    total += rs.net;
     return '<div style="'+GRID+'">'
       + '<div style="'+CELL+';text-align:center;color:#999">'+(idx+1)+'</div>'
       + '<div style="'+CELL+';font-weight:600">'+rs.name+'</div>'
       + '<div style="'+CELL+';text-align:right;font-weight:700">'+fmtN(rs.net)+'</div>'
       + '</div>';
   }).join('');
-  wrap.innerHTML = '<div style="margin-top:6px;padding:14px;background:#fff;border:1px solid #D5D3CC;border-radius:10px;max-width:420px">'
+  wrap.innerHTML = '<div style="margin-top:6px;padding:14px;background:#fff;border:1px solid #D5D3CC;border-radius:10px;display:inline-block">'
     +'<div style="'+GRID+'font-size:13px;font-weight:700;background:#F3EFEA">'
       +'<div style="padding:7px 10px;text-align:center;box-sizing:border-box">NO.</div>'
       +'<div style="padding:7px 10px;box-sizing:border-box">姓名</div>'
