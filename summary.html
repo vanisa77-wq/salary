@@ -838,9 +838,10 @@ function showWideReport(){
   }
   const n=monthRecords.length;
   const CELL='padding:6px 10px;border-bottom:1px solid #E5E3DC;border-right:1px solid #E5E3DC;box-sizing:border-box;white-space:nowrap;font-size:12.5px';
+  const LABEL_CELL='padding:6px 10px;border-bottom:1px solid #E5E3DC;border-right:1px solid #E5E3DC;box-sizing:border-box;white-space:normal;word-break:break-all;line-height:1.35;font-size:12.5px';
   const cells=[];
   function addRow(label,valueFn,bg,labelColor){
-    cells.push(`<div style="${CELL};text-align:left;font-weight:700;background:${bg||'#fff'}${labelColor?';color:'+labelColor:''}">${label}</div>`);
+    cells.push(`<div style="${LABEL_CELL};text-align:left;font-weight:700;background:${bg||'#fff'}${labelColor?';color:'+labelColor:''}">${label}</div>`);
     monthRecords.forEach(r=>{ cells.push(`<div style="${CELL};text-align:center;background:${bg||'#fff'}">${valueFn(r)}</div>`); });
   }
   function addGroupHeader(label,bg,color){
@@ -861,7 +862,7 @@ function showWideReport(){
   addRow('撥款日期', r=>isoToRoc(r.payment_date)||'－');
   addRow('老師簽名', r=>r.signature?`<img src="${r.signature}" style="max-width:72px;max-height:38px;vertical-align:middle">`:'<span style="color:#bbb">未簽名</span>');
 
-  wrap.innerHTML=`<div style="overflow-x:auto"><div id="wide-report-grid" style="display:inline-grid;grid-template-columns:110px repeat(${n},86px);border-top:1px solid #E5E3DC;border-left:1px solid #E5E3DC">`
+  wrap.innerHTML=`<div style="overflow-x:auto"><div id="wide-report-grid" style="display:inline-grid;grid-template-columns:190px repeat(${n},86px);border-top:1px solid #E5E3DC;border-left:1px solid #E5E3DC">`
     +cells.join('')
     +`</div></div>`
     +`<div class="no-print" style="display:flex;gap:8px;margin-top:10px"><button type="button" class="btn-add" style="margin:0" onclick="exportWideReportImage()">🖼 匯出圖片(JPG)</button></div>`;
