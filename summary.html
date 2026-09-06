@@ -404,7 +404,7 @@ function bucketEarn(items){
   (items||[]).forEach(it=>{
     const v=amtNum(it.a);
     if(it.t.indexOf('全勤')!==-1)b.attendance+=v;
-    else if(it.t.indexOf('在職底薪')!==-1||it.t.indexOf('本薪')!==-1||it.t.indexOf('時薪工資')!==-1)b.base+=v;
+    else if(it.t.indexOf('在職底薪')!==-1)b.base+=v;
     else if(it.t.indexOf('值班')!==-1||it.t.indexOf('親師會談')!==-1||it.t.indexOf('7:30')!==-1||it.t.indexOf('18:30')!==-1)b.ot+=v;
     else b.other+=v;
   });
