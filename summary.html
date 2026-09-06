@@ -246,6 +246,18 @@ body.gate-lock{overflow:hidden}
   <div id="transfer-wrap" style="margin-top:14px"></div>
 </div>
 
+<div class="card" id="wide-report-card">
+  <div class="card-title">📋 整月薪資統計總表（橫式）</div>
+  <div class="hint">依目前查詢到的月份資料產生，比照紙本薪資統計表：從左到右依序列出所有老師，含應領/應扣明細、實領總計、撥款日期、老師簽名。</div>
+  <div class="no-print" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px">
+    <label style="font-size:13px;color:#666">撥款日期（民國，例：115/09/07）</label>
+    <input type="text" id="payment-date-roc" placeholder="115/09/07" style="height:36px;border:1px solid #D5D3CC;border-radius:8px;padding:0 10px;width:130px">
+    <button class="btn-add" style="margin:0" onclick="applyPaymentDate()">套用到本月所有紀錄</button>
+    <button class="btn-add" style="margin:0" onclick="showWideReport()">產生橫式總表</button>
+  </div>
+  <div id="wide-report-wrap" style="margin-top:14px"></div>
+</div>
+
 <div class="card">
   <div class="card-title">全體彙總</div>
   <div class="sum-grid">
@@ -785,6 +797,87 @@ function copyTransferTableText(){
   copyTextToClipboard(lines.join('\n'));
   alert('已複製到剪貼簿，可直接貼到 Excel');
 }
+
+/* ===== 整月薪資統計總表（橫式）：比照紙本薪資統計表，老師橫向並列 ===== */
+function rocToIso(rocStr){
+  const m=String(rocStr||'').trim().match(/^(\d{2,3})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if(!m) return null;
+  const y=(+m[1])+1911, mo=String(+m[2]).padStart(2,'0'), d=String(+m[3]).padStart(2,'0');
+  return `${y}-${mo}-${d}`;
+}
+function isoToRoc(iso){
+  if(!iso) return '';
+  const p=String(iso).split('-');
+  if(p.length<3) return iso;
+  return (+p[0]-1911)+'/'+(+p[1])+'/'+(+p[2]);
+}
+async function applyPaymentDate(){
+  if(!sb){ alert('無法連線到資料庫'); return; }
+  if(!monthRecords.length){ alert('請先在上方查詢並載入月份資料'); return; }
+  const raw=document.getElementById('payment-date-roc').value;
+  const iso=rocToIso(raw);
+  if(!iso){ alert('日期格式請填「民國年/月/日」，例如 115/09/07'); return; }
+  if(!confirm('確定要把這 '+monthRecords.length+' 筆紀錄的撥款日期都設成 '+raw+' 嗎？')) return;
+  const ids=monthRecords.map(r=>r.id);
+  const {error}=await sb.from('salary_records').update({payment_date:iso}).in('id',ids);
+  if(error){ alert('設定失敗：'+error.message); return; }
+  monthRecords.forEach(r=>{ r.payment_date=iso; });
+  alert('已套用到 '+ids.length+' 筆紀錄');
+}
+function showWideReport(){
+  const wrap=document.getElementById('wide-report-wrap');
+  if(!monthRecords.length){ wrap.innerHTML='<div class="empty-hint">請先在上方查詢並載入月份資料</div>'; return; }
+  const earnLabels=[], deductLabels=[];
+  monthRecords.forEach(r=>{
+    (r.earn_items||[]).forEach(it=>{ if(it&&it.t&&earnLabels.indexOf(it.t)===-1) earnLabels.push(it.t); });
+    (r.deduct_items||[]).forEach(it=>{ if(it&&it.t&&deductLabels.indexOf(it.t)===-1) deductLabels.push(it.t); });
+  });
+  function amtOf(items,label){
+    let s=0; (items||[]).forEach(it=>{ if(it&&it.t===label) s+=amtNum(it.a); });
+    return s;
+  }
+  const n=monthRecords.length;
+  const CELL='padding:6px 10px;border-bottom:1px solid #E5E3DC;border-right:1px solid #E5E3DC;box-sizing:border-box;white-space:nowrap;font-size:12.5px';
+  const cells=[];
+  function addRow(label,valueFn,bg,labelColor){
+    cells.push(`<div style="${CELL};text-align:left;font-weight:700;background:${bg||'#fff'}${labelColor?';color:'+labelColor:''}">${label}</div>`);
+    monthRecords.forEach(r=>{ cells.push(`<div style="${CELL};text-align:center;background:${bg||'#fff'}">${valueFn(r)}</div>`); });
+  }
+  function addGroupHeader(label,bg,color){
+    cells.push(`<div style="${CELL};grid-column:1/${n+2};font-weight:700;background:${bg};color:${color}">${label}</div>`);
+  }
+  addRow('項目 ＼ 姓名', r=>`<b>${r.emp_name}</b>`, '#F3EFEA');
+  addGroupHeader('應領薪資項目','#DCECE9','#3E7370');
+  earnLabels.forEach(label=>{
+    addRow(label, r=>{ const v=amtOf(r.earn_items,label); return v?v.toLocaleString('zh-TW'):'－'; });
+  });
+  addRow('應領小計', r=>Number(r.earn_total||0).toLocaleString('zh-TW'), '#DCECE9');
+  addGroupHeader('應扣金額項目','#F5E2D8','#B15C3F');
+  deductLabels.forEach(label=>{
+    addRow(label, r=>{ const v=amtOf(r.deduct_items,label); return v?v.toLocaleString('zh-TW'):'－'; });
+  });
+  addRow('應扣小計', r=>Number(r.deduct_total||0).toLocaleString('zh-TW'), '#F5E2D8');
+  addRow('※ 實領總計', r=>Number(r.net_total||0).toLocaleString('zh-TW'), '#FDE68A');
+  addRow('撥款日期', r=>isoToRoc(r.payment_date)||'－');
+  addRow('老師簽名', r=>r.signature?`<img src="${r.signature}" style="max-width:72px;max-height:38px;vertical-align:middle">`:'<span style="color:#bbb">未簽名</span>');
+
+  wrap.innerHTML=`<div style="overflow-x:auto"><div id="wide-report-grid" style="display:inline-grid;grid-template-columns:110px repeat(${n},86px);border-top:1px solid #E5E3DC;border-left:1px solid #E5E3DC">`
+    +cells.join('')
+    +`</div></div>`
+    +`<div class="no-print" style="display:flex;gap:8px;margin-top:10px"><button type="button" class="btn-add" style="margin:0" onclick="exportWideReportImage()">🖼 匯出圖片(JPG)</button></div>`;
+}
+function exportWideReportImage(){
+  const el=document.getElementById('wide-report-grid');
+  if(!el || typeof html2canvas==='undefined'){ alert('匯出圖片功能載入失敗，請重新整理頁面再試一次'); return; }
+  html2canvas(el,{backgroundColor:'#ffffff',scale:2}).then(canvas=>{
+    const ym=ymToRoc();
+    const link=document.createElement('a');
+    link.download='薪資統計總表_'+(ym?ym.rocY+'年'+ym.mo+'月':'')+'.jpg';
+    link.href=canvas.toDataURL('image/jpeg',0.95);
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  }).catch(err=>{ console.error(err); alert('匯出圖片時發生錯誤：'+err.message); });
+}
+
 function printTransferTable(){
   document.body.classList.add('print-transfer-only');
   window.print();
