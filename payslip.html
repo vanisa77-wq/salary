@@ -106,13 +106,9 @@
   <div class="card hidden" id="doneCard">
     <h2>已完成簽名</h2>
     <div class="steps">
-      請以下列方式將簽名回傳給園所：<br>
-      <b>方式一：</b>點下方「分享薪資單圖片」，選擇 LINE 直接傳給園所。<br>
-      <b>方式二：</b>長按下方薪資單圖片存檔後，於 LINE 對話中回傳。<br>
-      （簽名同時也已自動存回系統，園所可以在追蹤頁看到）
+      簽名已自動存回系統，園所可以在追蹤頁看到，不需要再另外回傳截圖或圖片。
     </div>
     <img id="resultImg" alt="薪資單">
-    <button class="btn btn-main" type="button" onclick="shareImg()">分享薪資單圖片</button>
   </div>
 
 </div>
@@ -277,8 +273,6 @@ function clearSig(){
   document.getElementById('sigHint').style.display = 'block';
 }
 
-let resultBlob = null;
-
 async function confirmSign(){
   const err = document.getElementById('signErr');
   if(!drawn){ err.textContent = '※ 請於上方簽名確認'; err.style.display = 'block'; return; }
@@ -308,27 +302,12 @@ async function confirmSign(){
 
   html2canvas(wrap.querySelector('#slip'), {scale:2, backgroundColor:'#ffffff'}).then(canvas=>{
     canvas.toBlob(b=>{
-      resultBlob = b;
       document.getElementById('resultImg').src = URL.createObjectURL(b);
       document.getElementById('slipCard').classList.add('hidden');
       document.getElementById('doneCard').classList.remove('hidden');
       window.scrollTo({top:0, behavior:'smooth'});
     }, 'image/png');
   });
-}
-
-function shareImg(){
-  if(!resultBlob) return;
-  const file = new File([resultBlob], '薪資單.png', {type:'image/png'});
-  if(navigator.canShare && navigator.canShare({files:[file]})){
-    navigator.share({files:[file], title:'薪資單'}).catch(()=>{});
-  } else {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(resultBlob);
-    a.download = '薪資單.png';
-    a.click();
-    alert('圖片已下載，請於 LINE 對話中回傳給園所。');
-  }
 }
 </script>
 </body>
