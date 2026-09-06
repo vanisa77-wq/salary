@@ -232,7 +232,10 @@ body.gate-lock{overflow:hidden}
 </div>
 
 <div class="card">
-  <div class="card-title">老師薪資明細</div>
+  <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <span>老師薪資明細</span>
+    <button type="button" id="batch-sign-btn" class="btn-add no-print" style="margin:0" onclick="batchSendSignLinks()">🖋 一鍵產生連結並發送</button>
+  </div>
   <div class="list-wrap" id="t-list"><div class="empty-hint">請先選擇年月並按「從資料庫載入」</div></div>
 </div>
 
@@ -475,6 +478,49 @@ async function generateSignLink(id,btnEl){
   if(idx>=0) monthRecords[idx]=res.data;
   renderMonth();
   openLineShare(token,res.data.emp_name);
+}
+/* 一鍵對整個月尚未簽名的老師產生連結＋嘗試LINE私訊推播，不逐一彈視窗（避免瀏覽器擋多重彈窗），
+   推播失敗的人連結還是會先產生好，最後統一列出，回到列表用「📤 傳送LINE」個別重新嘗試即可。 */
+async function batchSendSignLinks(){
+  if(!sb){ alert('無法連線到資料庫'); return; }
+  if(!monthRecords.length){ alert('請先選擇年月並按「從資料庫載入」'); return; }
+  const targets=monthRecords.filter(r=>!r.signature);
+  if(!targets.length){ alert('這個月所有老師都已經簽名完成了'); return; }
+  if(!confirm('確定要對 '+targets.length+' 位尚未簽名的老師，一鍵產生連結並嘗試發送LINE嗎？')) return;
+  const btn=document.getElementById('batch-sign-btn');
+  if(btn){ btn.disabled=true; }
+  let pushed=0, manual=0, failed=0;
+  const manualNames=[];
+  for(let i=0;i<targets.length;i++){
+    const r=targets[i];
+    if(btn) btn.textContent='⏳ 處理中… '+(i+1)+'/'+targets.length;
+    try{
+      let token=r.sign_token;
+      if(!token){
+        token=genShortId(10);
+        const res=await sb.from('salary_records')
+          .update({ sign_token:token, link_created_at:new Date().toISOString(), signature:null, signed_at:null })
+          .eq('id',r.id).select('*').maybeSingle();
+        if(res.error){ failed++; continue; }
+        const idx=monthRecords.findIndex(x=>x.id===r.id);
+        if(idx>=0) monthRecords[idx]=res.data;
+      }
+      const link=location.origin+'/payslip?token='+token;
+      const text=r.emp_name+' 的薪資單，請點連結查看並簽名確認：\n'+link;
+      const pushRes=await fetch(`${TEACHER_PLATFORM_URL}/functions/v1/notify-teacher-line`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':`Bearer ${TEACHER_PLATFORM_KEY}`},
+        body:JSON.stringify({ name:r.emp_name, text })
+      });
+      const result=await pushRes.json().catch(()=>({}));
+      if(pushRes.ok && result.ok){ pushed++; } else { manual++; manualNames.push(r.emp_name); }
+    }catch(e){ manual++; manualNames.push(r.emp_name); }
+  }
+  renderMonth();
+  if(btn){ btn.disabled=false; btn.textContent='🖋 一鍵產生連結並發送'; }
+  let msg='處理完成！\n私訊成功：'+pushed+' 位\n需要手動傳送：'+manual+' 位'+(failed?'\n產生失敗：'+failed+' 位':'');
+  if(manualNames.length) msg+='\n\n需要手動傳送：'+manualNames.join('、')+'\n連結都已經產生好了，回到列表對他們按「📤 傳送LINE」即可再次嘗試（會自動複製連結到剪貼簿，可直接貼給對方）。';
+  alert(msg);
 }
 function copyTextToClipboard(text){
   if(navigator.clipboard && navigator.clipboard.writeText){
