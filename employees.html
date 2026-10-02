@@ -428,6 +428,13 @@ function renderEmpDetail(e,i){
   html+='</div>';
   html+='</div>';
 
+  html+='<div class="card"><div class="card-title">'+ic('wallet')+' 薪資</div>';
+  html+='<div class="row2">';
+  html+='<div class="f-line"><span class="f-label">本薪</span><input type="number" class="f-input num-input" value="'+(e.base||'')+'" min="0" oninput="updateEmpDBField('+i+',\'base\',+this.value)" onchange="renderEmpDBList()"><span style="font-size:14px;color:var(--ink-faint)">元</span></div>';
+  html+='<div class="f-line"><span class="f-label">全勤獎金</span><input type="number" class="f-input num-input" value="'+(e.bonus||'')+'" min="0" oninput="updateEmpDBField('+i+',\'bonus\',+this.value)" onchange="renderEmpDBList()"><span style="font-size:14px;color:var(--ink-faint)">元</span></div>';
+  html+='</div><div class="help-text">月中調薪請用下方「月中調薪」設定，不要直接改這裡的本薪</div>';
+  html+='</div>';
+
   html+='<div class="card"><div class="card-title">'+ic('key')+' 登入帳號</div>';
   html+='<div class="row2">';
   html+='<div class="f-line"><span class="f-label">帳號</span><input type="text" class="f-input" value="'+(e.account||'').replace(/"/g,'&quot;')+'" oninput="updateEmpDBField('+i+',\'account\',this.value)"></div>';
