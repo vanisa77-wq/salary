@@ -2022,14 +2022,23 @@ function applySavedBatchDone(){
 async function toggleBatchDone(i){
   const data=batchReports[i];
   if(!data)return;
-  data.done=!data.done;
   var map=loadBatchDoneMap();
   var key=batchDoneKey(data);
-  if(data.done) map[key]=true; else delete map[key];
-  saveBatchDoneMap(map);
-  if(data.done && i===currentBatchIndex){
-    try{ await saveToYearly(true); }catch(e){}
+  if(!data.done){
+    // 核薪完成一定要真的存檔：不是目前載入的老師就先載入（含還原存檔項目）再存；存檔取消/失敗就不標記已核薪
+    if(i!==currentBatchIndex){ await loadBatchReport(i); }
+    var saved=false;
+    try{ saved=await saveToYearly(true); }catch(e){ console.error(e); }
+    if(saved===false){
+      alert('「'+(data.name||'')+'」薪資未存檔成功，所以沒有標記為核薪完成。請按「載入計算」確認後再試一次。');
+      if(lastBatchResults) renderBatchResultsTable(); else renderBatchList();
+      return;
+    }
+    data.done=true; map[key]=true;
+  }else{
+    data.done=false; delete map[key];
   }
+  saveBatchDoneMap(map);
   if(lastBatchResults) renderBatchResultsTable(); else renderBatchList();
 }
 var currentBatchIndex=null;
@@ -2055,10 +2064,10 @@ function restoreSavedManualState(){
   var mo=(document.getElementById('cal-month')||{}).value||'';
   var savedRec=yearlyRecords[y]&&yearlyRecords[y][name]&&yearlyRecords[y][name][mo];
   var localMs=savedRec&&savedRec.manualState;
-  if(localMs&&localMs.extraEarnAll){ applyManualState(localMs); return; }
+  if(localMs&&localMs.extraEarnAll){ applyManualState(localMs); return Promise.resolve(); }
   // 本機沒有新格式的存檔狀態：改讀雲端 salary_records.manual_state，讀不到才用本機舊格式
-  if(!sb||!name){ if(localMs)applyManualState(localMs); return; }
-  sb.from('salary_records').select('manual_state').eq('emp_name',name).eq('year_roc',parseInt(y)).eq('month',parseInt(mo)).limit(1).then(function(res){
+  if(!sb||!name){ if(localMs)applyManualState(localMs); return Promise.resolve(); }
+  return sb.from('salary_records').select('manual_state').eq('emp_name',name).eq('year_roc',parseInt(y)).eq('month',parseInt(mo)).limit(1).then(function(res){
     var stillSame=(document.getElementById('emp-name')||{}).value===name&&(document.getElementById('cal-year')||{}).value===y&&(document.getElementById('cal-month')||{}).value===mo;
     if(!stillSame)return;
     var remoteMs=res&&!res.error&&res.data&&res.data[0]&&res.data[0].manual_state;
@@ -2120,7 +2129,7 @@ function loadBatchReport(i){
   currentBatchIndex=i;
   resetInsuranceSpecial();
   applyReportData(data);
-  restoreSavedManualState();
+  const restored=restoreSavedManualState();
   const logBox=document.getElementById('batch-detail-log');
   if(logBox){
     let prevLine='';
@@ -2130,6 +2139,7 @@ function loadBatchReport(i){
     }catch(e){}
     logBox.innerHTML='<div style="font-weight:700;margin:10px 0 4px">已載入「'+(data.name||'（未命名）')+'」，辨識結果：</div>'+data.log.map(l=>'<div>'+l+'</div>').join('')+prevLine+'<div>'+(data.dbMatched?'✅ 已自動帶入員工資料庫中的本薪/全勤獎金/投保級距/眷屬人數':'⚠️ 員工資料庫中無此人資料，請手動填寫本薪等欄位（或到上方「員工基本資料庫管理」新增）')+'</div>';
   }
+  return restored;
 }
 function parseLineReport(){
   const boxText=document.getElementById('line-report-text').value;
@@ -2525,6 +2535,10 @@ async function saveToYearly(silent){
   var earnItemsNow = collectRows('earn-body'), deductItemsNow = collectRows('deduct-body'), detailNow = buildResultText();
   var syncResult = await syncSalaryRecordToSupabase(y, name, mo, earn, deduct, net, earnItemsNow, deductItemsNow, detailNow);
   if(syncResult && (syncResult.cancelled || syncResult.locked)) return false;
+  if(syncResult && syncResult.error){
+    alert('「'+name+'」薪資存進雲端資料庫失敗，這次沒有存檔，請檢查網路後再試一次：'+(syncResult.error.message||syncResult.error));
+    return false;
+  }
   if(!yearlyRecords[y]) yearlyRecords[y] = {};
   if(!yearlyRecords[y][name]) yearlyRecords[y][name] = {};
   var existed = !!yearlyRecords[y][name][mo];
