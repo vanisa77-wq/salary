@@ -1394,6 +1394,21 @@ function updateAdjustmentField(id,field,val){
 function renderAdjustments(){
   const box=document.getElementById('adjustments-list');
   if(!box)return;
+  // 打字中重畫會換掉輸入框，先記住游標所在的欄位與位置，重畫後放回去，避免輸入斷斷續續
+  const fields=box.querySelectorAll('input,select');
+  const focusIdx=Array.prototype.indexOf.call(fields,document.activeElement);
+  let selStart=null,selEnd=null;
+  if(focusIdx>=0){ try{ selStart=document.activeElement.selectionStart; selEnd=document.activeElement.selectionEnd; }catch(e){} }
+  renderAdjustmentsHTML(box);
+  if(focusIdx>=0){
+    const el=box.querySelectorAll('input,select')[focusIdx];
+    if(el){
+      el.focus();
+      if(selStart!=null){ try{ el.setSelectionRange(selStart,selEnd); }catch(e){} }
+    }
+  }
+}
+function renderAdjustmentsHTML(box){
   box.innerHTML=adjustments.map(function(a){
     const insuranceType=a.insuranceType||'health';
     const premiumAmount=(a.premiumAmount!=null&&a.premiumAmount!==0)?a.premiumAmount:(a.grade||0);
