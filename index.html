@@ -2018,15 +2018,48 @@ async function toggleBatchDone(i){
   if(lastBatchResults) renderBatchResultsTable(); else renderBatchList();
 }
 var currentBatchIndex=null;
+/* 存檔當下的手動狀態。extraEarnAll/extraDeductAll 是整份其它應領/應扣（含從員工資料庫帶入、之後被手動改過金額或名稱的固定津貼），
+   載入計算時整份取代，才不會被員工資料庫的固定津貼蓋回原值。也會一併存進 salary_records.manual_state，換電腦也能還原。 */
+function buildManualState(){
+  return {
+    extraEarnAll: JSON.parse(JSON.stringify(extraItems.earn)),
+    extraDeductAll: JSON.parse(JSON.stringify(extraItems.deduct)),
+    adjustments: JSON.parse(JSON.stringify(adjustments)),
+    isResignMonth: document.getElementById('is-resign-month').checked,
+    resignDate: (document.getElementById('resign-date')||{}).value || '',
+    unusedAnnualLeave: (document.getElementById('unused-annual-leave')||{}).value || '0',
+    annualLeaveTotal: (document.getElementById('annual-leave-total')||{}).value || '0',
+    isHireMonth: document.getElementById('is-hire-month').checked,
+    hireDateManual: (document.getElementById('hire-date')||{}).value || '',
+    persNoAttend: collectPersNoAttend()
+  };
+}
 function restoreSavedManualState(){
   var name=(document.getElementById('emp-name')||{}).value||'';
   var y=(document.getElementById('cal-year')||{}).value||'';
   var mo=(document.getElementById('cal-month')||{}).value||'';
   var savedRec=yearlyRecords[y]&&yearlyRecords[y][name]&&yearlyRecords[y][name][mo];
-  var ms=savedRec&&savedRec.manualState;
+  var localMs=savedRec&&savedRec.manualState;
+  if(localMs&&localMs.extraEarnAll){ applyManualState(localMs); return; }
+  // 本機沒有新格式的存檔狀態：改讀雲端 salary_records.manual_state，讀不到才用本機舊格式
+  if(!sb||!name){ if(localMs)applyManualState(localMs); return; }
+  sb.from('salary_records').select('manual_state').eq('emp_name',name).eq('year_roc',parseInt(y)).eq('month',parseInt(mo)).limit(1).then(function(res){
+    var stillSame=(document.getElementById('emp-name')||{}).value===name&&(document.getElementById('cal-year')||{}).value===y&&(document.getElementById('cal-month')||{}).value===mo;
+    if(!stillSame)return;
+    var remoteMs=res&&!res.error&&res.data&&res.data[0]&&res.data[0].manual_state;
+    if(remoteMs)applyManualState(remoteMs);
+    else if(localMs)applyManualState(localMs);
+  });
+}
+function applyManualState(ms){
   if(!ms)return;
-  (ms.extraEarn||[]).forEach(function(it){ extraItems.earn.push(Object.assign({},it)); });
-  (ms.extraDeduct||[]).forEach(function(it){ extraItems.deduct.push(Object.assign({},it)); });
+  if(ms.extraEarnAll){
+    extraItems.earn=ms.extraEarnAll.map(function(it){ return Object.assign({},it,{id:++itemId}); });
+    extraItems.deduct=(ms.extraDeductAll||[]).map(function(it){ return Object.assign({},it,{id:++itemId}); });
+  }else{
+    (ms.extraEarn||[]).forEach(function(it){ extraItems.earn.push(Object.assign({},it)); });
+    (ms.extraDeduct||[]).forEach(function(it){ extraItems.deduct.push(Object.assign({},it)); });
+  }
   (ms.adjustments||[]).forEach(function(a){
     var copy=Object.assign({},a);
     copy.id=++adjIdCounter;
@@ -2376,6 +2409,7 @@ async function syncSalaryRecordToSupabase(y, name, mo, earn, deduct, net, earnIt
     employer_labor: ec.employerLabor,
     employer_health: ec.employerHealth,
     employer_pension: ec.employerPension,
+    manual_state: buildManualState(),
     saved_at: new Date().toISOString()
   };
   const { data: existingRows, error: selErr } = await sb.from('salary_records').select('*')
@@ -2484,18 +2518,7 @@ async function saveToYearly(silent){
     items: { earn: earnItemsNow, deduct: deductItemsNow },
     detail: detailNow,
     savedAt: new Date().toLocaleString('zh-TW'),
-    manualState: {
-      extraEarn: extraItems.earn.filter(function(it){ return !it.fromEmp; }),
-      extraDeduct: extraItems.deduct.filter(function(it){ return !it.fromEmp; }),
-      adjustments: JSON.parse(JSON.stringify(adjustments)),
-      isResignMonth: document.getElementById('is-resign-month').checked,
-      resignDate: (document.getElementById('resign-date')||{}).value || '',
-      unusedAnnualLeave: (document.getElementById('unused-annual-leave')||{}).value || '0',
-      annualLeaveTotal: (document.getElementById('annual-leave-total')||{}).value || '0',
-      isHireMonth: document.getElementById('is-hire-month').checked,
-      hireDateManual: (document.getElementById('hire-date')||{}).value || '',
-      persNoAttend: collectPersNoAttend()
-    }
+    manualState: buildManualState()
   };
   saveYearlyRecords();
   refreshYearlySel();
