@@ -328,6 +328,7 @@ body.gate-lock{overflow:hidden}
   <div class="modalInner">
     <div id="signPreviewWrap"></div>
     <button class="modalDownload" onclick="downloadSignPreview()">下載薪資單圖片</button>
+    <button class="modalClose" onclick="resignFromPreview(this)" style="background:#A5514B;color:#fff">🖋 簽名不完整，請老師重新簽名</button>
     <button class="modalClose" onclick="closeSignPreview()">關閉</button>
   </div>
 </div>
@@ -585,10 +586,11 @@ function renderSlipInto(container,data){
   container.appendChild(tpl);
   return container.querySelector('#slip');
 }
-let signPreviewBlob=null;
+let signPreviewBlob=null, signPreviewIdx=-1;
 function viewSignedSlip(idx){
   const r=monthRecords[idx];
   if(!r) return;
+  signPreviewIdx=idx;
   const wrap=document.getElementById('signPreviewWrap');
   const slipEl=renderSlipInto(wrap,r);
   const sigImg=slipEl.querySelector('.sigImg');
@@ -610,6 +612,14 @@ function closeSignPreview(){
   document.getElementById('signPreviewModal').style.display='none';
   document.getElementById('signPreviewWrap').innerHTML='';
   signPreviewBlob=null;
+}
+/* 簽名不完整時：清掉舊簽名、產生新連結並重新傳LINE給老師 */
+function resignFromPreview(btnEl){
+  const r=monthRecords[signPreviewIdx];
+  if(!r) return;
+  if(!confirm('確定要請「'+r.emp_name+'」重新簽名嗎？\n原本的簽名會被清除，舊連結也會失效。')) return;
+  closeSignPreview();
+  generateSignLink(r.id,btnEl);
 }
 function downloadSignPreview(){
   if(!signPreviewBlob){ alert('圖片還在準備中，請稍等一下再試一次'); return; }
