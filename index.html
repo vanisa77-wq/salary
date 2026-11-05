@@ -2629,7 +2629,10 @@ async function syncSalaryRecordToSupabase(y, name, mo, earn, deduct, net, earnIt
   const existing = existingRows && existingRows[0];
   if(existing){
     const sameAmount = Number(existing.earn_total)===Number(earn) && Number(existing.deduct_total)===Number(deduct) && Number(existing.net_total)===Number(net);
-    const sameItems = JSON.stringify(existing.earn_items||[])===JSON.stringify(earnItems||[]) && JSON.stringify(existing.deduct_items||[])===JSON.stringify(deductItems||[]);
+    // 資料庫 jsonb 會把欄位重新排序（{t,s,a} 存回來變 {a,s,t}），直接 JSON.stringify 比對永遠不同，
+    // 改成只比對每列的 名稱／說明／金額 內容
+    const normItems = arr => JSON.stringify((arr||[]).map(it => [it&&it.t||'', it&&it.s||'', it&&it.a||'']));
+    const sameItems = normItems(existing.earn_items)===normItems(earnItems) && normItems(existing.deduct_items)===normItems(deductItems);
     if(!sameAmount || !sameItems){
       const confirmed = await showAmendConfirm({ name:name, y:yearRoc, mo:monthNum, oldNet:existing.net_total, newNet:net, savedAt:existing.saved_at });
       if(!confirmed.ok) return { ok:false, cancelled:true };
