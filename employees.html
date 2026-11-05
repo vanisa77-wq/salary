@@ -247,7 +247,7 @@ let employeeDB=[];
 let dependentsByEmp={};
 let allowancesByEmp={};
 let expandedEmpId=null;
-function rowToEmp(r){return {id:r.id,account:r.account||'',password:r.password||'',name:r.name||'',base:r.base||0,bonus:r.bonus||0,insGrade:r.ins_grade||0,dependents:r.dependents||0,hireDate:r.hire_date||'',resignDate:r.resign_date||'',jobTitle:r.job_title||'',healthInsGrade:r.health_ins_grade||0,laborInsExempt:r.labor_ins_exempt===true,raiseDate:r.raise_effective_date||'',raiseNewBase:r.raise_new_base||0,gradeEffDate:r.grade_effective_date||'',gradeNewGrade:(r.grade_new_ins_grade===null||r.grade_new_ins_grade===undefined)?'':r.grade_new_ins_grade,tenureDeductMonths:r.tenure_deduct_months||0};}
+function rowToEmp(r){return {id:r.id,account:r.account||'',password:r.password||'',name:r.name||'',base:r.base||0,bonus:r.bonus||0,insGrade:r.ins_grade||0,dependents:r.dependents||0,hireDate:r.hire_date||'',resignDate:r.resign_date||'',jobTitle:r.job_title||'',healthInsGrade:r.health_ins_grade||0,laborInsExempt:r.labor_ins_exempt===true,raiseDate:r.raise_effective_date||'',raiseNewBase:r.raise_new_base||0,gradeEffDate:r.grade_effective_date||'',gradeNewGrade:(r.grade_new_ins_grade===null||r.grade_new_ins_grade===undefined)?'':r.grade_new_ins_grade,tenureDeductMonths:r.tenure_deduct_months||0,alEntitled:(r.al_entitled===null||r.al_entitled===undefined)?'':+r.al_entitled,alTaken:(r.al_taken===null||r.al_taken===undefined)?'':+r.al_taken,alAsOf:r.al_as_of||'',alNote:r.al_note||''};}
 function rocDateFields(prefix,iso,onChangeExpr){
   const p=iso?iso.split('-'):['','',''];
   const y=p[0]?(+p[0]-1911):'',m=p[1]?+p[1]:'',d=p[2]?+p[2]:'';
@@ -467,6 +467,18 @@ function renderEmpDetail(e,i){
   html+='</div>';
   html+='</div>';
 
+  /* 特休：老師統計好的應休／已休天數，存檔時帶進薪資明細單的「特休」小表格 */
+  var alHas=e.alEntitled!==''&&e.alEntitled!==null&&e.alEntitled!==undefined;
+  var alLeft=alHas?+((+e.alEntitled)-(+e.alTaken||0)).toFixed(2):'';
+  html+='<div class="card"><div class="card-title">'+ic('calendar')+' 特休'+(alHas?'<span class="badge">薪資單會顯示</span>':'')+'</div>';
+  html+='<div class="f-line"><span class="f-label">應休</span><input type="number" step="0.1" min="0" class="f-input num-input" value="'+(alHas?e.alEntitled:'')+'" placeholder="例：19.5" onchange="updateEmpDBField('+i+',\'alEntitled\',this.value===\'\'?\'\':+this.value);renderEmpDBList()"><span style="font-size:12px;color:var(--ink-faint)">日</span></div>';
+  html+='<div class="f-line"><span class="f-label">已休</span><input type="number" step="0.1" min="0" class="f-input num-input" value="'+(e.alTaken===''||e.alTaken===null||e.alTaken===undefined?'':e.alTaken)+'" placeholder="例：17" onchange="updateEmpDBField('+i+',\'alTaken\',this.value===\'\'?\'\':+this.value);renderEmpDBList()"><span style="font-size:12px;color:var(--ink-faint)">日</span></div>';
+  html+='<div class="f-line"><span class="f-label">未休</span><span style="font-weight:700">'+(alHas?alLeft+' 日':'—')+'</span><span style="font-size:12px;color:var(--ink-faint)">（自動計算＝應休－已休）</span></div>';
+  html+='<div class="f-line"><span class="f-label">統計至</span>'+rocDateFields('al-date-'+i,e.alAsOf,'updateEmpDBField('+i+',\'alAsOf\',readRocDate(\'al-date-'+i+'\'))')+'</div>';
+  html+='<div class="f-line"><span class="f-label">附註</span><input type="text" class="f-input" value="'+String(e.alNote||'').replace(/"/g,'&quot;')+'" placeholder="選填，例：115/11/13 起" onchange="updateEmpDBField('+i+',\'alNote\',this.value.trim())"></div>';
+  html+='<div class="help-text">填了「應休」，之後存檔的薪資明細單下方就會出現特休小表格（應休／已休／未休）。老師重新統計後，直接改這裡的數字即可；已存檔的月份不會變。應休留空＝薪資單不顯示特休。</div>';
+  html+='</div>';
+
 
   const depsSorted=deps.slice().sort(function(a,b){
     const ageA=depAge(a.birth_date), ageB=depAge(b.birth_date);
@@ -569,7 +581,7 @@ function renderEmpDBList(){
   box.innerHTML=out;
 }
 function empFieldToColumn(field){
-  const map={insGrade:'ins_grade',hireDate:'hire_date',resignDate:'resign_date',jobTitle:'job_title',healthInsGrade:'health_ins_grade',laborInsExempt:'labor_ins_exempt',raiseDate:'raise_effective_date',raiseNewBase:'raise_new_base',gradeEffDate:'grade_effective_date',gradeNewGrade:'grade_new_ins_grade',tenureDeductMonths:'tenure_deduct_months'};
+  const map={insGrade:'ins_grade',hireDate:'hire_date',resignDate:'resign_date',jobTitle:'job_title',healthInsGrade:'health_ins_grade',laborInsExempt:'labor_ins_exempt',raiseDate:'raise_effective_date',raiseNewBase:'raise_new_base',gradeEffDate:'grade_effective_date',gradeNewGrade:'grade_new_ins_grade',tenureDeductMonths:'tenure_deduct_months',alEntitled:'al_entitled',alTaken:'al_taken',alAsOf:'al_as_of',alNote:'al_note'};
   return map[field]||field;
 }
 function updateEmpDBField(i,field,val){
@@ -581,7 +593,7 @@ function updateEmpDBField(i,field,val){
   const client=initSupabase();
   if(!client)return;
   const payload={};
-  payload[empFieldToColumn(field)]=((field==='account'||field==='raiseDate'||field==='gradeEffDate')&&val==='')?null:val;
+  payload[empFieldToColumn(field)]=((field==='account'||field==='raiseDate'||field==='gradeEffDate'||field==='alEntitled'||field==='alTaken'||field==='alAsOf'||field==='alNote')&&val==='')?null:val;
   client.from('employees').update(payload).eq('id',emp.id).then(function(res){
     if(res.error)console.error(res.error);
   });

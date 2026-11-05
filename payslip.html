@@ -127,6 +127,7 @@
       <span class="net-label">實領金額</span>
       <span class="net-amt netTotal"></span>
     </div>
+    <div class="alBox"></div>
     <div class="sigline">
       <b>老師簽名：</b>
       <span class="sigPlaceholder" style="color:#999;">（尚未簽名）</span>
@@ -141,6 +142,22 @@
 const SUPABASE_URL = 'https://vicbgttehkqeqhyvtlet.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_N4DH8txPq9dc9naOPk_Qmg_qEbEcXVM';
 
+/* 特休小表格：資料來自 salary_records.annual_leave（index.html 存檔時的快照），沒有就不顯示 */
+function alRocDate(iso){
+  if(!iso) return '';
+  var p = String(iso).split('-');
+  return (+p[0]-1911)+'/'+p[1]+'/'+p[2];
+}
+function annualLeaveHTML(al){
+  if(!al) return '';
+  var td = 'border:1px solid #D5D3CC;padding:5px 8px;text-align:center';
+  return '<div class="al-box" style="margin:10px 0 6px;font-size:13px">'
+    + '<div class="al-title" style="font-weight:700;margin-bottom:4px">特休' + (al.asOf ? '（統計至 '+alRocDate(al.asOf)+'）' : '') + '</div>'
+    + '<table style="border-collapse:collapse;width:100%"><tr>'
+    + '<th style="'+td+';background:#F3EFEA">應休</th><th style="'+td+';background:#F3EFEA">已休</th><th style="'+td+';background:#F3EFEA">未休</th></tr><tr>'
+    + '<td style="'+td+'">'+al.entitled+' 日' + (al.note ? '<div style="font-size:11px;color:#666">'+al.note+'</div>' : '') + '</td>'
+    + '<td style="'+td+'">'+al.taken+' 日</td><td style="'+td+';font-weight:700">'+al.left+' 日</td></tr></table></div>';
+}
 function fmtMoney(n){
   const num = Number(n) || 0;
   return num.toLocaleString('zh-TW') + ' 元';
@@ -179,6 +196,7 @@ function renderSlipInto(container, data){
   q('deductTotal').textContent = fmtMoney(data.deduct_total);
 
   q('netTotal').textContent = fmtMoney(data.net_total);
+  q('alBox').innerHTML=annualLeaveHTML(data.annual_leave);
 
   container.appendChild(tpl);
   return container.querySelector('#slip');
