@@ -989,6 +989,7 @@ function getRaiseSplitNote(){
   var parts=emp.raiseDate.split('-');
   var ry=+parts[0],rm=+parts[1],rd=+parts[2];
   if(!(ad===ry&&mo===rm))return '';
+  if(!(+emp.raiseNewBase>0))return '';
   var daysOld=Math.min(rd-1,30), daysNew=30-daysOld;
   var oldAmt=Math.round((emp.base||0)/30*daysOld);
   var newAmt=Math.round((emp.raiseNewBase||0)/30*daysNew);
@@ -1765,6 +1766,14 @@ function autoLinkRaiseSplit(){
   var ry=+parts[0],rm=+parts[1],rd=+parts[2];
   var baseEl=document.getElementById('base');
   if(ad<ry||(ad===ry&&mo<rm))return;
+  /* 調薪後本薪沒填（0）時不拆算，維持原本薪，避免本薪被算成只剩幾天 */
+  if(!(+emp.raiseNewBase>0)){
+    if(noteEl){
+      noteEl.style.display='block';
+      noteEl.textContent='⚠️ 此員工有設定調薪生效日（'+ry+'/'+String(rm).padStart(2,'0')+'/'+String(rd).padStart(2,'0')+'），但「調薪後本薪」沒填，已暫時用原本薪計算。請到員工資料管理補上調薪後本薪，或按「清除設定」。';
+    }
+    return;
+  }
   if(ad===ry&&mo===rm){
     var daysOld=Math.min(rd-1,30), daysNew=30-daysOld;
     var blended=Math.round((emp.base||0)/30*daysOld+(emp.raiseNewBase||0)/30*daysNew);

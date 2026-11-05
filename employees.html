@@ -447,6 +447,7 @@ function renderEmpDetail(e,i){
   if(e.raiseDate){
     html+='<div class="f-line"><span class="f-label">生效日</span>'+rocDateFields('raise-date-'+i,e.raiseDate,'updateEmpDBField('+i+',\'raiseDate\',readRocDate(\'raise-date-'+i+'\'))')+'</div>';
     html+='<div class="f-line"><span class="f-label">調薪後</span><input type="number" class="f-input num-input" value="'+(e.raiseNewBase||'')+'" placeholder="例：36000" oninput="updateEmpDBField('+i+',\'raiseNewBase\',+this.value)"></div>';
+    if(!(+e.raiseNewBase>0))html+='<div class="help-text" style="color:#B5533C;font-weight:600">⚠️ 還沒填「調薪後本薪」，薪資計算器會先用原本薪計算（不拆算）。不調薪的話請按右上「清除設定」。</div>';
     html+='<button type="button" class="btn btn-fill" style="width:100%;justify-content:center;margin-top:4px" onclick="promoteRaise('+i+')">✓ 套用為正式本薪並清除設定</button>';
     html+='<div class="help-text">生效當月薪資計算器會自動把本薪拆成「生效日前用原本薪、生效日後用調薪後本薪」兩段合計（按30天基準分配，不受大小月影響）；生效月份過了之後直接改用調薪後本薪。確認無誤後按上方按鈕套用為正式本薪。</div>';
   }else{
@@ -588,7 +589,8 @@ function updateEmpDBField(i,field,val){
 function promoteRaise(i){
   const emp=employeeDB[i];
   if(!emp||!emp.raiseDate)return;
-  if(!confirm('確定要把「'+emp.name+'」的正式本薪改成 '+(emp.raiseNewBase||0)+' 元，並清除調薪設定嗎？(之後計算器就不會再自動拆分本薪)'))return;
+  if(!(+emp.raiseNewBase>0)){alert('請先填寫「調薪後本薪」再套用，否則正式本薪會變成 0 元。');return;}
+  if(!confirm('確定把「'+emp.name+'」的本薪正式改成 '+Number(emp.raiseNewBase||0).toLocaleString('zh-TW')+' 元嗎？'))return;
   updateEmpDBField(i,'base',emp.raiseNewBase||0);
   updateEmpDBField(i,'raiseDate','');
   updateEmpDBField(i,'raiseNewBase',0);
