@@ -76,8 +76,8 @@ body.gate-lock{overflow:hidden}
 table.emp-table{width:100%;border-collapse:collapse;font-size:16px;table-layout:fixed}
 table.emp-table col.c-no{width:32px}
 table.emp-table col.c-name{width:96px}
-table.emp-table col.c-birth{width:100px}
-table.emp-table col.c-nid{width:120px}
+table.emp-table col.c-birth{width:118px}
+table.emp-table col.c-nid{width:140px}
 table.emp-table col.c-hire{width:100px}
 table.emp-table col.c-tenure{width:150px}
 table.emp-table col.c-base{width:92px}
@@ -100,6 +100,11 @@ table.emp-table td.c{text-align:center;white-space:nowrap}
 .tenure-cell{display:flex;align-items:center;gap:5px;color:var(--ink-soft);font-size:14.5px}
 .tenure-cell svg{color:var(--accent)}
 .hire-cell{color:var(--ink-soft);font-size:14.5px}
+.copy-wrap{display:inline-flex;align-items:center;gap:3px}
+.copy-btn{background:transparent;border:0;padding:2px;cursor:pointer;color:var(--ink-faint);display:inline-flex;align-items:center;border-radius:4px;opacity:.55}
+.copy-btn:hover{opacity:1;color:var(--accent);background:var(--hover)}
+.copy-btn.done{opacity:1;color:#3D7A4A}
+.copy-btn svg{width:14px;height:14px}
 .base-cell{color:var(--accent-deep);font-weight:700}
 .dash{color:var(--ink-faint)}
 .resign-sep td{background:var(--tint);color:var(--ink-soft);font-weight:700;font-size:14.5px;padding:8px 10px;border-bottom:1px solid var(--border)}
@@ -231,6 +236,8 @@ function ic(name){
   var paths={
     calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
     chevronDown:'<path d="m6 9 6 6 6-6"/>',
+    copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+    check:'<path d="M20 6 9 17l-5-5"/>',
     chevronUp:'<path d="m18 15-6-6-6 6"/>',
     trash:'<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/><path d="M10 11v6M14 11v6"/>',
     key:'<circle cx="7.5" cy="15.5" r="3.5"/><path d="m10.5 12.5 7-7 3 3-2.5 2.5m-2-2 2 2"/>',
@@ -411,6 +418,19 @@ function empDBHealthGradeOptions(selectedIdx){
   return HEALTH.map(([sal,fee],i)=>'<option value="'+i+'"'+(i===+selectedIdx?' selected':'')+'>'+sal.toLocaleString('zh-TW')+' 元</option>').join('');
 }
 function toggleEmpExpand(id){expandedEmpId=(expandedEmpId===id)?null:id;renderEmpDBList();}
+function copyCell(text,title){
+  const t=String(text).replace(/[^0-9A-Za-z\/]/g,'');
+  return '<span class="copy-wrap">'+t+'<button type="button" class="copy-btn" title="'+title+'" onclick="event.stopPropagation();copyText(\''+t+'\',this)">'+ic('copy')+'</button></span>';
+}
+function copyText(t,btn){
+  const done=function(){ btn.classList.add('done'); btn.innerHTML=ic('check'); setTimeout(function(){ btn.classList.remove('done'); btn.innerHTML=ic('copy'); },1200); };
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(done,function(){ fallbackCopy(t); done(); }); }
+  else { fallbackCopy(t); done(); }
+}
+function fallbackCopy(t){
+  const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta);
+}
 function renderLeavePeriods(e,i){
   const list=e.leavePeriods||[];
   let h='<div class="f-line" style="align-items:flex-start"><span class="f-label">育嬰留停</span><div style="display:flex;flex-direction:column;gap:6px;flex:1">';
@@ -613,8 +633,8 @@ function renderEmpDBList(){
     let row='<tr class="emp-row'+(isResigned?' resigned':'')+'" onclick="toggleEmpExpand('+e.id+')">'
       +'<td class="c" style="color:var(--ink-faint)">'+seq+'</td>'
       +'<td><div class="name-cell"><span class="dot'+(isResigned?' off':'')+'"></span>'+(e.name||'（未命名）')+'</div></td>'
-      +'<td class="hire-cell num">'+(rocDateDisp(e.birthDate)||'<span class="dash">—</span>')+'</td>'
-      +'<td class="hire-cell num" style="letter-spacing:.3px">'+(e.nationalId||'<span class="dash">—</span>')+'</td>'
+      +'<td class="hire-cell num">'+(rocDateDisp(e.birthDate)?copyCell(rocDateDisp(e.birthDate),'複製生日'):'<span class="dash">—</span>')+'</td>'
+      +'<td class="hire-cell num" style="letter-spacing:.3px">'+(e.nationalId?copyCell(e.nationalId,'複製身分證字號'):'<span class="dash">—</span>')+'</td>'
       +'<td class="hire-cell num">'+(rocDateDisp(e.hireDate)||'<span class="dash">—</span>')+'</td>'
       +'<td>'+(isResigned?'<span class="dash">—</span>':'<span class="tenure-cell">'+ic('calendar')+(tenureFull(e.hireDate,null,e.tenureDeductMonths,e.tenureDeductDays,e.leavePeriods)||'<span class="dash">—</span>')+'</span>')+'</td>'
       +'<td class="r base-cell num">'+(e.base?Number(e.base).toLocaleString('zh-TW'):'<span class="dash">—</span>')+'</td>'
