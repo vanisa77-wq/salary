@@ -76,6 +76,7 @@ body.gate-lock{overflow:hidden}
 table.emp-table{width:100%;border-collapse:collapse;font-size:16px;table-layout:fixed}
 table.emp-table col.c-no{width:32px}
 table.emp-table col.c-name{width:110px}
+table.emp-table col.c-hire{width:100px}
 table.emp-table col.c-tenure{width:168px}
 table.emp-table col.c-base{width:92px}
 table.emp-table col.c-bonus{width:88px}
@@ -96,6 +97,7 @@ table.emp-table td.c{text-align:center}
 .dot.off{background:transparent;border:1.5px solid var(--ink-faint)}
 .tenure-cell{display:flex;align-items:center;gap:5px;color:var(--ink-soft);font-size:14.5px}
 .tenure-cell svg{color:var(--accent)}
+.hire-cell{color:var(--ink-soft);font-size:14.5px}
 .base-cell{color:var(--accent-deep);font-weight:700}
 .dash{color:var(--ink-faint)}
 .resign-sep td{background:var(--tint);color:var(--ink-soft);font-weight:700;font-size:14.5px;padding:8px 10px;border-bottom:1px solid var(--border)}
@@ -555,6 +557,7 @@ function renderEmpDBList(){
     let row='<tr class="emp-row'+(isResigned?' resigned':'')+'" onclick="toggleEmpExpand('+e.id+')">'
       +'<td class="c" style="color:var(--ink-faint)">'+seq+'</td>'
       +'<td><div class="name-cell"><span class="dot'+(isResigned?' off':'')+'"></span>'+(e.name||'（未命名）')+'</div></td>'
+      +'<td class="hire-cell num">'+(rocDateDisp(e.hireDate)||'<span class="dash">—</span>')+'</td>'
       +'<td>'+(isResigned?'<span class="dash">—</span>':'<span class="tenure-cell">'+ic('calendar')+(tenureFull(e.hireDate,null,e.tenureDeductMonths)||'<span class="dash">—</span>')+'</span>')+'</td>'
       +'<td class="r base-cell num">'+(e.base?Number(e.base).toLocaleString('zh-TW'):'<span class="dash">—</span>')+'</td>'
       +'<td class="r num" style="color:var(--ink-soft)">'+(e.bonus?Number(e.bonus).toLocaleString('zh-TW'):'<span class="dash">—</span>')+'</td>'
@@ -565,15 +568,15 @@ function renderEmpDBList(){
         : '<button type="button" class="btn-icon" title="展開" onclick="toggleEmpExpand('+e.id+')">'+ic(expandedEmpId===e.id?'chevronUp':'chevronDown')+'</button> <button type="button" class="btn-icon danger" title="刪除" onclick="removeEmpDBRow('+i+')">'+ic('trash')+'</button>')
       +'</td>'
       +'</tr>';
-    if(expandedEmpId===e.id)row+='<tr><td colspan="7" style="padding:0">'+renderEmpDetail(e,i)+'</td></tr>';
+    if(expandedEmpId===e.id)row+='<tr><td colspan="8" style="padding:0">'+renderEmpDetail(e,i)+'</td></tr>';
     return row;
   };
 
-  let out='<table class="emp-table"><colgroup><col class="c-no"><col class="c-name"><col class="c-tenure"><col class="c-base"><col class="c-bonus"><col class="c-grade"><col class="c-op"></colgroup>';
-  out+='<thead><tr><th>#</th><th>姓名</th><th>在職年資</th><th class="r">本薪</th><th class="r">全勤獎金</th><th class="r">投保級距</th><th class="c">操作</th></tr></thead><tbody>';
+  let out='<table class="emp-table"><colgroup><col class="c-no"><col class="c-name"><col class="c-hire"><col class="c-tenure"><col class="c-base"><col class="c-bonus"><col class="c-grade"><col class="c-op"></colgroup>';
+  out+='<thead><tr><th>#</th><th>姓名</th><th>到職日</th><th>在職年資</th><th class="r">本薪</th><th class="r">全勤獎金</th><th class="r">投保級距</th><th class="c">操作</th></tr></thead><tbody>';
   out+=active.map((i,pos)=>renderRow(i,pos+1)).join('');
   if(resigned.length){
-    out+='<tr class="resign-sep"><td colspan="7">已離職（'+resigned.length+'）</td></tr>';
+    out+='<tr class="resign-sep"><td colspan="8">已離職（'+resigned.length+'）</td></tr>';
     out+=resigned.map((i,pos)=>renderRow(i,active.length+pos+1)).join('');
   }
   out+='</tbody></table>';
