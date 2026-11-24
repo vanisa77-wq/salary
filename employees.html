@@ -614,7 +614,7 @@ function renderEmpDBList(){
       +'<td class="c" style="color:var(--ink-faint)">'+seq+'</td>'
       +'<td><div class="name-cell"><span class="dot'+(isResigned?' off':'')+'"></span>'+(e.name||'（未命名）')+'</div></td>'
       +'<td class="hire-cell num">'+(rocDateDisp(e.birthDate)||'<span class="dash">—</span>')+'</td>'
-      +'<td class="hire-cell num" style="font-family:monospace">'+(e.nationalId||'<span class="dash">—</span>')+'</td>'
+      +'<td class="hire-cell num" style="letter-spacing:.3px">'+(e.nationalId||'<span class="dash">—</span>')+'</td>'
       +'<td class="hire-cell num">'+(rocDateDisp(e.hireDate)||'<span class="dash">—</span>')+'</td>'
       +'<td>'+(isResigned?'<span class="dash">—</span>':'<span class="tenure-cell">'+ic('calendar')+(tenureFull(e.hireDate,null,e.tenureDeductMonths,e.tenureDeductDays,e.leavePeriods)||'<span class="dash">—</span>')+'</span>')+'</td>'
       +'<td class="r base-cell num">'+(e.base?Number(e.base).toLocaleString('zh-TW'):'<span class="dash">—</span>')+'</td>'
