@@ -249,7 +249,7 @@ let employeeDB=[];
 let dependentsByEmp={};
 let allowancesByEmp={};
 let expandedEmpId=null;
-function rowToEmp(r){return {id:r.id,account:r.account||'',password:r.password||'',name:r.name||'',base:r.base||0,bonus:r.bonus||0,insGrade:r.ins_grade||0,dependents:r.dependents||0,hireDate:r.hire_date||'',resignDate:r.resign_date||'',jobTitle:r.job_title||'',healthInsGrade:r.health_ins_grade||0,laborInsExempt:r.labor_ins_exempt===true,raiseDate:r.raise_effective_date||'',raiseNewBase:r.raise_new_base||0,gradeEffDate:r.grade_effective_date||'',gradeNewGrade:(r.grade_new_ins_grade===null||r.grade_new_ins_grade===undefined)?'':r.grade_new_ins_grade,tenureDeductMonths:r.tenure_deduct_months||0,tenureDeductDays:r.tenure_deduct_days||0,alEntitled:(r.al_entitled===null||r.al_entitled===undefined)?'':+r.al_entitled,alTaken:(r.al_taken===null||r.al_taken===undefined)?'':+r.al_taken,alAsOf:r.al_as_of||'',alNote:r.al_note||''};}
+function rowToEmp(r){return {id:r.id,account:r.account||'',password:r.password||'',name:r.name||'',base:r.base||0,bonus:r.bonus||0,insGrade:r.ins_grade||0,dependents:r.dependents||0,hireDate:r.hire_date||'',resignDate:r.resign_date||'',jobTitle:r.job_title||'',healthInsGrade:r.health_ins_grade||0,laborInsExempt:r.labor_ins_exempt===true,raiseDate:r.raise_effective_date||'',raiseNewBase:r.raise_new_base||0,gradeEffDate:r.grade_effective_date||'',gradeNewGrade:(r.grade_new_ins_grade===null||r.grade_new_ins_grade===undefined)?'':r.grade_new_ins_grade,tenureDeductMonths:r.tenure_deduct_months||0,tenureDeductDays:r.tenure_deduct_days||0,leavePeriods:Array.isArray(r.leave_periods)?r.leave_periods:[],alEntitled:(r.al_entitled===null||r.al_entitled===undefined)?'':+r.al_entitled,alTaken:(r.al_taken===null||r.al_taken===undefined)?'':+r.al_taken,alAsOf:r.al_as_of||'',alNote:r.al_note||''};}
 function rocDateFields(prefix,iso,onChangeExpr){
   const p=iso?iso.split('-'):['','',''];
   const y=p[0]?(+p[0]-1911):'',m=p[1]?+p[1]:'',d=p[2]?+p[2]:'';
@@ -308,13 +308,27 @@ function depIsBillable(d){
   if(age===null)return true;
   return age<65;
 }
-function tenureFull(hireDate, untilDate, deductMonths, deductDays){
+/* 育嬰留停等停職期間：起日～迄日（迄日=復職日，空白=仍停職中）換算成「幾個月又幾天」 */
+function leaveSpan(s,e){
+  var a=new Date(s+'T00:00:00'), b=e?new Date(e+'T00:00:00'):new Date();
+  if(isNaN(a)||isNaN(b)||b<=a)return {m:0,d:0};
+  var m=(b.getFullYear()-a.getFullYear())*12+b.getMonth()-a.getMonth();
+  var d=b.getDate()-a.getDate();
+  if(d<0){ m--; d+=new Date(b.getFullYear(),b.getMonth(),0).getDate(); }
+  return {m:m,d:d};
+}
+function tenureFull(hireDate, untilDate, deductMonths, deductDays, leavePeriods){
   if(!hireDate) return '';
   var start=new Date(hireDate+'T00:00:00');
   if(isNaN(start)) return '';
   // 停職（育嬰留停）扣除：到職日往後順延 N 個月 + N 天再起算
-  start.setMonth(start.getMonth()+(+deductMonths||0));
-  start.setDate(start.getDate()+(+deductDays||0));
+  // 有育嬰留停紀錄就依紀錄起迄日扣；沒有才用舊的手動扣除月/天
+  if(leavePeriods&&leavePeriods.length){
+    leavePeriods.forEach(function(lp){ if(!lp||!lp.start)return; var sp=leaveSpan(lp.start,lp.end||untilDate||null); start.setMonth(start.getMonth()+sp.m); start.setDate(start.getDate()+sp.d); });
+  }else{
+    start.setMonth(start.getMonth()+(+deductMonths||0));
+    start.setDate(start.getDate()+(+deductDays||0));
+  }
   var end=untilDate?new Date(untilDate+'T00:00:00'):new Date();
   if(isNaN(end)||end<start) return '';
   var y=end.getFullYear()-start.getFullYear();
@@ -395,11 +409,48 @@ function empDBHealthGradeOptions(selectedIdx){
   return HEALTH.map(([sal,fee],i)=>'<option value="'+i+'"'+(i===+selectedIdx?' selected':'')+'>'+sal.toLocaleString('zh-TW')+' 元</option>').join('');
 }
 function toggleEmpExpand(id){expandedEmpId=(expandedEmpId===id)?null:id;renderEmpDBList();}
+function renderLeavePeriods(e,i){
+  const list=e.leavePeriods||[];
+  let h='<div class="f-line" style="align-items:flex-start"><span class="f-label">育嬰留停</span><div style="display:flex;flex-direction:column;gap:6px;flex:1">';
+  list.forEach(function(lp,k){
+    const sp=leaveSpan(lp.start,lp.end||null);
+    const pre='leave-'+i+'-'+k;
+    h+='<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">'
+      +'<span style="font-size:14px;color:var(--ink-soft)">起</span>'+rocDateFields(pre+'-s',lp.start,'updateLeavePeriod('+i+','+k+')')
+      +'<span style="font-size:14px;color:var(--ink-soft);margin-left:6px">復職</span>'+rocDateFields(pre+'-e',lp.end,'updateLeavePeriod('+i+','+k+')')
+      +'<span style="font-size:14px;color:var(--ink-faint);margin-left:6px">'+(lp.start?'扣 '+sp.m+' 個月 '+sp.d+' 天'+(lp.end?'':'（停職中）'):'')+'</span>'
+      +'<button type="button" class="btn-icon danger" title="刪除這筆" onclick="removeLeavePeriod('+i+','+k+')">'+ic('x')+'</button></div>';
+  });
+  h+='<div><button type="button" class="btn btn-dashed" onclick="addLeavePeriod('+i+')">＋新增育嬰留停</button></div>';
+  h+='<div class="help-text" style="margin:0">依社會局「人員年資查詢」停職起日／迄日填寫（迄日＝復職日；還在停職中復職日留空），在職年資會自動扣除</div>';
+  h+='</div></div>';
+  return h;
+}
+function saveLeavePeriods(i,list){
+  updateEmpDBField(i,'leavePeriods',list);
+  renderEmpDBList();
+}
+function addLeavePeriod(i){
+  const e=employeeDB[i]; if(!e)return;
+  saveLeavePeriods(i,(e.leavePeriods||[]).concat([{start:'',end:''}]));
+}
+function removeLeavePeriod(i,k){
+  const e=employeeDB[i]; if(!e)return;
+  if(!confirm('確定刪除這筆育嬰留停紀錄？'))return;
+  saveLeavePeriods(i,(e.leavePeriods||[]).filter(function(_,x){return x!==k;}));
+}
+function updateLeavePeriod(i,k){
+  const e=employeeDB[i]; if(!e)return;
+  const pre='leave-'+i+'-'+k;
+  const list=(e.leavePeriods||[]).slice();
+  list[k]={start:readRocDate(pre+'-s'),end:readRocDate(pre+'-e')};
+  saveLeavePeriods(i,list);
+}
 function renderEmpDetail(e,i){
   const deps=dependentsByEmp[e.id]||[];
   const billableCount=deps.filter(depIsBillable).length;
   const exemptCount=deps.length-billableCount;
-  const tenure=tenureFull(e.hireDate, e.resignDate||null, e.tenureDeductMonths,e.tenureDeductDays);
+  const tenure=tenureFull(e.hireDate, e.resignDate||null, e.tenureDeductMonths,e.tenureDeductDays,e.leavePeriods);
 
   let html='<div class="detail-wrap">';
 
@@ -407,6 +458,7 @@ function renderEmpDetail(e,i){
   html+='<div><div class="dh-name">'+(e.name||'（未命名）')+'</div><div class="dh-sub">'+(e.jobTitle||'－')+'．編號 '+e.id+'</div>';
   html+='<div class="dh-stats">';
   html+='<div><span class="s-label">在職年資</span><span class="s-val">'+(tenure||'－')+'</span></div>';
+  if((e.leavePeriods||[]).length)html+='<div><span class="s-label">育嬰留停</span><span class="s-val">'+e.leavePeriods.map(function(lp){return rocDateDisp(lp.start)+'～'+(lp.end?rocDateDisp(lp.end):'停職中');}).join('、')+'</span></div>';
   html+='<div><span class="s-label">生日（敏感個資）</span><span class="s-val" style="display:flex;align-items:center;gap:4px">'+rocDateFields('pii-birth-'+i,e.birthDate,'updateEmpPii('+i+',\'birthDate\',readRocDate(\'pii-birth-'+i+'\'))')+'</span></div>';
   html+='<div><span class="s-label">身分證字號</span><span class="s-val"><input type="text" class="f-input" style="height:30px;width:120px;font-family:monospace" value="'+(e.nationalId||'').replace(/"/g,'&quot;')+'" maxlength="10" oninput="updateEmpPii('+i+',\'nationalId\',this.value.toUpperCase())"></span></div>';
   html+='</div></div>';
@@ -422,7 +474,7 @@ function renderEmpDetail(e,i){
     html+='<div class="f-line"><span class="f-label">離職日</span><button type="button" class="btn btn-dashed" onclick="updateEmpDBField('+i+',\'resignDate\',new Date().toISOString().slice(0,10));renderEmpDBList()">＋設定離職</button></div>';
   }
   html+='<div class="f-line"><span class="f-label">職稱</span><input type="text" class="f-input" value="'+(e.jobTitle||'').replace(/"/g,'&quot;')+'" oninput="updateEmpDBField('+i+',\'jobTitle\',this.value)"></div>';
-  html+='<div class="f-line"><span class="f-label">年資扣除</span><input type="number" class="f-input num-input" style="width:70px;flex:0 0 70px" value="'+(e.tenureDeductMonths||0)+'" min="0" oninput="updateEmpDBField('+i+',\'tenureDeductMonths\',+this.value)"><span style="font-size:14px;color:var(--ink-faint)">個月</span><input type="number" class="f-input num-input" style="width:60px;flex:0 0 60px" value="'+(e.tenureDeductDays||0)+'" min="0" oninput="updateEmpDBField('+i+',\'tenureDeductDays\',+this.value)"><span style="font-size:14px;color:var(--ink-faint)">天（育嬰留職停薪等停職期間，依社會局「人員年資查詢」停職起迄日核對）</span></div>';
+  html+=renderLeavePeriods(e,i);
   html+='</div>';
 
   html+='<div class="card"><div class="card-title">'+ic('pin')+' 投保級距</div>';
@@ -560,7 +612,7 @@ function renderEmpDBList(){
       +'<td class="c" style="color:var(--ink-faint)">'+seq+'</td>'
       +'<td><div class="name-cell"><span class="dot'+(isResigned?' off':'')+'"></span>'+(e.name||'（未命名）')+'</div></td>'
       +'<td class="hire-cell num">'+(rocDateDisp(e.hireDate)||'<span class="dash">—</span>')+'</td>'
-      +'<td>'+(isResigned?'<span class="dash">—</span>':'<span class="tenure-cell">'+ic('calendar')+(tenureFull(e.hireDate,null,e.tenureDeductMonths,e.tenureDeductDays)||'<span class="dash">—</span>')+'</span>')+'</td>'
+      +'<td>'+(isResigned?'<span class="dash">—</span>':'<span class="tenure-cell">'+ic('calendar')+(tenureFull(e.hireDate,null,e.tenureDeductMonths,e.tenureDeductDays,e.leavePeriods)||'<span class="dash">—</span>')+'</span>')+'</td>'
       +'<td class="r base-cell num">'+(e.base?Number(e.base).toLocaleString('zh-TW'):'<span class="dash">—</span>')+'</td>'
       +'<td class="r num" style="color:var(--ink-soft)">'+(e.bonus?Number(e.bonus).toLocaleString('zh-TW'):'<span class="dash">—</span>')+'</td>'
       +'<td class="r num" style="color:var(--ink-soft)">'+(gradeAmt||'<span class="dash">—</span>')+'</td>'
@@ -586,7 +638,7 @@ function renderEmpDBList(){
   box.innerHTML=out;
 }
 function empFieldToColumn(field){
-  const map={insGrade:'ins_grade',hireDate:'hire_date',resignDate:'resign_date',jobTitle:'job_title',healthInsGrade:'health_ins_grade',laborInsExempt:'labor_ins_exempt',raiseDate:'raise_effective_date',raiseNewBase:'raise_new_base',gradeEffDate:'grade_effective_date',gradeNewGrade:'grade_new_ins_grade',tenureDeductMonths:'tenure_deduct_months',tenureDeductDays:'tenure_deduct_days',alEntitled:'al_entitled',alTaken:'al_taken',alAsOf:'al_as_of',alNote:'al_note'};
+  const map={insGrade:'ins_grade',hireDate:'hire_date',resignDate:'resign_date',jobTitle:'job_title',healthInsGrade:'health_ins_grade',laborInsExempt:'labor_ins_exempt',raiseDate:'raise_effective_date',raiseNewBase:'raise_new_base',gradeEffDate:'grade_effective_date',gradeNewGrade:'grade_new_ins_grade',tenureDeductMonths:'tenure_deduct_months',tenureDeductDays:'tenure_deduct_days',leavePeriods:'leave_periods',alEntitled:'al_entitled',alTaken:'al_taken',alAsOf:'al_as_of',alNote:'al_note'};
   return map[field]||field;
 }
 function updateEmpDBField(i,field,val){

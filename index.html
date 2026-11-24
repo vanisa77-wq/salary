@@ -1022,7 +1022,7 @@ function updateNameBadge(){
       var depBillable=computeBillableDependents(emp.id);
       var allowances=allowancesByEmp[emp.id]||[];
       var allowanceTxt=allowances.length?allowances.map(function(a){return (a.name||'津貼')+' '+Number(a.amount||0).toLocaleString('zh-TW')+'元';}).join('、'):'無';
-      var tenure=tenureText(emp.hireDate, emp.resignDate||null, emp.tenureDeductMonths, emp.tenureDeductDays);
+      var tenure=tenureText(emp.hireDate, emp.resignDate||null, emp.tenureDeductMonths, emp.tenureDeductDays, emp.leavePeriods);
       var headline=name;
       var headTags=[];
       if(tenure)headTags.push('在職年資 '+tenure);
@@ -1317,7 +1317,7 @@ let dependentsByEmp={};
 let allowancesByEmp={};
 let insuranceHistory={};
 try{ var _ihCache=localStorage.getItem('scInsuranceHistory'); if(_ihCache) insuranceHistory=JSON.parse(_ihCache); }catch(e){}
-function rowToEmp(r){return {id:r.id,account:r.account||'',password:r.password||'',name:r.name||'',base:r.base||0,bonus:r.bonus||0,insGrade:r.ins_grade||0,dependents:r.dependents||0,hireDate:r.hire_date||'',resignDate:r.resign_date||'',jobTitle:r.job_title||'',healthInsGrade:r.health_ins_grade||0,laborInsExempt:r.labor_ins_exempt===true,raiseDate:r.raise_effective_date||'',raiseNewBase:r.raise_new_base||0,gradeEffDate:r.grade_effective_date||'',gradeNewGrade:(r.grade_new_ins_grade===null||r.grade_new_ins_grade===undefined)?'':r.grade_new_ins_grade,tenureDeductMonths:r.tenure_deduct_months||0,tenureDeductDays:r.tenure_deduct_days||0,alEntitled:(r.al_entitled===null||r.al_entitled===undefined)?'':+r.al_entitled,alTaken:(r.al_taken===null||r.al_taken===undefined)?'':+r.al_taken,alAsOf:r.al_as_of||'',alNote:r.al_note||''};}
+function rowToEmp(r){return {id:r.id,account:r.account||'',password:r.password||'',name:r.name||'',base:r.base||0,bonus:r.bonus||0,insGrade:r.ins_grade||0,dependents:r.dependents||0,hireDate:r.hire_date||'',resignDate:r.resign_date||'',jobTitle:r.job_title||'',healthInsGrade:r.health_ins_grade||0,laborInsExempt:r.labor_ins_exempt===true,raiseDate:r.raise_effective_date||'',raiseNewBase:r.raise_new_base||0,gradeEffDate:r.grade_effective_date||'',gradeNewGrade:(r.grade_new_ins_grade===null||r.grade_new_ins_grade===undefined)?'':r.grade_new_ins_grade,tenureDeductMonths:r.tenure_deduct_months||0,tenureDeductDays:r.tenure_deduct_days||0,leavePeriods:Array.isArray(r.leave_periods)?r.leave_periods:[],alEntitled:(r.al_entitled===null||r.al_entitled===undefined)?'':+r.al_entitled,alTaken:(r.al_taken===null||r.al_taken===undefined)?'':+r.al_taken,alAsOf:r.al_as_of||'',alNote:r.al_note||''};}
 function depAge(birthDate){
   if(!birthDate)return null;
   const b=new Date(birthDate);
@@ -1661,13 +1661,27 @@ function loadEmployeePii(){
     updateNameBadge();
   });
 }
-function tenureText(hireDate, untilDate, deductMonths, deductDays){
+/* 育嬰留停等停職期間：起日～迄日（迄日=復職日，空白=仍停職中）換算成「幾個月又幾天」 */
+function leaveSpan(s,e){
+  var a=new Date(s+'T00:00:00'), b=e?new Date(e+'T00:00:00'):new Date();
+  if(isNaN(a)||isNaN(b)||b<=a)return {m:0,d:0};
+  var m=(b.getFullYear()-a.getFullYear())*12+b.getMonth()-a.getMonth();
+  var d=b.getDate()-a.getDate();
+  if(d<0){ m--; d+=new Date(b.getFullYear(),b.getMonth(),0).getDate(); }
+  return {m:m,d:d};
+}
+function tenureText(hireDate, untilDate, deductMonths, deductDays, leavePeriods){
   if(!hireDate) return '';
   var start=new Date(hireDate+'T00:00:00');
   if(isNaN(start)) return '';
   // 停職（育嬰留停）扣除：到職日往後順延 N 個月 + N 天再起算
-  start.setMonth(start.getMonth()+(+deductMonths||0));
-  start.setDate(start.getDate()+(+deductDays||0));
+  // 有育嬰留停紀錄就依紀錄起迄日扣；沒有才用舊的手動扣除月/天
+  if(leavePeriods&&leavePeriods.length){
+    leavePeriods.forEach(function(lp){ if(!lp||!lp.start)return; var sp=leaveSpan(lp.start,lp.end||untilDate||null); start.setMonth(start.getMonth()+sp.m); start.setDate(start.getDate()+sp.d); });
+  }else{
+    start.setMonth(start.getMonth()+(+deductMonths||0));
+    start.setDate(start.getDate()+(+deductDays||0));
+  }
   var end=untilDate?new Date(untilDate+'T00:00:00'):new Date();
   if(isNaN(end)||end<start) return '';
   var y=end.getFullYear()-start.getFullYear();
