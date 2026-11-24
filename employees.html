@@ -289,7 +289,7 @@ function rocDateDisp(iso){
   if(!iso)return '';
   var p=String(iso).split('-');
   if(p.length<3)return iso;
-  return (+p[0]-1911)+'/'+(+p[1])+'/'+(+p[2]);
+  return (+p[0]-1911)+'/'+('0'+(+p[1])).slice(-2)+'/'+('0'+(+p[2])).slice(-2);
 }
 function depAge(birthDate){
   if(!birthDate)return null;
